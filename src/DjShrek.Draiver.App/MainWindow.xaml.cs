@@ -105,6 +105,7 @@ public partial class MainWindow : Window
             otherSelector.SelectedValue = theme.Id;
             ThemeStatusText.Text = "Тема: " + theme.Name;
             StatusText.Text = "Оформление изменено: " + theme.Name;
+            ShowPanel(_currentPanel);
         }
         finally { _syncingThemes = false; }
     }
@@ -152,12 +153,13 @@ public partial class MainWindow : Window
         PageTitle.Text = titles.Item1;
         PageSubtitle.Text = titles.Item2;
 
+        var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == ThemeManager.LoadPreference()) ?? ThemeManager.Themes[0];
+        var active = ActiveNavigationButton(panel);
         foreach (var button in new[] { DashboardNavButton, DevicesNavButton, UpdatesNavButton, RegistryNavButton, CleanupNavButton, SettingsNavButton })
         {
-            button.Background = new System.Windows.Media.SolidColorBrush(
-                (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(
-                    button == ActiveNavigationButton(panel) ? ThemeManager.Themes.First(x => x.Id == ThemeManager.LoadPreference()).Accent : ThemeManager.Themes.First(x => x.Id == ThemeManager.LoadPreference()).Navigation));
-            button.BorderBrush = button == ActiveNavigationButton(panel)
+            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(button == active ? theme.Accent : theme.Navigation);
+            button.Background = new System.Windows.Media.SolidColorBrush(color);
+            button.BorderBrush = button == active
                 ? (System.Windows.Media.Brush)Application.Current.Resources["AccentSecondaryBrush"]
                 : (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"];
         }
