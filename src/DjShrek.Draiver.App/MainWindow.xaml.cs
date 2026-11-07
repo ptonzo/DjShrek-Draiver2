@@ -14,12 +14,14 @@ public partial class MainWindow : Window
 {
  private readonly DeviceInventoryService _inventory=new();
  private readonly DriverMaintenanceService _maintenance=new();
+ private readonly WindowsUpdateDriverService _windowsUpdate=new();
+ private readonly ObservableCollection<DriverUpdate> _driverUpdates=new();
  private readonly ObservableCollection<DeviceInfo> _devices=new();
  private readonly DispatcherTimer _monitorTimer=new(){Interval=TimeSpan.FromSeconds(5)};
  private bool _scanRunning;
  public MainWindow()
  {
-  InitializeComponent();DevicesGrid.ItemsSource=_devices;
+  InitializeComponent();DevicesGrid.ItemsSource=_devices;UpdatesGrid.ItemsSource=_driverUpdates;
   Loaded+=async(_,_)=>{await RefreshAllAsync();_monitorTimer.Tick+=async(_,_)=>await RefreshMetricsAsync();_monitorTimer.Start();};
   Closed+=(_,_)=>_monitorTimer.Stop();
  }
@@ -115,6 +117,29 @@ public partial class MainWindow : Window
   try{var result=_maintenance.InstallInf(dialog.FileName);StatusText.Text=result;MessageBox.Show(result,"Установка драйвера",MessageBoxButton.OK,MessageBoxImage.Information);}
   catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена пользователем в UAC.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Установка драйвера",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
+ private async void SearchWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
+ {
+  try{
+   UpdatesCountText.Text="Идёт поиск через Windows Update Agent...";
+   var updates=await _windowsUpdate.SearchAsync();_driverUpdates.Clear();foreach(var item in updates)_driverUpdates.Add(item);
+   UpdatesCountText.Text=updates.Count==0?"Доступные обновления драйверов не найдены.":$"Найдено обновлений драйверов: {updates.Count}.";
+   StatusText.Text=UpdatesCountText.Text;
+  }catch(Exception ex){UpdatesCountText.Text="Не удалось выполнить поиск.";MessageBox.Show(ex.Message,"Поиск обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
+ private async void InstallWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
+ {
+  if(_driverUpdates.Count==0){MessageBox.Show("Сначала выполните поиск доступных обновлений драйверов.","Windows Update",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+  if(MessageBox.Show($"Windows Update сообщил о {_driverUpdates.Count} пакетах. Установить все найденные обновления драйверов?\n\nБудет использован системный Windows Update Agent. Возможна необходимость перезагрузки.","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+  try{
+   StatusText.Text="Запуск установки через Windows Update Agent...";
+   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable());
+   MessageBox.Show(result,"Результат установки драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
+   StatusText.Text="Установка через Windows Update завершена. Повторите поиск для проверки результата.";
+   UpdatesCountText.Text="Установка завершена. Выполните повторный поиск.";
+   _driverUpdates.Clear();
+  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена пользователем в UAC.";}
+  catch(Exception ex){MessageBox.Show(ex.Message,"Установка обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);StatusText.Text="Ошибка установки обновлений.";}
  }
  private void WindowsUpdate_Click(object sender,RoutedEventArgs e)
  {
