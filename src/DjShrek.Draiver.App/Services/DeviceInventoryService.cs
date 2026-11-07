@@ -53,18 +53,43 @@ ConvertTo-Json -InputObject @($devices.ToArray()) -Depth 4 -Compress
 
     private const string SystemSummaryScript = @"
 $ErrorActionPreference = 'Stop'
-$cpuValues = Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average
-$cpu = if ($null -eq $cpuValues.Average) { 0 } else { [math]::Round($cpuValues.Average) }
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 $os = Get-CimInstance Win32_OperatingSystem
-$memory = if ($os.TotalVisibleMemorySize -gt 0) {
-    [math]::Round((($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize) * 100)
-} else { 0 }
 $computer = Get-CimInstance Win32_ComputerSystem
+$cpuInfo = Get-CimInstance Win32_Processor | Select-Object -First 1
+$cpu = 0
+try {
+    $sample = Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 1 -ErrorAction Stop
+    $cpu = [math]::Round([math]::Max(0, [math]::Min(100, $sample.CounterSamples[0].CookedValue)), 0)
+} catch {
+    $loads = Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average
+    if ($null -ne $loads.Average) { $cpu = [math]::Round($loads.Average) }
+}
+$memoryTotal = [double]$os.TotalVisibleMemorySize
+$memoryFree = [double]$os.FreePhysicalMemory
+$memoryUsed = [math]::Max(0, $memoryTotal - $memoryFree)
+$memoryPercent = if ($memoryTotal -gt 0) { [math]::Round(($memoryUsed / $memoryTotal) * 100, 0) } else { 0 }
+$disk = Get-CimInstance Win32_LogicalDisk -Filter ""DeviceID='C:'""
+$diskTotal = if ($disk -and $disk.Size) { [double]$disk.Size / 1GB } else { 0 }
+$diskFree = if ($disk) { [double]$disk.FreeSpace / 1GB } else { 0 }
+$diskUsed = [math]::Max(0, $diskTotal - $diskFree)
+$diskPercent = if ($diskTotal -gt 0) { [math]::Round(($diskUsed / $diskTotal) * 100, 0) } else { 0 }
+$gpu = Get-CimInstance Win32_VideoController | Select-Object -First 1
+$uptime = New-TimeSpan -Start $os.LastBootUpTime -End (Get-Date)
+$uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours) ч."" } else { ""$($uptime.Hours) ч. $($uptime.Minutes) мин."" }
 [pscustomobject]@{
-    Cpu = $cpu
-    Memory = $memory
-    Os = $os.Caption
-    Computer = $computer.Manufacturer + ' ' + $computer.Model
+    Cpu = [double]$cpu
+    Memory = [double]$memoryPercent
+    MemoryUsedGb = [math]::Round($memoryUsed / 1MB, 1)
+    MemoryTotalGb = [math]::Round($memoryTotal / 1MB, 1)
+    Disk = [double]$diskPercent
+    DiskUsedGb = [math]::Round($diskUsed, 1)
+    DiskTotalGb = [math]::Round($diskTotal, 1)
+    CpuName = [string]$cpuInfo.Name
+    GpuName = [string]$gpu.Name
+    Os = [string]$os.Caption + "" (сборка "" + [string]$os.BuildNumber + "")""
+    Computer = [string]$computer.Manufacturer + "" "" + [string]$computer.Model
+    Uptime = $uptimeText
 } | ConvertTo-Json -Compress
 ";
 
@@ -85,18 +110,19 @@ $computer = Get-CimInstance Win32_ComputerSystem
             .ToArray();
     }
 
-    public async Task<(string Cpu, string Memory, string Os, string Computer)> GetSystemSummaryAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<SystemMetrics> GetSystemMetricsAsync(CancellationToken cancellationToken = default)
     {
         var output = await RunPowerShellAsync(SystemSummaryScript, cancellationToken);
         using var document = JsonDocument.Parse(output);
         var root = document.RootElement;
-
-        return (
-            GetString(root, "Cpu") + "%",
-            GetString(root, "Memory") + "%",
-            GetString(root, "Os"),
-            GetString(root, "Computer"));
+        static double Number(JsonElement element, string name) =>
+            element.TryGetProperty(name, out var value) && double.TryParse(value.ToString(), out var result) ? result : 0;
+        return new SystemMetrics(
+            Number(root, "Cpu"), Number(root, "Memory"),
+            Number(root, "MemoryUsedGb"), Number(root, "MemoryTotalGb"),
+            Number(root, "Disk"), Number(root, "DiskUsedGb"), Number(root, "DiskTotalGb"),
+            GetString(root, "CpuName"), GetString(root, "GpuName"),
+            GetString(root, "Os"), GetString(root, "Computer"), GetString(root, "Uptime"));
     }
 
     private static DeviceInfo Parse(JsonElement element) => new()
