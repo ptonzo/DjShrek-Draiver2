@@ -1,6 +1,17 @@
 <Application x:Class="DjShrek.Draiver.App.App" StartupUri="MainWindow.xaml" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
  <Application.Resources>
-  <Style TargetType="Button"><Setter Property="Foreground" Value="White"/><Setter Property="Background" Value="#167BC1"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="16,10"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,8,0"/></Style>
-  <Style TargetType="DataGrid"><Setter Property="Background" Value="#121B30"/><Setter Property="Foreground" Value="#F2F6FF"/><Setter Property="BorderBrush" Value="#263653"/><Setter Property="RowBackground" Value="#121B30"/><Setter Property="AlternatingRowBackground" Value="#17233A"/><Setter Property="GridLinesVisibility" Value="Horizontal"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="IsReadOnly" Value="True"/></Style>
+  <SolidColorBrush x:Key="AppBackgroundBrush" Color="#0B1020"/>
+  <SolidColorBrush x:Key="HeaderBrush" Color="#101A2D"/>
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#121B30"/>
+  <SolidColorBrush x:Key="SurfaceAltBrush" Color="#17233A"/>
+  <SolidColorBrush x:Key="BorderBrush" Color="#263653"/>
+  <SolidColorBrush x:Key="TextBrush" Color="#F2F6FF"/>
+  <SolidColorBrush x:Key="MutedBrush" Color="#9BAAC4"/>
+  <SolidColorBrush x:Key="AccentBrush" Color="#39B8FF"/>
+  <SolidColorBrush x:Key="AccentSecondaryBrush" Color="#7C4DFF"/>
+  <SolidColorBrush x:Key="SuccessBrush" Color="#35D49A"/>
+  <Style TargetType="Button"><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="Background" Value="{DynamicResource AccentBrush}"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="16,10"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,8,0"/></Style>
+  <Style TargetType="DataGrid"><Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/><Setter Property="RowBackground" Value="{DynamicResource SurfaceBrush}"/><Setter Property="AlternatingRowBackground" Value="{DynamicResource SurfaceAltBrush}"/><Setter Property="GridLinesVisibility" Value="Horizontal"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="IsReadOnly" Value="True"/></Style>
+  <Style TargetType="ComboBox"><Setter Property="Foreground" Value="#101820"/><Setter Property="Padding" Value="8,4"/></Style>
  </Application.Resources>
 </Application>
