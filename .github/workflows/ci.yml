@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-check:
+    name: Repository checks
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required project files
+        shell: pwsh
+        run: |
+          $required = @(
+            "README.md",
+            "docs/ARCHITECTURE.md",
+            "docs/ROADMAP.md",
+            ".gitignore"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) {
+              throw "Required file is missing: $file"
+            }
+          }
+          Write-Host "Repository structure check passed."
