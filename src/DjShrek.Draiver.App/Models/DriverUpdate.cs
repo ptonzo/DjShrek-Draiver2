@@ -8,4 +8,5 @@ public sealed class DriverUpdate
  public string DriverDate { get; set; } = "";
  public string UpdateId { get; set; } = "";
  public string Description { get; set; } = "";
+ public bool IsSelected { get; set; }
 }
