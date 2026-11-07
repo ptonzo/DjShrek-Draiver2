@@ -11,7 +11,7 @@ public sealed class HardwareSensorService
     {
         try
         {
-            using var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
+            var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
             computer.Open();
             var cpuTemperatures = new List<float>();
             var gpuTemperatures = new List<float>();
@@ -42,7 +42,7 @@ public sealed class HardwareSensorService
         List<float> gpuTemps, List<float> gpuLoads, ref string gpuName)
     {
         hardware.Update();
-        var isGpu = hardware.HardwareType is HardwareType.GpuAmd or HardwareType.GpuNvidia or HardwareType.GpuIntel;
+        var isGpu = hardware.HardwareType.ToString().StartsWith("Gpu", StringComparison.OrdinalIgnoreCase);
         if (isGpu && string.IsNullOrWhiteSpace(gpuName)) gpuName = hardware.Name;
         foreach (var sensor in hardware.Sensors)
         {
