@@ -133,7 +133,7 @@ public partial class MainWindow : Window
   if(MessageBox.Show($"Windows Update сообщил о {_driverUpdates.Count} пакетах. Установить все найденные обновления драйверов?\n\nБудет использован системный Windows Update Agent. Возможна необходимость перезагрузки.","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
   try{
    StatusText.Text="Запуск установки через Windows Update Agent...";
-   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable());
+   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable(_driverUpdates.Select(u=>u.UpdateId).ToArray()));
    MessageBox.Show(result,"Результат установки драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
    StatusText.Text="Установка через Windows Update завершена. Повторите поиск для проверки результата.";
    UpdatesCountText.Text="Установка завершена. Выполните повторный поиск.";
