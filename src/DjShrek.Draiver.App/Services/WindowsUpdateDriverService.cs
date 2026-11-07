@@ -119,7 +119,7 @@ try {{
         if ([int]$itemResult.ResultCode -eq 2) {{
             [void]$ready.Add($selected.Item($i))
         }} else {{
-            $lines.Add('Пропущено (загрузка не завершилась успешно): ' + $selected.Item($i).Title + '; код=' + $itemResult.ResultCode + '; HRESULT=' + ('0x{0:X8}' -f ([uint32]$itemResult.HResult)))
+            $lines.Add('Пропущено (загрузка не завершилась успешно): ' + $selected.Item($i).Title + '; код=' + $itemResult.ResultCode + '; HRESULT=' + ('0x{{0:X8}}' -f ([uint32]$itemResult.HResult)))
         }}
     }}
 
@@ -139,7 +139,7 @@ try {{
 
     for ($i = 0; $i -lt $ready.Count; $i++) {{
         $itemResult = $installResult.GetUpdateResult($i)
-        $lines.Add($ready.Item($i).Title + ' — код=' + $itemResult.ResultCode + '; HRESULT=' + ('0x{0:X8}' -f ([uint32]$itemResult.HResult)))
+        $lines.Add($ready.Item($i).Title + ' — код=' + $itemResult.ResultCode + '; HRESULT=' + ('0x{{0:X8}}' -f ([uint32]$itemResult.HResult)))
     }}
 
     $lines | Set-Content -LiteralPath '{escapedLogPath}' -Encoding UTF8
