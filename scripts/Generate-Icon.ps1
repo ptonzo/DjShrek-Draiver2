@@ -17,7 +17,6 @@ function New-IconPng([int]$Size) {
     $pink=[System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255,255,53,211),10)
     $blue=[System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255,0,217,255),9)
     try {
-      $g.FillRoundedRectangle # intentionally unavailable on older .NET; draw rounded background with path below
       $path=[System.Drawing.Drawing2D.GraphicsPath]::new()
       $path.AddArc(8,8,48,48,180,90);$path.AddArc(200,8,48,48,270,90);$path.AddArc(200,200,48,48,0,90);$path.AddArc(8,200,48,48,90,90);$path.CloseFigure()
       $g.FillPath($bg,$path);$path.Dispose()
