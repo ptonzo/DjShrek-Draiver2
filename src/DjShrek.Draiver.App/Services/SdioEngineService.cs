@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -63,7 +64,8 @@ public sealed class SdioEngineService
         var exe = Directory.EnumerateFiles(root, "SDIO_x64_*.exe", SearchOption.AllDirectories).FirstOrDefault();
         if (exe is null) throw new FileNotFoundException("В архиве SDIO не найден 64-битный исполняемый файл.");
         var start = new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! };
-        Process.Start(start) ?? throw new InvalidOperationException("Не удалось запустить SDIO.");
+        var process = Process.Start(start);
+        if (process is null) throw new InvalidOperationException("Не удалось запустить SDIO.");
         return "SDIO запущен. Обновите индексы в окне SDIO, выберите нужные драйверы и подтвердите установку там.";
     }
 }
