@@ -23,9 +23,22 @@ public partial class MainWindow : Window
  private bool _scanRunning;
  public MainWindow()
  {
-  InitializeComponent();DevicesGrid.ItemsSource=_devices;
+  InitializeComponent();
+  ThemeSelector.ItemsSource=ThemeManager.Themes;
+  var savedTheme=ThemeManager.LoadPreference();
+  ThemeSelector.SelectedItem=ThemeManager.Themes.FirstOrDefault(t=>t.Name==savedTheme)??ThemeManager.Themes[0];
+  ThemeManager.Apply((AppTheme)ThemeSelector.SelectedItem);
+  DevicesGrid.ItemsSource=_devices;
   Loaded+=async(_,_)=>{await RefreshAllAsync();DetectOem();_monitorTimer.Tick+=async(_,_)=>await RefreshMetricsAsync();_monitorTimer.Start();};
   Closed+=(_,_)=>_monitorTimer.Stop();
+ }
+ private void ThemeSelector_SelectionChanged(object sender,SelectionChangedEventArgs e)
+ {
+  if(ThemeSelector?.SelectedItem is AppTheme theme)
+  {
+   ThemeManager.Apply(theme);
+   if(StatusText!=null)StatusText.Text="Тема оформления: "+theme.Name;
+  }
  }
  private void ShowPanel(string title,string subtitle,string panel)
  {
