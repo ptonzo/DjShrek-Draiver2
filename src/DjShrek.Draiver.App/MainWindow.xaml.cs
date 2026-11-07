@@ -123,17 +123,18 @@ public partial class MainWindow : Window
   try{
    UpdatesCountText.Text="Идёт поиск через Windows Update Agent...";
    var updates=await _windowsUpdate.SearchAsync();_driverUpdates.Clear();foreach(var item in updates)_driverUpdates.Add(item);
-   UpdatesCountText.Text=updates.Count==0?"Доступные обновления драйверов не найдены.":$"Найдено обновлений драйверов: {updates.Count}.";
+   UpdatesCountText.Text=updates.Count==0?"Доступные обновления драйверов не найдены.":$"Найдено обновлений: {updates.Count}. Отметьте галочками пакеты для установки.";
    StatusText.Text=UpdatesCountText.Text;
   }catch(Exception ex){UpdatesCountText.Text="Не удалось выполнить поиск.";MessageBox.Show(ex.Message,"Поиск обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
  private async void InstallWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
  {
-  if(_driverUpdates.Count==0){MessageBox.Show("Сначала выполните поиск доступных обновлений драйверов.","Windows Update",MessageBoxButton.OK,MessageBoxImage.Information);return;}
-  if(MessageBox.Show($"Windows Update сообщил о {_driverUpdates.Count} пакетах. Установить все найденные обновления драйверов?\n\nБудет использован системный Windows Update Agent. Возможна необходимость перезагрузки.","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+  var selected=_driverUpdates.Where(u=>u.IsSelected).ToArray();
+  if(selected.Length==0){MessageBox.Show("Отметьте галочками нужные пакеты в списке обновлений.","Windows Update",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+  if(MessageBox.Show($"Установить выбранные обновления драйверов: {selected.Length}?\n\nБудет использован системный Windows Update Agent. Возможна необходимость перезагрузки.","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
   try{
    StatusText.Text="Запуск установки через Windows Update Agent...";
-   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable(_driverUpdates.Select(u=>u.UpdateId).ToArray()));
+   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable(selected.Select(u=>u.UpdateId).ToArray()));
    MessageBox.Show(result,"Результат установки драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
    StatusText.Text="Установка через Windows Update завершена. Повторите поиск для проверки результата.";
    UpdatesCountText.Text="Установка завершена. Выполните повторный поиск.";
