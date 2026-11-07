@@ -31,7 +31,8 @@ docs/
 
 ## Основные контракты
 - `IDeviceInventory`: получение PnP-устройств и Hardware ID.
-- `IDriverSource`: поиск метаданных в разрешённых источниках.
+- `IDriverSource`: собственный каталог DjShrek-Draiver; без WUAPI и Microsoft Update Catalog.
+- `DriverCatalogService`: Hardware ID matching, HTTPS download, SHA-256, INF и подпись издателя.
 - `IDriverPackageVerifier`: проверка подписи, издателя, хэша и целевой платформы.
 - `IDriverInstaller`: установка только после подтверждения пользователя.
 - `IDriverBackupService`: экспорт и проверка резервных копий.
