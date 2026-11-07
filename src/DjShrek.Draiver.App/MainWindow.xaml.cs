@@ -37,7 +37,7 @@ public partial class MainWindow : Window
  }
  private void Dashboard_Click(object sender,RoutedEventArgs e)=>ShowPanel("Обзор системы","Мониторинг и инструменты обслуживания","dashboard");
  private void Devices_Click(object sender,RoutedEventArgs e)=>ShowPanel("Устройства","Инвентаризация Plug and Play и экспорт отчёта","devices");
- private void Drivers_Click(object sender,RoutedEventArgs e)=>ShowPanel("Драйверы и резервная копия","Собственный каталог драйверов и резервное копирование","drivers");
+ private void Drivers_Click(object sender,RoutedEventArgs e)=>ShowPanel("Драйверы и резервная копия","Онлайн-поиск драйверов и резервное копирование","drivers");
  private void Diagnostics_Click(object sender,RoutedEventArgs e)=>ShowPanel("Диагностика","Проверка состояния устройств без автоматического изменения системы","diagnostics");
  private async void Refresh_Click(object sender,RoutedEventArgs e)=>await RefreshAllAsync();
  private async void Scan_Click(object sender,RoutedEventArgs e)=>await ScanDevicesAsync();
