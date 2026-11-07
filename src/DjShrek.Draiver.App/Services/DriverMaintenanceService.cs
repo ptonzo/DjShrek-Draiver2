@@ -14,6 +14,11 @@ public sealed class DriverMaintenanceService
   if(!File.Exists(infPath)||!string.Equals(Path.GetExtension(infPath),".inf",StringComparison.OrdinalIgnoreCase))throw new ArgumentException("Выберите существующий INF-файл драйвера.");
   return RunElevated("pnputil.exe",$"/add-driver \"{infPath}\" /install");
  }
+ public string RestoreDrivers(string source)
+ {
+  if(!Directory.Exists(source)||!Directory.EnumerateFiles(source,"*.inf",SearchOption.AllDirectories).Any())throw new ArgumentException("В выбранной папке не найдены INF-пакеты.");
+  return RunElevated("pnputil.exe",$"/add-driver \"{Path.Combine(source,"*.inf")}\" /subdirs /install");
+ }
  public string ListDriverPackages()
  {
   var start=new ProcessStartInfo("pnputil.exe","/enum-drivers"){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true,CreateNoWindow=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};
