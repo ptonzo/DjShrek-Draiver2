@@ -37,6 +37,11 @@ jobs:
         run: |
           dotnet build .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release --no-restore -v normal 2>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run WPF UI smoke test
+        shell: pwsh
+        run: |
+          dotnet run --project .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release --no-build -- --self-test
+          if ($LASTEXITCODE -ne 0) { throw "WPF UI smoke test failed." }
       - name: Publish self-contained EXE
         run: dotnet publish .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\win-x64 -v minimal
       - name: Verify and prepare portable package
