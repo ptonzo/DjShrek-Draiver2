@@ -80,9 +80,9 @@ public partial class MainWindow : Window
   var dialog=new SaveFileDialog{Title="Сохранить отчёт устройств",Filter="CSV (*.csv)|*.csv",FileName="DjShrek-device-report.csv",DefaultExt=".csv"};
   if(dialog.ShowDialog(this)!=true)return;
   try{
-   static string Q(string s)=>"\""+(s??"").Replace("\"",""\""\"")+"\":";
+   static string Q(string s) => "\"" + (s ?? "").Replace("\"", "\"\"") + "\"";
    var sb=new StringBuilder();sb.AppendLine("Устройство;Класс;Состояние;Код ошибки;Instance ID");
-   foreach(var d in _devices)sb.AppendLine(string.Join(";",new[]{d.Name,d.Class,d.Status,d.Problem,d.InstanceId}.Select(s=>"\""+(s??"").Replace("\"",""\""\"")+"\":".TrimEnd(':'))));
+   foreach(var d in _devices)sb.AppendLine(string.Join(";",new[]{d.Name,d.Class,d.Status,d.Problem,d.InstanceId}.Select(Q)));
    File.WriteAllText(dialog.FileName,sb.ToString(),new UTF8Encoding(true));StatusText.Text="Отчёт сохранён: "+dialog.FileName;
   }catch(Exception ex){MessageBox.Show(ex.Message,"Экспорт CSV",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
