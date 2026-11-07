@@ -7,6 +7,7 @@ public sealed class WindowsUpdateDriverService
 {
  private const string SearchScript = @"
 $ErrorActionPreference='Stop'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 $session=New-Object -ComObject Microsoft.Update.Session
 $searcher=$session.CreateUpdateSearcher()
 $result=$searcher.Search(""IsInstalled=0 and Type='Driver' and IsHidden=0"")
@@ -83,7 +84,7 @@ try {{
  private static async Task<string> RunPowerShellAsync(string script,CancellationToken token)
  {
   var encoded=Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-  var start=new ProcessStartInfo("powershell.exe",$"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}"){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true,CreateNoWindow=true};
+  var start=new ProcessStartInfo("powershell.exe",$"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}"){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true,CreateNoWindow=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};
   using var process=Process.Start(start)??throw new InvalidOperationException("Не удалось запустить Windows PowerShell.");
   var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();
   await process.WaitForExitAsync(token);var output=await stdout;var error=await stderr;
