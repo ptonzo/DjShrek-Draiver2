@@ -14,12 +14,12 @@ public partial class MainWindow : Window
 {
  private readonly DeviceInventoryService _inventory=new();
  private readonly DriverMaintenanceService _maintenance=new();
- private readonly WindowsUpdateDriverService _windowsUpdate=new();
+ private readonly DriverCatalogService _driverCatalog=new();
  private readonly HardwareSensorService _sensors=new();
  private readonly GameOptimizationService _gameProfile=new();
  private readonly OemCatalogService _oemCatalog=new();
  private OemSupport? _detectedOem;
- private readonly ObservableCollection<DriverUpdate> _driverUpdates=new();
+ private readonly ObservableCollection<DriverCatalogService.CatalogPackage> _driverUpdates=new();
  private readonly ObservableCollection<DeviceInfo> _devices=new();
  private readonly DispatcherTimer _monitorTimer=new(){Interval=TimeSpan.FromSeconds(5)};
  private bool _scanRunning;
@@ -39,7 +39,7 @@ public partial class MainWindow : Window
  }
  private void Dashboard_Click(object sender,RoutedEventArgs e)=>ShowPanel("Обзор системы","Мониторинг и инструменты обслуживания","dashboard");
  private void Devices_Click(object sender,RoutedEventArgs e)=>ShowPanel("Устройства","Инвентаризация Plug and Play и экспорт отчёта","devices");
- private void Drivers_Click(object sender,RoutedEventArgs e)=>ShowPanel("Драйверы и резервная копия","Driver Store, резервное копирование и обновления Windows","drivers");
+ private void Drivers_Click(object sender,RoutedEventArgs e)=>ShowPanel("Драйверы и резервная копия","Собственный каталог драйверов и резервное копирование","drivers");
  private void Diagnostics_Click(object sender,RoutedEventArgs e)=>ShowPanel("Диагностика","Проверка состояния устройств без автоматического изменения системы","diagnostics");
  private async void Refresh_Click(object sender,RoutedEventArgs e)=>await RefreshAllAsync();
  private async void Scan_Click(object sender,RoutedEventArgs e)=>await ScanDevicesAsync();
@@ -126,73 +126,32 @@ public partial class MainWindow : Window
  }
  private async void AutoUpdateDrivers_Click(object sender,RoutedEventArgs e)
  {
-  if(_scanRunning)return;
-  _scanRunning=true;
+  if(_scanRunning)return;_scanRunning=true;
   try{
-   ShowPanel("Драйверы и резервная копия","Автоматический поиск и установка совместимых драйверов","drivers");
-   UpdatesCountText.Text="1/3: Сканирование оборудования...";
-   StatusText.Text="Проверка устройств Windows...";
-   var devices=await _inventory.ScanAsync();
-   ApplyDevices(devices);
-   var problemDevices=devices.Where(d=>!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0").ToArray();
-   UpdatesCountText.Text=$"Оборудование проверено: {devices.Count} устройств; с кодами ошибок: {problemDevices.Length}. 2/3: Поиск совместимых драйверов в Windows Update...";
-   StatusText.Text="Поиск обновлений драйверов на серверах Microsoft...";
-   var updates=await _windowsUpdate.SearchAsync();
-   _driverUpdates.Clear();
-   foreach(var item in updates){item.IsSelected=true;_driverUpdates.Add(item);}
-   if(updates.Count==0){
-    UpdatesCountText.Text="Новых совместимых драйверов через Windows Update не найдено. Это не означает, что у производителя нет более новых версий.";
+   ShowPanel("Драйверы и резервная копия","Независимый каталог DjShrek-Draiver","drivers");
+   UpdatesCountText.Text="1/3: Сканирование Hardware ID...";
+   var devices=await _inventory.ScanAsync();ApplyDevices(devices);
+   UpdatesCountText.Text="2/3: Поиск точных совпадений в каталоге DjShrek-Draiver...";
+   var matches=await _driverCatalog.FindMatchesAsync(devices);_driverUpdates.Clear();
+   foreach(var item in matches)_driverUpdates.Add(item);
+   if(matches.Count==0){
+    UpdatesCountText.Text="Совпадений в собственном каталоге пока нет. Windows Update не использовался. Каталог ожидает публикации проверенных пакетов.";
     StatusText.Text=UpdatesCountText.Text;
-    MessageBox.Show(UpdatesCountText.Text+"\n\nПроверьте также официальный сайт производителя устройства.", "Автоматический поиск драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
-    return;
+    MessageBox.Show(UpdatesCountText.Text,"Собственный каталог драйверов",MessageBoxButton.OK,MessageBoxImage.Information);return;
    }
-   var list=string.Join(Environment.NewLine,updates.Take(12).Select((u,i)=>$"• {u.Title}"));
-   if(updates.Count>12)list+=Environment.NewLine+$"… и ещё {updates.Count-12} пак.";
-   var prompt=$"Windows Update нашёл {updates.Count} совместимых обновлений драйверов.\n\n{list}\n\nПрограмма скачает и установит все найденные пакеты через Windows Update Agent. Потребуется подтверждение UAC. Возможна перезагрузка. Продолжить?";
-   if(MessageBox.Show(prompt,"Подтверждение автоматической установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes){
-    UpdatesCountText.Text=$"Найдено обновлений: {updates.Count}. Установка отменена; список оставлен для выбора.";
-    StatusText.Text="Установка отменена пользователем.";
-    return;
+   var list=string.Join(Environment.NewLine,matches.Select(p=>$"• {p.Provider} — {p.Device}, версия {p.Version}"));
+   if(MessageBox.Show($"Найдены совпадения: {matches.Count}.\n\n{list}\n\nПеред установкой будут проверены SHA-256, подпись издателя и Hardware ID. Продолжить?","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+   var count=0;
+   foreach(var package in matches){
+    UpdatesCountText.Text=$"3/3: Загрузка и проверка {++count}/{matches.Count} — {package.Provider}...";
+    StatusText.Text=await _driverCatalog.DownloadVerifyAndInstallAsync(package);
    }
-   UpdatesCountText.Text=$"3/3: Загрузка и установка {updates.Count} пакетов. Не выключайте компьютер...";
-   StatusText.Text="Windows Update скачивает и устанавливает драйверы. Подтвердите запрос UAC, если он появится.";
-   var log=await Task.Run(()=>_windowsUpdate.InstallAvailable(updates.Select(u=>u.UpdateId).ToArray()));
-   UpdatesCountText.Text="Обработка пакетов завершена. Выполняется повторная проверка устройств...";
-   StatusText.Text="Повторное сканирование после установки...";
-   var after=await _inventory.ScanAsync();
-   ApplyDevices(after);
-   var remaining=after.Count(d=>!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0");
-   UpdatesCountText.Text=$"Завершено. Было найдено пакетов: {updates.Count}. Устройств с кодами ошибок после установки: {remaining}. Смотрите отчёт Windows Update ниже.";
-   StatusText.Text="Автоматическая установка драйверов завершена.";
-   MessageBox.Show(log+"\n\nПовторная проверка устройств: "+after.Count+"; устройств с кодами ошибок: "+remaining+". Если Windows сообщила о необходимости перезагрузки, сохраните работу и перезагрузите ПК.", "Результат автоматического обновления",MessageBoxButton.OK,MessageBoxImage.Information);
-   _driverUpdates.Clear();
-  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена в запросе UAC.";UpdatesCountText.Text="Пользователь отменил запрос прав администратора. Драйверы не установлены.";}
-  catch(Exception ex){StatusText.Text="Не удалось завершить автоматическое обновление.";UpdatesCountText.Text="Ошибка автоматического обновления. Проверьте Windows Update и повторите попытку.";MessageBox.Show(ex.Message,"Автоматическая установка драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+   var after=await _inventory.ScanAsync();ApplyDevices(after);
+   UpdatesCountText.Text=$"Завершено. Установлено пакетов: {count}. Повторно проверено устройств: {after.Count}.";
+   MessageBox.Show(UpdatesCountText.Text,"DjShrek-Draiver",MessageBoxButton.OK,MessageBoxImage.Information);
+  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена в UAC.";}
+  catch(Exception ex){StatusText.Text="Ошибка собственного каталога драйверов.";MessageBox.Show(ex.Message,"DjShrek-Draiver",MessageBoxButton.OK,MessageBoxImage.Error);}
   finally{_scanRunning=false;}
- }
- private async void SearchWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
- {
-  try{
-   UpdatesCountText.Text="Идёт поиск через Windows Update Agent...";
-   var updates=await _windowsUpdate.SearchAsync();_driverUpdates.Clear();foreach(var item in updates)_driverUpdates.Add(item);
-   UpdatesCountText.Text=updates.Count==0?"Доступные обновления драйверов не найдены.":$"Найдено обновлений: {updates.Count}. Отметьте галочками пакеты для установки.";
-   StatusText.Text=UpdatesCountText.Text;
-  }catch(Exception ex){UpdatesCountText.Text="Не удалось выполнить поиск.";MessageBox.Show(ex.Message,"Поиск обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
- }
- private async void InstallWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
- {
-  var selected=_driverUpdates.Where(u=>u.IsSelected).ToArray();
-  if(selected.Length==0){MessageBox.Show("Отметьте галочками нужные пакеты в списке обновлений.","Windows Update",MessageBoxButton.OK,MessageBoxImage.Information);return;}
-  if(MessageBox.Show($"Установить выбранные обновления драйверов: {selected.Length}?\n\nБудет использован системный Windows Update Agent. Возможна необходимость перезагрузки.","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
-  try{
-   StatusText.Text="Запуск установки через Windows Update Agent...";
-   var result=await Task.Run(()=>_windowsUpdate.InstallAvailable(selected.Select(u=>u.UpdateId).ToArray()));
-   MessageBox.Show(result,"Результат установки драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
-   StatusText.Text="Установка через Windows Update завершена. Повторите поиск для проверки результата.";
-   UpdatesCountText.Text="Установка завершена. Выполните повторный поиск.";
-   _driverUpdates.Clear();
-  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена пользователем в UAC.";}
-  catch(Exception ex){MessageBox.Show(ex.Message,"Установка обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);StatusText.Text="Ошибка установки обновлений.";}
  }
  private void DetectOem()
  {
@@ -220,11 +179,6 @@ public partial class MainWindow : Window
  {
   try{GameProfileText.Text=_gameProfile.Restore();StatusText.Text="Настройки игрового профиля восстановлены.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Восстановление профиля",MessageBoxButton.OK,MessageBoxImage.Error);}
- }
- private void WindowsUpdate_Click(object sender,RoutedEventArgs e)
- {
-  try{Process.Start(new ProcessStartInfo("ms-settings:windowsupdate-optionalupdates"){UseShellExecute=true});StatusText.Text="Открыт раздел необязательных обновлений Windows. Проверьте категорию «Обновления драйверов».";}
-  catch(Exception ex){MessageBox.Show(ex.Message,"Windows Update",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
  private void ListPackages_Click(object sender,RoutedEventArgs e)
  {
