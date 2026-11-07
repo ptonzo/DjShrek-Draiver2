@@ -22,6 +22,9 @@ jobs:
         run: |
           .\scripts\Generate-Icon.ps1
           if (-not (Test-Path .\assets\DjShrek-Draiver.ico)) { throw "Application icon was not generated." }
+      - name: Validate XAML events, installer license, and assets
+        shell: pwsh
+        run: .\scripts\Validate-Project.ps1
       - name: Show SDK and project
         shell: pwsh
         run: |
