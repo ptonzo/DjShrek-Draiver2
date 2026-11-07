@@ -1,5 +1,5 @@
 #define MyAppName "DjShrek-Draiver Cyber Club"
-#define MyAppVersion "1.3.0"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "DjShrek-Draiver"
 
 [Setup]
@@ -30,8 +30,8 @@ SetupLogging=yes
 Uninstallable=yes
 CloseApplications=yes
 RestartApplications=no
-VersionInfoVersion=1.3.0.0
-VersionInfoProductVersion=1.3.0
+VersionInfoVersion=1.4.0.0
+VersionInfoProductVersion=1.4.0
 VersionInfoProductName={#MyAppName}
 VersionInfoCompany={#MyAppPublisher}
 
