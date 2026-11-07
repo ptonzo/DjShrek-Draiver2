@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using DjShrek.Draiver.App.Models;
@@ -116,7 +117,8 @@ $uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours)
         using var document = JsonDocument.Parse(output);
         var root = document.RootElement;
         static double Number(JsonElement element, string name) =>
-            element.TryGetProperty(name, out var value) && double.TryParse(value.ToString(), out var result) ? result : 0;
+            element.TryGetProperty(name, out var value) &&
+            double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : 0;
         return new SystemMetrics(
             Number(root, "Cpu"), Number(root, "Memory"),
             Number(root, "MemoryUsedGb"), Number(root, "MemoryTotalGb"),
