@@ -14,18 +14,16 @@ public partial class MainWindow : Window
 {
  private readonly DeviceInventoryService _inventory=new();
  private readonly DriverMaintenanceService _maintenance=new();
- private readonly DriverCatalogService _driverCatalog=new();
  private readonly HardwareSensorService _sensors=new();
  private readonly GameOptimizationService _gameProfile=new();
  private readonly OemCatalogService _oemCatalog=new();
  private OemSupport? _detectedOem;
- private readonly ObservableCollection<DriverCatalogService.CatalogPackage> _driverUpdates=new();
  private readonly ObservableCollection<DeviceInfo> _devices=new();
  private readonly DispatcherTimer _monitorTimer=new(){Interval=TimeSpan.FromSeconds(5)};
  private bool _scanRunning;
  public MainWindow()
  {
-  InitializeComponent();DevicesGrid.ItemsSource=_devices;UpdatesGrid.ItemsSource=_driverUpdates;
+  InitializeComponent();DevicesGrid.ItemsSource=_devices;
   Loaded+=async(_,_)=>{await RefreshAllAsync();DetectOem();_monitorTimer.Tick+=async(_,_)=>await RefreshMetricsAsync();_monitorTimer.Start();};
   Closed+=(_,_)=>_monitorTimer.Stop();
  }
@@ -126,32 +124,22 @@ public partial class MainWindow : Window
  }
  private async void AutoUpdateDrivers_Click(object sender,RoutedEventArgs e)
  {
-  if(_scanRunning)return;_scanRunning=true;
-  try{
-   ShowPanel("Драйверы и резервная копия","Независимый каталог DjShrek-Draiver","drivers");
-   UpdatesCountText.Text="1/3: Сканирование Hardware ID...";
-   var devices=await _inventory.ScanAsync();ApplyDevices(devices);
-   UpdatesCountText.Text="2/3: Поиск точных совпадений в каталоге DjShrek-Draiver...";
-   var matches=await _driverCatalog.FindMatchesAsync(devices);_driverUpdates.Clear();
-   foreach(var item in matches)_driverUpdates.Add(item);
-   if(matches.Count==0){
-    UpdatesCountText.Text="Совпадений в собственном каталоге пока нет. Windows Update не использовался. Каталог ожидает публикации проверенных пакетов.";
-    StatusText.Text=UpdatesCountText.Text;
-    MessageBox.Show(UpdatesCountText.Text,"Собственный каталог драйверов",MessageBoxButton.OK,MessageBoxImage.Information);return;
-   }
-   var list=string.Join(Environment.NewLine,matches.Select(p=>$"• {p.Provider} — {p.Device}, версия {p.Version}"));
-   if(MessageBox.Show($"Найдены совпадения: {matches.Count}.\n\n{list}\n\nПеред установкой будут проверены SHA-256, подпись издателя и Hardware ID. Продолжить?","Подтверждение установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
-   var count=0;
-   foreach(var package in matches){
-    UpdatesCountText.Text=$"3/3: Загрузка и проверка {++count}/{matches.Count} — {package.Provider}...";
-    StatusText.Text=await _driverCatalog.DownloadVerifyAndInstallAsync(package);
-   }
-   var after=await _inventory.ScanAsync();ApplyDevices(after);
-   UpdatesCountText.Text=$"Завершено. Установлено пакетов: {count}. Повторно проверено устройств: {after.Count}.";
-   MessageBox.Show(UpdatesCountText.Text,"DjShrek-Draiver",MessageBoxButton.OK,MessageBoxImage.Information);
-  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена в UAC.";}
-  catch(Exception ex){StatusText.Text="Ошибка собственного каталога драйверов.";MessageBox.Show(ex.Message,"DjShrek-Draiver",MessageBoxButton.OK,MessageBoxImage.Error);}
-  finally{_scanRunning=false;}
+  if(_scanRunning)return;
+  _scanRunning=true;
+  try {
+   ShowPanel("Драйверы и резервная копия","Онлайн-поиск драйверов по Hardware ID","drivers");
+   UpdatesCountText.Text="Сканирование устройств...";
+   var devices=await _inventory.ScanAsync(); ApplyDevices(devices);
+   var affected=devices.Count(d=>d.HardwareIds.Length>0 && ((!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0") || string.IsNullOrWhiteSpace(d.DriverVersion)));
+   UpdatesCountText.Text=$"Найдено устройств: {devices.Count}; требуют внимания: {affected}.";
+   if(MessageBox.Show("DjShrek-Draiver загрузит официальный Snappy Driver Installer Origin (SDIO), обновит его онлайн-индексы и выполнит подбор драйверов по Hardware ID.\n\nSDIO покажет найденные пакеты. Перед установкой проверьте список и подтвердите установку в SDIO. Автоматическая установка всех предложений без проверки отключена, чтобы не повредить рабочие драйверы.\n\nПродолжить?","Онлайн-поиск драйверов",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+   UpdatesCountText.Text="Загрузка движка SDIO...";
+   var result=await new SdioEngineService().DownloadAndLaunchAsync();
+   UpdatesCountText.Text=result; StatusText.Text=result;
+  } catch(Exception ex) {
+   UpdatesCountText.Text="Не удалось запустить онлайн-поиск.";
+   MessageBox.Show(ex.Message,"DjShrek-Draiver",MessageBoxButton.OK,MessageBoxImage.Error);
+  } finally { _scanRunning=false; }
  }
  private void DetectOem()
  {
