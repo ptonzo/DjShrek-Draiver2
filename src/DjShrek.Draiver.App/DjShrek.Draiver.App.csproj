@@ -8,7 +8,8 @@
     <AssemblyName>DjShrek-Draiver</AssemblyName>
     <RootNamespace>DjShrek.Draiver.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.2.0</Version>
+    <ApplicationIcon>..\..\assets\DjShrek-Draiver.ico</ApplicationIcon>
+    <Version>1.3.0</Version>
     <Product>DjShrek-Draiver Cyber Club</Product>
     <Company>DjShrek-Draiver</Company>
     <Description>Windows device inventory and driver maintenance utility</Description>

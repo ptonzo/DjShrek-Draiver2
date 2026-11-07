@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - name: Generate application and installer icon
+        shell: pwsh
+        run: |
+          .\scripts\Generate-Icon.ps1
+          if (-not (Test-Path .\assets\DjShrek-Draiver.ico)) { throw "Application icon was not generated." }
       - name: Show SDK and project
         shell: pwsh
         run: |
@@ -31,14 +36,36 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish self-contained EXE
         run: dotnet publish .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\win-x64 -v minimal
-      - name: Verify published executable
+      - name: Verify and prepare portable package
         shell: pwsh
         run: |
           $exe = ".\artifacts\win-x64\DjShrek-Draiver.exe"
           if (-not (Test-Path $exe)) { throw "Published executable not found: $exe" }
           $item = Get-Item $exe
           if ($item.Length -lt 1000000) { throw "Published executable is unexpectedly small ($($item.Length) bytes)." }
+          Remove-Item .\artifacts\win-x64\*.pdb -Force -ErrorAction SilentlyContinue
+          Copy-Item .\README.md .\artifacts\win-x64\README.txt
+          Copy-Item .\LICENSE-TERMS-RU.txt .\artifacts\win-x64\LICENSE-TERMS-RU.txt
           Write-Host "EXE verified: $($item.Length) bytes"
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
+          $iscc = Join-Path $programFilesX86 "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup compiler ISCC.exe not found." }
+          "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force .\artifacts\installer | Out-Null
+          & $env:ISCC_PATH .\installer\DjShrek-Draiver.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $setup = ".\artifacts\installer\DjShrek-Draiver-Cyber-Club-Setup-x64.exe"
+          if (-not (Test-Path $setup)) { throw "Installer was not created." }
+          if ((Get-Item $setup).Length -lt 10000000) { throw "Installer is unexpectedly small." }
+          Write-Host "Installer verified: $((Get-Item $setup).Length) bytes"
       - name: Upload diagnostic log
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,11 +74,19 @@ jobs:
           path: build.log
           if-no-files-found: ignore
           retention-days: 7
-      - name: Upload test build
+      - name: Upload portable Windows x64 build
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: DjShrek-Draiver-Windows-x64
           path: .\artifacts\win-x64\
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Windows installer
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DjShrek-Draiver-Setup-Windows-x64
+          path: .\artifacts\installer\DjShrek-Draiver-Cyber-Club-Setup-x64.exe
           if-no-files-found: error
           retention-days: 14
