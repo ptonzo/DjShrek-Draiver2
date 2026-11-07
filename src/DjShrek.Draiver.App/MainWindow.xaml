@@ -1,43 +1,455 @@
-<Window x:Class="DjShrek.Draiver.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="DjShrek-Draiver Cyber Club" Height="820" Width="1360" MinHeight="680" MinWidth="1050" WindowStartupLocation="CenterScreen" Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextBrush}">
- <Grid><Grid.RowDefinitions><RowDefinition Height="76"/><RowDefinition Height="*"/><RowDefinition Height="34"/></Grid.RowDefinitions>
-  <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"><Grid Margin="26,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel VerticalAlignment="Center"><TextBlock Text="DjShrek-Draiver" FontSize="25" FontWeight="Bold"/><TextBlock Text="CYBER CLUB  •  PC CONTROL CENTER" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold"/></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="ТЕМА" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/><ComboBox x:Name="ThemeSelector" Width="250" Height="34" VerticalContentAlignment="Center" SelectionChanged="ThemeSelector_SelectionChanged"/><Ellipse Width="9" Height="9" Fill="{DynamicResource SuccessBrush}" Margin="14,0,9,0"/><TextBlock Text="ЛОКАЛЬНЫЙ РЕЖИМ" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/></StackPanel></Grid></Border>
-  <Grid Grid.Row="1" Margin="22,18"><Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-   <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="12" Margin="0,0,18,0"><StackPanel>
-    <TextBlock Text="РАЗДЕЛЫ" Foreground="{DynamicResource MutedBrush}" FontWeight="Bold" FontSize="10" Margin="8,8,0,14"/>
-    <Button Content="◈  Обзор системы" Click="Dashboard_Click" HorizontalContentAlignment="Left" Background="#203451"/>
-    <Button Content="▦  Устройства" Click="Devices_Click" HorizontalContentAlignment="Left" Background="Transparent"/>
-    <Button Content="↻  Драйверы и backup" Click="Drivers_Click" HorizontalContentAlignment="Left" Background="Transparent"/>
-    <Button Content="⚙  Диагностика" Click="Diagnostics_Click" HorizontalContentAlignment="Left" Background="Transparent"/>
-    <Separator Margin="4,18" Background="{DynamicResource BorderBrush}"/><TextBlock Text="ИНФОРМАЦИЯ" Foreground="{DynamicResource MutedBrush}" FontWeight="Bold" FontSize="10" Margin="8,4,0,10"/>
-    <TextBlock Text="Версия 1.3.0" Foreground="{DynamicResource MutedBrush}" Margin="8,0,0,6"/><TextBlock Text="Windows 10 / 11 x64" Foreground="{DynamicResource MutedBrush}" Margin="8,0,0,6"/>
-    <TextBlock Text="Используются системные механизмы Windows. Установка драйверов требует отдельного подтверждения." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="11" Margin="8,18,8,0"/>
-   </StackPanel></Border>
-   <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-    <DockPanel Margin="0,2,0,16"><StackPanel><TextBlock x:Name="PageTitle" Text="Обзор системы" FontSize="25" FontWeight="Bold"/><TextBlock x:Name="PageSubtitle" Text="Состояние компьютера и инструменты обслуживания" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/></StackPanel><Button DockPanel.Dock="Right" Content="⟳  Обновить данные" Click="Refresh_Click" VerticalAlignment="Center"/></DockPanel>
-    <Grid Grid.Row="1">
-     <Grid x:Name="DashboardPanel"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
-      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-       <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,10,14"><StackPanel><TextBlock Text="ЗАГРУЗКА CPU" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="CpuValue" Text="—" FontSize="30" FontWeight="Bold" Margin="0,8,0,0"/><TextBlock Text="Последнее измерение" Foreground="{DynamicResource MutedBrush}" FontSize="10"/></StackPanel></Border>
-       <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,10,14"><StackPanel><TextBlock Text="ПАМЯТЬ" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="MemoryValue" Text="—" FontSize="30" FontWeight="Bold" Margin="0,8,0,0"/><TextBlock Text="Использование RAM" Foreground="{DynamicResource MutedBrush}" FontSize="10"/></StackPanel></Border>
-       <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,0,14"><StackPanel><TextBlock Text="УСТРОЙСТВА" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="DeviceCount" Text="—" FontSize="30" FontWeight="Bold" Margin="0,8,0,0"/><TextBlock Text="Обнаружено Windows" Foreground="{DynamicResource MutedBrush}" FontSize="10"/></StackPanel></Border>
-      </Grid>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,14"><StackPanel><TextBlock Text="ОПЕРАЦИОННАЯ СИСТЕМА" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="OsValue" Text="Получение сведений..." FontSize="17" Margin="0,8,0,0"/><TextBlock x:Name="ComputerValue" Text="Определение модели компьютера..." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,4,0,0"/></StackPanel></Border>
-      <Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="18" Margin="0,0,10,0"><StackPanel><TextBlock Text="ТЕМПЕРАТУРА CPU" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="CpuTempValue" Text="Нет данных" FontSize="24" Margin="0,8,0,0"/></StackPanel></Border><Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="18"><StackPanel><TextBlock Text="ТЕМПЕРАТУРА GPU" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="GpuTempValue" Text="Нет данных" FontSize="24" Margin="0,8,0,0"/></StackPanel></Border></Grid><TextBlock x:Name="TemperatureNote" Text="Данные аппаратных датчиков" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,12"/>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,14"><StackPanel><TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold" Margin="0,0,0,14"/><WrapPanel><Button Content="Сканировать устройства" Click="Scan_Click"/><Button Content="Резервная копия драйверов" Click="Backup_Click"/><Button Content="Найти драйверы" Click="AutoUpdateDrivers_Click"/></WrapPanel><TextBlock Text="Поиск и установка доступных драйверов выполняются через официальный механизм Windows Update. Приложение не подменяет драйверы сторонними пакетами." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="11"/></StackPanel></Border>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20"><StackPanel><TextBlock Text="СОСТОЯНИЕ УСТРОЙСТВ" Foreground="{DynamicResource MutedBrush}" FontSize="10" FontWeight="Bold"/><TextBlock x:Name="HealthSummary" Text="Нажмите «Сканировать устройства» для проверки кодов ошибок." Foreground="{DynamicResource TextBrush}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel></Border>
-     </StackPanel></ScrollViewer></Grid>
-     <Grid x:Name="DevicesPanel" Visibility="Collapsed"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><DockPanel Margin="0,0,0,10"><StackPanel Orientation="Horizontal"><TextBox x:Name="DeviceSearch" Width="300" Height="34" VerticalContentAlignment="Center" Padding="8" TextChanged="DeviceSearch_TextChanged" ToolTip="Поиск по устройству, производителю, драйверу или Instance ID"/><CheckBox x:Name="ErrorsOnlyCheck" Content="Только с ошибками" Margin="14,0,0,0" VerticalAlignment="Center" Checked="DeviceSearch_TextChanged" Unchecked="DeviceSearch_TextChanged" Foreground="{DynamicResource TextBrush}"/></StackPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Экспорт CSV" Click="ExportDevices_Click"/><Button Content="Сканировать" Click="Scan_Click"/></StackPanel></DockPanel><DataGrid x:Name="DevicesGrid" Grid.Row="1" AutoGenerateColumns="False"><DataGrid.Columns><DataGridTextColumn Header="Устройство" Binding="{Binding Name}" Width="2*"/><DataGridTextColumn IsReadOnly="True" Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/><DataGridTextColumn IsReadOnly="True" Header="Класс" Binding="{Binding Class}" Width="*"/><DataGridTextColumn Header="Состояние" Binding="{Binding Status}" Width="*"/><DataGridTextColumn Header="Код ошибки" Binding="{Binding Problem}" Width="*"/><DataGridTextColumn Header="Поставщик драйвера" Binding="{Binding DriverProvider}" Width="*"/><DataGridTextColumn Header="Версия" Binding="{Binding DriverVersion}" Width="*"/><DataGridTextColumn IsReadOnly="True" Header="Дата" Binding="{Binding DriverDate}" Width="*"/><DataGridTextColumn Header="INF" Binding="{Binding InfName}" Width="*"/><DataGridTextColumn Header="Подпись" Binding="{Binding Signature}" Width="*"/><DataGridTextColumn Header="Instance ID" Binding="{Binding InstanceId}" Width="3*"/></DataGrid.Columns></DataGrid></Grid>
-     <Grid x:Name="DriversPanel" Visibility="Collapsed"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="Обслуживание драйверов" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14"/>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="ЦЕНТР ОБНОВЛЕНИЙ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><TextBlock Text="Сканирование Plug and Play и подбор драйверов через актуальные онлайн-индексы SDIO. Собственного каталога пакетов нет. Windows Update и Microsoft Update Catalog не используются." TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,8,0,12"/><WrapPanel><Button Content="Найти, скачать и установить драйверы" Click="AutoUpdateDrivers_Click" FontWeight="Bold"/><Button Content="Запустить онлайн-поиск" Click="AutoUpdateDrivers_Click"/><Button Content="Повторить онлайн-поиск" Click="AutoUpdateDrivers_Click"/></WrapPanel><TextBlock x:Name="UpdatesCountText" Text="Список ещё не проверялся." Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,8"/></StackPanel></Border>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="ОНЛАЙН-ПОИСК ПО HARDWARE ID" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><TextBlock Text="Движок получает актуальные индексы из сети и сопоставляет их с аппаратными ID. Список кандидатов проверяется перед установкой." TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,8,0,14"/><Button Content="Запустить онлайн-поиск драйверов" HorizontalAlignment="Left" Click="AutoUpdateDrivers_Click"/></StackPanel></Border>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="РЕЗЕРВНОЕ КОПИРОВАНИЕ" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><TextBlock Text="Экспорт установленных пакетов драйверов из Driver Store в выбранную папку. Рекомендуется выполнить перед обслуживанием системы." TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,8,0,14"/><WrapPanel><Button Content="Экспортировать драйверы" Click="Backup_Click"/><Button Content="Восстановить из папки backup" Click="RestoreDrivers_Click"/></WrapPanel></StackPanel></Border>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="УСТАНОВКА INF-ПАКЕТА" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><TextBlock Text="Выберите INF-файл из доверенного источника. Проверьте производителя и совместимость. Windows может запросить права администратора." TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,8,0,14"/><Button Content="Выбрать INF и установить" HorizontalAlignment="Left" Click="Install_Click"/></StackPanel></Border>
-      <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="ОФИЦИАЛЬНЫЕ КАТАЛОГИ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><TextBlock x:Name="OemDetectText" Text="Определение производителя компьютера..." Foreground="{DynamicResource TextBrush}" Margin="0,8,0,10" TextWrapping="Wrap"/><WrapPanel><Button Content="Каталог производителя ПК" Click="OpenDetectedOem_Click"/><Button Content="Все каталоги" Click="OpenOemCatalog_Click"/></WrapPanel></StackPanel></Border><Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20"><StackPanel><TextBlock Text="УСТАНОВЛЕННЫЕ ПАКЕТЫ DRIVER STORE" Foreground="{DynamicResource AccentBrush}" FontWeight="Bold" FontSize="11"/><Button Content="Обновить список пакетов" HorizontalAlignment="Left" Margin="0,10,0,10" Click="ListPackages_Click"/><TextBox x:Name="PackagesText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="190" Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrush}" FontFamily="Consolas"/></StackPanel></Border>
-     </StackPanel></ScrollViewer></Grid>
-     <Grid x:Name="DiagnosticsPanel" Visibility="Collapsed"><StackPanel><TextBlock Text="Диагностика" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14"/><Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="ПРОВЕРКА PLUG AND PLAY" FontWeight="Bold"/><TextBlock Text="Сканирование устройств, кодов конфигурации и состояния драйверов. Отчёт можно экспортировать в CSV." Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/><Button Content="Запустить полную проверку" HorizontalAlignment="Left" Click="Scan_Click"/></StackPanel></Border><Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,12"><StackPanel><TextBlock Text="ИГРОВОЙ ПРОФИЛЬ WINDOWS" FontWeight="Bold"/><TextBlock Text="Включает Windows Game Mode и план высокой производительности. Сохраняет исходные настройки для восстановления. Не отключает системные службы и процессы." Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/><WrapPanel><Button Content="Включить игровой профиль" Click="EnableGameProfile_Click"/><Button Content="Восстановить настройки" Click="RestoreGameProfile_Click"/></WrapPanel><TextBlock x:Name="GameProfileText" Text="Профиль не активирован." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"/></StackPanel></Border><Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="20"><StackPanel><TextBlock Text="ОБНОВЛЕНИЯ WINDOWS" FontWeight="Bold"/><TextBlock Text="Поиск выполняется только по независимому каталогу DjShrek-Draiver." Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/><Button Content="Запустить поиск в каталоге DjShrek-Draiver" HorizontalAlignment="Left" Click="AutoUpdateDrivers_Click"/></StackPanel></Border></StackPanel></Grid>
+<Window x:Class="DjShrek.Draiver.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DjShrek-Draiver Cyber Club"
+        Height="900" Width="1480" MinHeight="760" MinWidth="1180"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="82"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="32"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="46" Height="46" CornerRadius="23"
+                        Background="{DynamicResource AccentBrush}" VerticalAlignment="Center">
+                    <TextBlock Text="DS" FontSize="17" FontWeight="Black"
+                               Foreground="White" HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <TextBlock Text="DjShrek-Draiver Cyber Club" FontSize="24" FontWeight="Black"/>
+                    <TextBlock Text="PC CONTROL CENTER" FontSize="10" FontWeight="Bold"
+                               Foreground="{DynamicResource AccentSecondaryBrush}" Margin="1,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="ТЕМА ОФОРМЛЕНИЯ" FontSize="10" FontWeight="Bold"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="ThemeSelector" Width="300" Height="38"
+                              ItemsSource="{x:Static services:ThemeManager.Themes}"
+                              DisplayMemberPath="Name" SelectedValuePath="Id"
+                              SelectionChanged="ThemeSelector_SelectionChanged"
+                              xmlns:services="clr-namespace:DjShrek.Draiver.App.Services"/>
+                    <Ellipse Width="9" Height="9" Fill="{DynamicResource SuccessBrush}" Margin="18,0,8,0"/>
+                    <TextBlock Text="ЛОКАЛЬНЫЙ РЕЖИМ" FontSize="10" FontWeight="Bold"
+                               Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="18,16,18,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="226"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{DynamicResource NavigationBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="13" Padding="12" Margin="0,0,16,0">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Text="РАЗДЕЛЫ ПРОГРАММЫ" FontSize="10" FontWeight="Bold"
+                                   Foreground="{DynamicResource MutedBrush}" Margin="10,9,0,17"/>
+                        <Button x:Name="DashboardNavButton" Content="Главная" Click="Dashboard_Click"
+                                HorizontalContentAlignment="Left" Background="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,7"/>
+                        <Button x:Name="DevicesNavButton" Content="Драйверы и устройства" Click="Devices_Click"
+                                HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" Margin="0,0,0,7"/>
+                        <Button x:Name="UpdatesNavButton" Content="Обновления драйверов" Click="Drivers_Click"
+                                HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" Margin="0,0,0,7"/>
+                        <Button x:Name="RegistryNavButton" Content="Проверка реестра" Click="Registry_Click"
+                                HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" Margin="0,0,0,7"/>
+                        <Button x:Name="CleanupNavButton" Content="Очистка компьютера" Click="Cleanup_Click"
+                                HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" Margin="0,0,0,7"/>
+                        <Button x:Name="SettingsNavButton" Content="Настройки" Click="Settings_Click"
+                                HorizontalContentAlignment="Left" Background="Transparent" BorderBrush="Transparent" Margin="0,0,0,7"/>
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="8,18,8,6">
+                        <Separator Background="{DynamicResource BorderBrush}" Margin="0,0,0,13"/>
+                        <TextBlock Text="DJSHREK CYBER CLUB" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                        <TextBlock Text="Версия 1.6.0" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,7,0,4"/>
+                        <TextBlock Text="Windows 10 / 11 x64" Foreground="{DynamicResource MutedBrush}" FontSize="11"/>
+                        <TextBlock Text="Установка драйверов выполняется только после проверки пакета и отдельного подтверждения."
+                                   Foreground="{DynamicResource MutedBrush}" FontSize="10"
+                                   TextWrapping="Wrap" Margin="0,14,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="62"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="2,0,0,12">
+                    <StackPanel>
+                        <TextBlock x:Name="PageTitle" Text="Главная" FontSize="25" FontWeight="Bold"/>
+                        <TextBlock x:Name="PageSubtitle" Text="Мониторинг компьютера и инструменты обслуживания"
+                                   Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Button DockPanel.Dock="Right" Content="Обновить мониторинг"
+                            Click="Refresh_Click" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </DockPanel>
+
+                <Grid Grid.Row="1">
+                    <Grid x:Name="DashboardPanel" Visibility="Visible">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="14"
+                                        Padding="22" Margin="0,0,0,14" MinHeight="154"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="220"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="DJSHREK CYBER CLUB" FontSize="10" FontWeight="Bold"
+                                                       Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                            <TextBlock Text="Центр управления компьютером" FontSize="25"
+                                                       FontWeight="Black" Margin="0,5,0,4"/>
+                                            <TextBlock Text="Контроль оборудования, драйверов и состояния Windows в одном окне."
+                                                       Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                            <WrapPanel Margin="0,15,0,0">
+                                                <Button Content="Сканировать устройства" Click="Scan_Click"/>
+                                                <Button Content="Найти драйверы" Click="AutoUpdateDrivers_Click"
+                                                        Background="{DynamicResource AccentSecondaryBrush}"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                        <Grid Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse Width="136" Height="136" Stroke="{DynamicResource AccentSecondaryBrush}"
+                                                     StrokeThickness="2" Opacity="0.35"/>
+                                            <Ellipse Width="110" Height="110" Stroke="{DynamicResource AccentBrush}"
+                                                     StrokeThickness="7" Opacity="0.65"/>
+                                            <Ellipse Width="82" Height="82" Stroke="{DynamicResource AccentSecondaryBrush}"
+                                                     StrokeThickness="1" StrokeDashArray="2,3"/>
+                                            <TextBlock Text="DS" FontSize="36" FontWeight="Black"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="CPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
+                                            <TextBlock x:Name="CpuValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
+                                            <ProgressBar x:Name="CpuProgress" Value="0"/>
+                                            <TextBlock Text="Загрузка процессора" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="GPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
+                                            <TextBlock x:Name="GpuValue" Text="Н/Д" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
+                                            <ProgressBar x:Name="GpuProgress" Value="0"/>
+                                            <TextBlock x:Name="GpuDetail" Text="Видеокарта" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="RAM" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
+                                            <TextBlock x:Name="MemoryValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
+                                            <ProgressBar x:Name="MemoryProgress" Value="0"/>
+                                            <TextBlock x:Name="MemoryDetail" Text="Использование памяти" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="ДИСК C:" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
+                                            <TextBlock x:Name="DiskValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
+                                            <ProgressBar x:Name="DiskProgress" Value="0"/>
+                                            <TextBlock x:Name="DiskDetail" Text="Использование системного диска" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="ОБОРУДОВАНИЕ И СИСТЕМА" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                            <TextBlock x:Name="OsValue" Text="Получение сведений о Windows..." FontSize="15" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                                            <TextBlock x:Name="ComputerValue" Text="Определение модели компьютера..." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock x:Name="CpuNameValue" Text="Процессор: —" Margin="0,10,0,0"/>
+                                            <TextBlock x:Name="GpuNameValue" Text="Видеокарта: —" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/>
+                                            <TextBlock x:Name="UptimeValue" Text="Время работы: —" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="ТЕМПЕРАТУРЫ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                            <TextBlock x:Name="CpuTempValue" Text="CPU  ·  Нет данных" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,6"/>
+                                            <TextBlock x:Name="GpuTempValue" Text="GPU  ·  Нет данных" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <TextBlock x:Name="TemperatureNote" Text="Датчики доступны не на каждом оборудовании."
+                                                       FontSize="10" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Сканировать устройства" Click="Scan_Click"/>
+                                            <Button Content="Резервная копия драйверов" Click="Backup_Click"/>
+                                            <Button Content="Онлайн-поиск драйверов" Click="AutoUpdateDrivers_Click"/>
+                                            <Button Content="Проверить реестр" Click="Registry_Click"/>
+                                            <Button Content="Проверить временные файлы" Click="Cleanup_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="HealthSummary" Text="Выполните сканирование для проверки состояния устройств."
+                                                   Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="Мониторинг обновляется автоматически. Если датчик недоступен, программа показывает «Нет данных», а не подставляет вымышленное значение."
+                                           Foreground="{DynamicResource MutedBrush}" FontSize="10" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid x:Name="DevicesPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <DockPanel Margin="0,0,0,12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="DeviceSearch" Width="310" Height="38" VerticalContentAlignment="Center"
+                                         TextChanged="DeviceSearch_TextChanged"
+                                         ToolTip="Поиск по имени, производителю, классу, драйверу и Hardware ID"/>
+                                <CheckBox x:Name="ErrorsOnlyCheck" Content="Только проблемные устройства"
+                                          Margin="14,0,0,0" Checked="DeviceFilter_Changed" Unchecked="DeviceFilter_Changed"/>
+                            </StackPanel>
+                            <WrapPanel DockPanel.Dock="Right">
+                                <Button Content="Сканировать" Click="Scan_Click"/>
+                                <Button Content="Экспорт CSV" Click="ExportDevices_Click"/>
+                                <Button Content="Резервная копия" Click="Backup_Click"/>
+                                <Button Content="Восстановить" Click="RestoreDrivers_Click"/>
+                            </WrapPanel>
+                        </DockPanel>
+                        <DataGrid x:Name="DevicesGrid" Grid.Row="1" AutoGenerateColumns="False"
+                                  IsReadOnly="True" SelectionMode="Single" CanUserSortColumns="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Устройство" Binding="{Binding Name}" Width="2*"/>
+                                <DataGridTextColumn Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/>
+                                <DataGridTextColumn Header="Класс" Binding="{Binding Class}" Width="*"/>
+                                <DataGridTextColumn Header="Состояние" Binding="{Binding Status}" Width="*"/>
+                                <DataGridTextColumn Header="Код ошибки" Binding="{Binding Problem}" Width="*"/>
+                                <DataGridTextColumn Header="Поставщик" Binding="{Binding DriverProvider}" Width="*"/>
+                                <DataGridTextColumn Header="Версия драйвера" Binding="{Binding DriverVersion}" Width="*"/>
+                                <DataGridTextColumn Header="Дата" Binding="{Binding DriverDate}" Width="*"/>
+                                <DataGridTextColumn Header="INF" Binding="{Binding InfName}" Width="*"/>
+                                <DataGridTextColumn Header="Подпись" Binding="{Binding Signature}" Width="*"/>
+                                <DataGridTextColumn Header="Hardware ID" Binding="{Binding InstanceId}" Width="3*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+
+                    <Grid x:Name="DriversPanel" Visibility="Collapsed">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,13"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ЦЕНТР ОБНОВЛЕНИЙ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="Поиск совместимых драйверов для обнаруженного оборудования" FontSize="20" FontWeight="Bold" Margin="0,6,0,5"/>
+                                        <TextBlock Text="Проверка выполняется по аппаратным идентификаторам. Перед установкой изучите список найденных пакетов."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                        <WrapPanel Margin="0,13,0,0">
+                                            <Button Content="Сканировать и открыть SDIO" Click="AutoUpdateDrivers_Click"/>
+                                            <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ДВИЖОК ПОИСКА SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Официальный Snappy Driver Installer Origin загружается по запросу, архив проверяется по SHA-256. Индексы обновляются внутри SDIO. Выбор и установка пакетов подтверждаются пользователем в окне движка."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <TextBlock Text="DjShrek-Draiver не использует Windows Update Agent, WUAPI или Microsoft Update Catalog."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ОФИЦИАЛЬНЫЕ ИНСТРУМЕНТЫ ПРОИЗВОДИТЕЛЕЙ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock x:Name="OemDetectText" Text="Определение производителя компьютера..." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,10"/>
+                                        <WrapPanel>
+                                            <Button Content="Открыть сайт производителя" Click="OpenDetectedOem_Click"/>
+                                            <Button Content="Все каталоги" Click="OpenOemCatalog_Click"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="РЕЗЕРВНОЕ КОПИРОВАНИЕ И ВОССТАНОВЛЕНИЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Экспорт пакетов из Driver Store. Перед изменениями драйверов рекомендуется сохранить копию."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Экспортировать все драйверы" Click="Backup_Click"/>
+                                            <Button Content="Восстановить из папки" Click="RestoreDrivers_Click"/>
+                                            <Button Content="Установить INF вручную" Click="Install_Click"/>
+                                            <Button Content="Список пакетов" Click="ListPackages_Click"/>
+                                        </WrapPanel>
+                                        <TextBox x:Name="PackagesText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                                 Height="180" Margin="0,12,0,0" FontFamily="Consolas"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ИГРОВОЙ ПРОФИЛЬ WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Включает Game Mode и схему высокой производительности с возможностью восстановления прежних настроек."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Включить игровой профиль" Click="EnableGameProfile_Click"/>
+                                            <Button Content="Восстановить прежние настройки" Click="RestoreGameProfile_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="GameProfileText" Text="Профиль не активирован." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <Grid x:Name="RegistryPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <StackPanel Margin="0,0,0,12">
+                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="16" Margin="0,0,0,12"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="ДИАГНОСТИКА АВТОЗАПУСКА WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                    <TextBlock Text="Проверяются только стандартные разделы Run и RunOnce пользователя и системы. Сканирование ничего не изменяет. Перед удалением выбранной записи создаётся файл резервной копии .reg."
+                                               Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,7,0,0"/>
+                                    <WrapPanel Margin="0,12,0,0">
+                                        <Button Content="Проверить реестр" Click="RegistryScan_Click"/>
+                                        <Button Content="Исправить выбранную ошибку" Click="RegistryRepair_Click"/>
+                                    </WrapPanel>
+                                    <TextBlock x:Name="RegistrySummaryText" Text="Проверка ещё не запускалась." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <DataGrid x:Name="RegistryGrid" Grid.Row="1" AutoGenerateColumns="False"
+                                  SelectionMode="Single" IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Статус" Binding="{Binding Severity}" Width="110"/>
+                                <DataGridTextColumn Header="Раздел" Binding="{Binding Hive}" Width="80"/>
+                                <DataGridTextColumn Header="Ключ" Binding="{Binding SubKey}" Width="2*"/>
+                                <DataGridTextColumn Header="Имя записи" Binding="{Binding ValueName}" Width="*"/>
+                                <DataGridTextColumn Header="Данные запуска" Binding="{Binding ValueData}" Width="2*"/>
+                                <DataGridTextColumn Header="Результат проверки" Binding="{Binding Issue}" Width="3*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+
+                    <Grid x:Name="CleanupPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,12"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="БЕЗОПАСНАЯ ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                <TextBlock Text="Проверяются только временные папки Windows и текущего пользователя. В список попадают файлы старше 7 дней. Загрузки, документы, фотографии, профили браузеров и личные данные не затрагиваются."
+                                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                <WrapPanel>
+                                    <Button Content="Быстрая проверка" Click="JunkScan_Click"/>
+                                    <Button Content="Очистить выбранное" Click="JunkClean_Click"/>
+                                </WrapPanel>
+                                <TextBlock x:Name="JunkSummaryText" Text="Проверка ещё не запускалась." Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <DataGrid x:Name="JunkGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  SelectionMode="Extended" IsReadOnly="False">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="Удалить" Binding="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
+                                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" IsReadOnly="True" Width="*"/>
+                                <DataGridTextColumn Header="Размер" Binding="{Binding SizeText}" IsReadOnly="True" Width="120"/>
+                                <DataGridTextColumn Header="Изменён" Binding="{Binding ModifiedText}" IsReadOnly="True" Width="150"/>
+                                <DataGridTextColumn Header="Путь" Binding="{Binding Path}" IsReadOnly="True" Width="3*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+
+                    <Grid x:Name="SettingsPanel" Visibility="Collapsed">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,14"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ПЕРСОНАЛИЗАЦИЯ DJSHREK" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="10"/>
+                                        <TextBlock Text="Настрой внешний вид программы" FontSize="22" FontWeight="Bold" Margin="0,6,0,4"/>
+                                        <TextBlock Text="Выбранная тема сохраняется автоматически и применяется ко всем разделам."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="12 ТЕМ ОФОРМЛЕНИЯ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Все темы меняют цвета фона, панелей, навигации, карточек, таблиц и кнопок. Переключение не меняет функции программы."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <ComboBox x:Name="SettingsThemeSelector" ItemsSource="{x:Static services:ThemeManager.Themes}"
+                                                  DisplayMemberPath="Name" SelectedValuePath="Id"
+                                                  SelectionChanged="SettingsThemeSelector_SelectionChanged" Width="450"
+                                                  HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ЯЗЫК ИНТЕРФЕЙСА" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Основной язык программы — русский. Доступен переключатель на английский для основных элементов навигации."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <ComboBox x:Name="LanguageSelector" Width="250" HorizontalAlignment="Left"
+                                                  SelectionChanged="LanguageSelector_SelectionChanged">
+                                            <ComboBoxItem Content="Русский" Tag="ru"/>
+                                            <ComboBoxItem Content="English" Tag="en"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ИНФОРМАЦИЯ О ПРОГРАММЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="DjShrek-Draiver Cyber Club 1.6.0" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                                        <TextBlock Text="Windows 10 / 11 x64 · .NET 8 · локальный режим"
+                                                   Foreground="{DynamicResource MutedBrush}"/>
+                                        <TextBlock Text="Программа не удаляет системные компоненты и не устанавливает драйверы без подтверждения пользователя."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <Border Grid.Row="2" Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <DockPanel Margin="20,0">
+                <TextBlock x:Name="StatusText" Text="Готово" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ThemeStatusText" Text="Тема: 01 · Игровой Neon Gaming"
+                           Foreground="{DynamicResource AccentSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            </DockPanel>
+        </Border>
     </Grid>
-   </Grid>
-  </Grid>
-  <Border Grid.Row="2" Background="{DynamicResource HeaderBrush}"><DockPanel Margin="22,0"><TextBlock x:Name="StatusText" Text="Готово" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"/><TextBlock Text="DjShrek-Draiver • Независимый проект" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel></Border>
- </Grid>
 </Window>
