@@ -47,12 +47,14 @@ public partial class MainWindow : Window
         SettingsThemeSelector.SelectedValue = selectedTheme;
         var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes[0];
         ThemeManager.Apply(theme);
+        HeroArtwork.SetTheme(theme);
         ThemeStatusText.Text = "Тема: " + theme.Name;
 
         _language = LoadLanguage();
         LanguageSelector.SelectedIndex = _language == "en" ? 1 : 0;
         _initializing = false;
         ApplyLanguage();
+        AppendEvent("Программа запущена. Мониторинг инициализирован.");
 
         Loaded += async (_, _) =>
         {
@@ -62,6 +64,13 @@ public partial class MainWindow : Window
             _monitorTimer.Start();
         };
         Closed += (_, _) => _monitorTimer.Stop();
+    }
+
+    private void AppendEvent(string message)
+    {
+        if (EventLogList is null) return;
+        EventLogList.Items.Insert(0, $"{DateTime.Now:HH:mm:ss}  |  {message}");
+        while (EventLogList.Items.Count > 30) EventLogList.Items.RemoveAt(EventLogList.Items.Count - 1);
     }
 
     private static string LanguagePath => Path.Combine(
@@ -102,6 +111,7 @@ public partial class MainWindow : Window
         try
         {
             ThemeManager.Apply(theme);
+            HeroArtwork.SetTheme(theme);
             otherSelector.SelectedValue = theme.Id;
             ThemeStatusText.Text = "Тема: " + theme.Name;
             StatusText.Text = "Оформление изменено: " + theme.Name;
@@ -203,6 +213,7 @@ public partial class MainWindow : Window
             ApplyDevices(devices);
             ApplyHardwareMetrics(await hardwareTask);
             StatusText.Text = $"Готово. Обнаружено устройств: {devices.Count}. Мониторинг обновляется каждые 5 секунд.";
+            AppendEvent($"Первичное сканирование: обнаружено устройств — {devices.Count}.");
             DetectOem();
         }
         catch (Exception ex)
@@ -269,6 +280,7 @@ public partial class MainWindow : Window
             var devices = await _inventory.ScanAsync();
             ApplyDevices(devices);
             StatusText.Text = $"Сканирование завершено. Устройств: {devices.Count}.";
+            AppendEvent($"Сканирование устройств завершено: {devices.Count}.");
             ShowPanel("devices");
         }
         catch (Exception ex)
@@ -365,6 +377,7 @@ public partial class MainWindow : Window
                 return;
             var result = _maintenance.ExportDrivers(dialog.FolderName);
             StatusText.Text = result;
+            AppendEvent("Создана резервная копия драйверов: " + dialog.FolderName);
             MessageBox.Show(result, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Операция отменена в запросе UAC."; }
@@ -394,6 +407,7 @@ public partial class MainWindow : Window
                 return;
             var result = _maintenance.RestoreDrivers(dialog.FolderName);
             StatusText.Text = result;
+            AppendEvent("Выполнено восстановление драйверов из " + dialog.FolderName);
             MessageBox.Show(result, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Восстановление отменено в UAC."; }
@@ -442,6 +456,7 @@ public partial class MainWindow : Window
             var result = await new SdioEngineService().DownloadAndLaunchAsync();
             UpdatesCountText.Text = result;
             StatusText.Text = result;
+            AppendEvent("Запущен проверенный движок SDIO для онлайн-поиска драйверов.");
         }
         catch (Exception ex)
         {
@@ -507,6 +522,7 @@ public partial class MainWindow : Window
                 ? "Подозрительных записей не обнаружено. Реестр не изменялся."
                 : $"Найдено замечаний: {findings.Count}; подтверждённых ошибок: {errors}. HKLM доступен только для просмотра.";
             StatusText.Text = "Проверка автозапуска завершена. Изменений в реестре не выполнялось.";
+            AppendEvent($"Проверка Run/RunOnce: найдено замечаний — {findings.Count}.");
         }
         catch (Exception ex)
         {
@@ -535,6 +551,7 @@ public partial class MainWindow : Window
         try
         {
             var backup = await Task.Run(() => _registryService.Repair(finding));
+            AppendEvent("Исправлена запись автозапуска; backup: " + backup);
             MessageBox.Show("Запись удалена. Резервная копия:\n" + backup, "Исправление реестра", MessageBoxButton.OK, MessageBoxImage.Information);
             await Task.Run(() => { });
             RegistryScan_Click(sender, e);
@@ -553,6 +570,7 @@ public partial class MainWindow : Window
             var total = files.Sum(x => x.Size);
             JunkSummaryText.Text = $"Найдено файлов старше 7 дней: {files.Count}. Потенциально освобождаемо: {JunkFileItem.FormatBytes(total)}. Отметьте файлы для удаления.";
             StatusText.Text = "Проверка временных файлов завершена. Ничего не удалено.";
+            AppendEvent($"Проверка временных файлов: найдено файлов — {files.Count}, объём — {JunkFileItem.FormatBytes(total)}.");
         }
         catch (Exception ex)
         {
@@ -580,6 +598,7 @@ public partial class MainWindow : Window
         {
             var result = await Task.Run(() => _junkService.Clean(selected, minimumAgeDays: 7));
             JunkSummaryText.Text = $"Удалено: {result.DeletedFiles}; освобождено: {JunkFileItem.FormatBytes(result.FreedBytes)}; пропущено: {result.SkippedFiles}.";
+            AppendEvent($"Очистка завершена: удалено файлов — {result.DeletedFiles}; освобождено — {JunkFileItem.FormatBytes(result.FreedBytes)}.");
             if (result.Errors.Count > 0)
                 MessageBox.Show(string.Join(Environment.NewLine, result.Errors.Take(10)), "Очистка завершена с замечаниями", MessageBoxButton.OK, MessageBoxImage.Warning);
             await Task.Delay(100);
