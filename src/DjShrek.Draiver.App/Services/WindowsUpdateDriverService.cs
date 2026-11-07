@@ -36,12 +36,16 @@ ConvertTo-Json -InputObject @($items) -Depth 4 -Compress
    Version=Read(e,"Version"),DriverDate=Read(e,"DriverDate"),UpdateId=Read(e,"UpdateId"),Description=Read(e,"Description")
   }).Where(x=>!string.IsNullOrWhiteSpace(x.UpdateId)).ToArray();
  }
- public string InstallAvailable()
+ public string InstallAvailable(IEnumerable<string> updateIds)
  {
+  var ids=updateIds.Where(x=>!string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+  if(ids.Length==0)throw new ArgumentException("Нет выбранных идентификаторов обновлений.");
+  var wanted=string.Join(",",ids.Select(x=>"'"+x.Replace("'","''")+"'"));
   var logPath=Path.Combine(Path.GetTempPath(),"DjShrek-WindowsUpdate-"+Guid.NewGuid().ToString("N")+".log");
   var escaped=logPath.Replace("'","''");
   var script=$@"
 $ErrorActionPreference='Stop'
+$wanted=@({wanted})
 try {{
  $session=New-Object -ComObject Microsoft.Update.Session
  $searcher=$session.CreateUpdateSearcher()
@@ -49,10 +53,11 @@ try {{
  $collection=New-Object -ComObject Microsoft.Update.UpdateColl
  for($i=0;$i -lt $result.Updates.Count;$i++) {{
   $u=$result.Updates.Item($i)
+  if($wanted -notcontains $u.Identity.UpdateID){{continue}}
   if(-not $u.EulaAccepted){{$u.AcceptEula()}}
   [void]$collection.Add($u)
  }}
- if($collection.Count -eq 0){{'Новых драйверов для установки не найдено.' | Set-Content -LiteralPath '{escaped}' -Encoding UTF8; exit 0}}
+ if($collection.Count -eq 0){{'Среди выбранных обновлений больше нет доступных пакетов.' | Set-Content -LiteralPath '{escaped}' -Encoding UTF8; exit 0}}
  $downloader=$session.CreateUpdateDownloader()
  $downloader.Updates=$collection
  $downloadResult=$downloader.Download()
