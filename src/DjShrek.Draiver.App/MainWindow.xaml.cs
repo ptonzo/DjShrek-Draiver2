@@ -124,6 +124,52 @@ public partial class MainWindow : Window
   catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена пользователем в UAC.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Установка драйвера",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
+ private async void AutoUpdateDrivers_Click(object sender,RoutedEventArgs e)
+ {
+  if(_scanRunning)return;
+  _scanRunning=true;
+  try{
+   ShowPanel("Драйверы и резервная копия","Автоматический поиск и установка совместимых драйверов","drivers");
+   UpdatesCountText.Text="1/3: Сканирование оборудования...";
+   StatusText.Text="Проверка устройств Windows...";
+   var devices=await _inventory.ScanAsync();
+   ApplyDevices(devices);
+   var problemDevices=devices.Where(d=>!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0").ToArray();
+   UpdatesCountText.Text=$"Оборудование проверено: {devices.Count} устройств; с кодами ошибок: {problemDevices.Length}. 2/3: Поиск совместимых драйверов в Windows Update...";
+   StatusText.Text="Поиск обновлений драйверов на серверах Microsoft...";
+   var updates=await _windowsUpdate.SearchAsync();
+   _driverUpdates.Clear();
+   foreach(var item in updates){item.IsSelected=true;_driverUpdates.Add(item);}
+   if(updates.Count==0){
+    UpdatesCountText.Text="Новых совместимых драйверов через Windows Update не найдено. Это не означает, что у производителя нет более новых версий.";
+    StatusText.Text=UpdatesCountText.Text;
+    MessageBox.Show(UpdatesCountText.Text+"\n\nПроверьте также официальный сайт производителя устройства.", "Автоматический поиск драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
+    return;
+   }
+   var list=string.Join(Environment.NewLine,updates.Take(12).Select((u,i)=>$"• {u.Title}"));
+   if(updates.Count>12)list+=Environment.NewLine+$"… и ещё {updates.Count-12} пак.";
+   var prompt=$"Windows Update нашёл {updates.Count} совместимых обновлений драйверов.\n\n{list}\n\nПрограмма скачает и установит все найденные пакеты через Windows Update Agent. Потребуется подтверждение UAC. Возможна перезагрузка. Продолжить?";
+   if(MessageBox.Show(prompt,"Подтверждение автоматической установки",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes){
+    UpdatesCountText.Text=$"Найдено обновлений: {updates.Count}. Установка отменена; список оставлен для выбора.";
+    StatusText.Text="Установка отменена пользователем.";
+    return;
+   }
+   UpdatesCountText.Text=$"3/3: Загрузка и установка {updates.Count} пакетов. Не выключайте компьютер...";
+   StatusText.Text="Windows Update скачивает и устанавливает драйверы. Подтвердите запрос UAC, если он появится.";
+   var log=await Task.Run(()=>_windowsUpdate.InstallAvailable(updates.Select(u=>u.UpdateId).ToArray()));
+   UpdatesCountText.Text="Обработка пакетов завершена. Выполняется повторная проверка устройств...";
+   StatusText.Text="Повторное сканирование после установки...";
+   var after=await _inventory.ScanAsync();
+   ApplyDevices(after);
+   var remaining=after.Count(d=>!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0");
+   UpdatesCountText.Text=$"Завершено. Было найдено пакетов: {updates.Count}. Устройств с кодами ошибок после установки: {remaining}. Смотрите отчёт Windows Update ниже.";
+   StatusText.Text="Автоматическая установка драйверов завершена.";
+   MessageBox.Show(log+"\n\nПовторная проверка устройств: "+after.Count+"; устройств с кодами ошибок: "+remaining+". Если Windows сообщила о необходимости перезагрузки, сохраните работу и перезагрузите ПК.", "Результат автоматического обновления",MessageBoxButton.OK,MessageBoxImage.Information);
+   _driverUpdates.Clear();
+  }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена в запросе UAC.";UpdatesCountText.Text="Пользователь отменил запрос прав администратора. Драйверы не установлены.";}
+  catch(Exception ex){StatusText.Text="Не удалось завершить автоматическое обновление.";UpdatesCountText.Text="Ошибка автоматического обновления. Проверьте Windows Update и повторите попытку.";MessageBox.Show(ex.Message,"Автоматическая установка драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+  finally{_scanRunning=false;}
+ }
  private async void SearchWindowsDriverUpdates_Click(object sender,RoutedEventArgs e)
  {
   try{
