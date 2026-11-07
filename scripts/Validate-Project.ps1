@@ -39,6 +39,13 @@ if ($themeIds.Count -ne 12 -or ($themeIds | Select-Object -Unique).Count -ne 12)
     throw "Expected twelve unique visual themes; found $($themeIds.Count)."
 }
 
+$languageTags = @('ru','en','de','fr','es','pt_BR','it','pl','tr','uk','zh_CN','ja')
+foreach ($tag in $languageTags) {
+    if ($xamlText -and (Get-Content -LiteralPath $xamlPath -Raw) -notmatch ('Tag="' + [regex]::Escape($tag) + '"')) {
+        throw "Language selector is missing supported language: $tag"
+    }
+}
+
 $xamlText = Get-Content -LiteralPath $xamlPath -Raw
 if ([regex]::Matches($xamlText, 'DisplayMemberPath="Name"').Count -lt 2) {
     throw 'Both theme selectors must display the human-readable Name property.'
