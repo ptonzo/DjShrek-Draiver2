@@ -42,6 +42,14 @@ jobs:
         run: |
           dotnet run --project .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release --no-build -- --self-test
           if ($LASTEXITCODE -ne 0) { throw "WPF UI smoke test failed." }
+      - name: Upload Windows integration self-test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DjShrek-Draiver-self-test-log
+          path: ${{ runner.temp }}\\DjShrek-Draiver-self-test.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Publish self-contained EXE
         run: dotnet publish .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\win-x64 -v minimal
       - name: Verify and prepare portable package
