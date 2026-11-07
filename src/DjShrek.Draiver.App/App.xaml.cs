@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -13,7 +14,7 @@ public partial class App : Application
         base.OnStartup(e);
         if (e.Args.Any(x => string.Equals(x, "--self-test", StringComparison.OrdinalIgnoreCase)))
         {
-            RunUiSmokeTest();
+            _ = RunUiSmokeTestAsync();
             return;
         }
 
@@ -22,8 +23,10 @@ public partial class App : Application
         window.Show();
     }
 
-    private void RunUiSmokeTest()
+    private async Task RunUiSmokeTestAsync()
     {
+        var checks = new List<string>();
+        var logPath = Path.Combine(Path.GetTempPath(), "DjShrek-Draiver-self-test.log");
         try
         {
             var window = new MainWindow();
@@ -33,8 +36,11 @@ public partial class App : Application
                 "RegistryPanel", "CleanupPanel", "SettingsPanel"
             };
             foreach (var name in requiredPanels)
+            {
                 if (window.FindName(name) is null)
                     throw new InvalidOperationException("Missing application screen: " + name);
+            }
+            checks.Add("PASS: six WPF screens loaded.");
 
             if (ThemeManager.Themes.Count != 12)
                 throw new InvalidOperationException($"Expected 12 themes, got {ThemeManager.Themes.Count}.");
@@ -66,18 +72,52 @@ public partial class App : Application
 
             var artwork = window.FindName("HeroArtwork") as FrameworkElement;
             if (artwork is null) throw new InvalidOperationException("Theme illustration is missing.");
+            checks.Add("PASS: all twelve named themes applied to dynamic WPF resources.");
+
+            // Read-only Windows integration checks: no registry edits, file deletes, or driver installs.
+            var inventory = new DeviceInventoryService();
+            var metrics = await inventory.GetSystemMetricsAsync();
+            if (metrics.MemoryTotalGb <= 0 || string.IsNullOrWhiteSpace(metrics.Os))
+                throw new InvalidOperationException("System telemetry did not return valid RAM/OS data.");
+            checks.Add("PASS: Windows system telemetry queried (CPU/RAM/disk/hardware/uptime).");
+
+            var devices = await inventory.ScanAsync();
+            if (devices.Count == 0)
+                throw new InvalidOperationException("PnP scan returned zero devices on the Windows runner.");
+            checks.Add($"PASS: PnP inventory queried ({devices.Count} devices).");
+
+            var registry = new RegistryMaintenanceService().Scan();
+            checks.Add($"PASS: Run/RunOnce registry diagnostics queried read-only ({registry.Count} findings).");
+
+            var junk = new JunkCleanupService().Scan(minimumAgeDays: 7);
+            if (junk.Any(item => string.IsNullOrWhiteSpace(item.Path)))
+                throw new InvalidOperationException("Temporary file scan returned an empty path.");
+            checks.Add($"PASS: temporary-file scan queried read-only ({junk.Count} candidate files).");
+
+            var driverPackages = new DriverMaintenanceService().ListDriverPackages();
+            if (string.IsNullOrWhiteSpace(driverPackages))
+                throw new InvalidOperationException("pnputil returned an empty Driver Store listing.");
+            checks.Add("PASS: Driver Store listing queried with pnputil /enum-drivers.");
+
+            var sensors = new HardwareSensorService().ReadMetrics();
+            checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
 
             var defaultTheme = ThemeManager.Themes[0];
             ThemeManager.Apply(defaultTheme);
             themeSelector.SelectedValue = defaultTheme.Id;
             settingsSelector.SelectedValue = defaultTheme.Id;
+            checks.Add("PASS: default theme restored after UI test.");
 
-            Debug.WriteLine("WPF UI smoke test passed: six screens, 12 themes, named ComboBox items and dynamic theme resources.");
+            File.WriteAllLines(logPath, checks);
+            Debug.WriteLine(string.Join(Environment.NewLine, checks));
+            window.Close();
             Environment.ExitCode = 0;
             Shutdown(0);
         }
         catch (Exception ex)
         {
+            checks.Add("FAIL: " + ex);
+            try { File.WriteAllLines(logPath, checks); } catch { }
             Debug.WriteLine(ex);
             Environment.ExitCode = 1;
             Shutdown(1);
