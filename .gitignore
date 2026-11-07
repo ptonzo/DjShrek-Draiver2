@@ -1,0 +1,28 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+artifacts/
+publish/
+TestResults/
+
+# Local data / secrets
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+secrets/
+*.pfx
+*.p12
+
+# OS / IDE
+.DS_Store
+Thumbs.db
