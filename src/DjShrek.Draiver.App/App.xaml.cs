@@ -26,7 +26,9 @@ public partial class App : Application
     private async Task RunUiSmokeTestAsync()
     {
         var checks = new List<string>();
-        var logPath = Path.Combine(Path.GetTempPath(), "DjShrek-Draiver-self-test.log");
+        var runnerTemp = Environment.GetEnvironmentVariable("RUNNER_TEMP");
+        var logRoot = string.IsNullOrWhiteSpace(runnerTemp) ? Path.GetTempPath() : runnerTemp;
+        var logPath = Path.Combine(logRoot, "DjShrek-Draiver-self-test.log");
         try
         {
             var window = new MainWindow();
