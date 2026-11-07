@@ -44,6 +44,8 @@ Get-CimInstance Win32_PnPEntity | ForEach-Object {
         InfName = if ($null -ne $driver) { [string]$driver.InfName } else { '' }
         Signature = if ($null -ne $driver -and $driver.IsSigned) { 'Подписан' } elseif ($null -ne $driver) { 'Не подписан' } else { 'Нет данных' }
         InstanceId = [string]$device.PNPDeviceID
+        HardwareIds = @((Get-PnpDeviceProperty -InstanceId $deviceKey -KeyName 'DEVPKEY_Device_HardwareIds' -ErrorAction SilentlyContinue).Data)
+        CompatibleIds = @((Get-PnpDeviceProperty -InstanceId $deviceKey -KeyName 'DEVPKEY_Device_CompatibleIds' -ErrorAction SilentlyContinue).Data)
     })
 }
 ConvertTo-Json -InputObject @($devices.ToArray()) -Depth 4 -Compress
@@ -109,8 +111,17 @@ $computer = Get-CimInstance Win32_ComputerSystem
         DriverDate = GetString(element, "DriverDate"),
         InfName = GetString(element, "InfName"),
         Signature = GetString(element, "Signature"),
-        InstanceId = GetString(element, "InstanceId")
+        InstanceId = GetString(element, "InstanceId"),
+        HardwareIds = ReadArray(element, "HardwareIds"),
+        CompatibleIds = ReadArray(element, "CompatibleIds")
     };
+
+    private static string[] ReadArray(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Array) return Array.Empty<string>();
+        return value.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String)
+            .Select(x => x.GetString() ?? "").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+    }
 
     private static string GetString(JsonElement element, string name)
     {
