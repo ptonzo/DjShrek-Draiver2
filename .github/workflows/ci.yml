@@ -24,8 +24,11 @@ jobs:
           Get-Content .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj
       - name: Restore
         run: dotnet restore .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -v minimal
-      - name: Build Release
-        run: dotnet build .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release --no-restore -v minimal
+      - name: Build Release with diagnostic log
+        shell: pwsh
+        run: |
+          dotnet build .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release --no-restore -v normal 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Publish self-contained EXE
         run: dotnet publish .\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\artifacts\win-x64 -v minimal
       - name: Verify published executable
@@ -36,7 +39,16 @@ jobs:
           $item = Get-Item $exe
           if ($item.Length -lt 1000000) { throw "Published executable is unexpectedly small ($($item.Length) bytes)." }
           Write-Host "EXE verified: $($item.Length) bytes"
+      - name: Upload diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DjShrek-Draiver-build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload test build
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: DjShrek-Draiver-Windows-x64
