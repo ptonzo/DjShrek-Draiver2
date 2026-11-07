@@ -1,25 +1,60 @@
 using LibreHardwareMonitor.Hardware;
+
 namespace DjShrek.Draiver.App.Services;
+
+public sealed record HardwareMetrics(string CpuTemperature, string GpuTemperature,
+    string GpuLoad, string GpuName, string Note);
+
 public sealed class HardwareSensorService
 {
- public (string Cpu,string Gpu,string Note) ReadTemperatures()
- {
-  try {
-   var computer=new Computer { IsCpuEnabled=true, IsGpuEnabled=true };
-   computer.Open();
-   var readings=new List<(string Name,float Value)>();
-   foreach(var hw in computer.Hardware) ReadHardware(hw,readings);
-   var cpu=readings.FirstOrDefault(x=>x.Name.Contains("CPU Package",StringComparison.OrdinalIgnoreCase)||x.Name.Contains("Tctl",StringComparison.OrdinalIgnoreCase)||x.Name.Contains("Tdie",StringComparison.OrdinalIgnoreCase)||x.Name.Equals("CPU",StringComparison.OrdinalIgnoreCase));
-   var gpu=readings.FirstOrDefault(x=>x.Name.Contains("GPU Core",StringComparison.OrdinalIgnoreCase)||x.Name.Equals("GPU",StringComparison.OrdinalIgnoreCase));
-   var result=(cpu.Value>0?$"{cpu.Value:0} °C":"Нет данных",gpu.Value>0?$"{gpu.Value:0} °C":"Нет данных","Данные аппаратных датчиков; поддержка зависит от модели и драйвера.");
-   computer.Close();
-   return result;
-  } catch(Exception ex) { return ("Нет данных","Нет данных","Датчики недоступны: "+ex.Message); }
- }
- private static void ReadHardware(IHardware hw,List<(string Name,float Value)> list)
- {
-  hw.Update();
-  foreach(var s in hw.Sensors) if(s.SensorType==SensorType.Temperature&&s.Value.HasValue) list.Add((s.Name,s.Value.Value));
-  foreach(var child in hw.SubHardware) ReadHardware(child,list);
- }
+    public HardwareMetrics ReadMetrics()
+    {
+        try
+        {
+            using var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
+            computer.Open();
+            var cpuTemperatures = new List<float>();
+            var gpuTemperatures = new List<float>();
+            var gpuLoads = new List<float>();
+            var gpuName = "";
+            foreach (var hardware in computer.Hardware)
+                ReadHardware(hardware, cpuTemperatures, gpuTemperatures, gpuLoads, ref gpuName);
+
+            computer.Close();
+            var cpu = cpuTemperatures.Where(x => x > 0 && x < 120).DefaultIfEmpty(-1).Max();
+            var gpu = gpuTemperatures.Where(x => x > 0 && x < 120).DefaultIfEmpty(-1).Max();
+            var load = gpuLoads.Where(x => x >= 0 && x <= 100).DefaultIfEmpty(-1).Max();
+            return new HardwareMetrics(
+                cpu >= 0 ? $"{cpu:0} °C" : "Нет данных",
+                gpu >= 0 ? $"{gpu:0} °C" : "Нет данных",
+                load >= 0 ? $"{load:0}%" : "Н/Д",
+                gpuName,
+                "Показания зависят от модели оборудования, драйверов и доступности датчиков.");
+        }
+        catch (Exception ex)
+        {
+            return new HardwareMetrics("Нет данных", "Нет данных", "Н/Д", "",
+                "Аппаратные датчики недоступны: " + ex.Message);
+        }
+    }
+
+    private static void ReadHardware(IHardware hardware, List<float> cpuTemps,
+        List<float> gpuTemps, List<float> gpuLoads, ref string gpuName)
+    {
+        hardware.Update();
+        var isGpu = hardware.HardwareType is HardwareType.GpuAmd or HardwareType.GpuNvidia or HardwareType.GpuIntel;
+        if (isGpu && string.IsNullOrWhiteSpace(gpuName)) gpuName = hardware.Name;
+        foreach (var sensor in hardware.Sensors)
+        {
+            if (!sensor.Value.HasValue) continue;
+            if (sensor.SensorType == SensorType.Temperature)
+            {
+                if (isGpu) gpuTemps.Add(sensor.Value.Value);
+                else if (hardware.HardwareType == HardwareType.Cpu) cpuTemps.Add(sensor.Value.Value);
+            }
+            if (isGpu && sensor.SensorType == SensorType.Load) gpuLoads.Add(sensor.Value.Value);
+        }
+        foreach (var child in hardware.SubHardware)
+            ReadHardware(child, cpuTemps, gpuTemps, gpuLoads, ref gpuName);
+    }
 }
