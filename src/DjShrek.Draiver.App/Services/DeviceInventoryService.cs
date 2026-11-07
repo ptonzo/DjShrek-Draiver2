@@ -9,6 +9,7 @@ public sealed class DeviceInventoryService
 {
     private const string DeviceScanScript = @"
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 $driverMap = @{}
 Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue | ForEach-Object {
     if (-not [string]::IsNullOrWhiteSpace([string]$_.DeviceID)) {
@@ -19,7 +20,8 @@ Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue | ForEach-Ob
 $devices = New-Object System.Collections.Generic.List[object]
 Get-CimInstance Win32_PnPEntity | ForEach-Object {
     $device = $_
-    $driver = $driverMap[[string]$device.PNPDeviceID]
+    $deviceKey = [string]$device.PNPDeviceID
+    $driver = $driverMap[$deviceKey]
     $problem = 'Нет'
     if ($null -ne $device.ConfigManagerErrorCode -and [int]$device.ConfigManagerErrorCode -ne 0) {
         $problem = [string]$device.ConfigManagerErrorCode
