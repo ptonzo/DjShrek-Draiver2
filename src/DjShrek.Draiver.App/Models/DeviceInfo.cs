@@ -12,4 +12,6 @@ public sealed class DeviceInfo
  public string InfName { get; set; } = "";
  public string Signature { get; set; } = "";
  public string InstanceId { get; set; } = "";
+ public string[] HardwareIds { get; set; } = Array.Empty<string>();
+ public string[] CompatibleIds { get; set; } = Array.Empty<string>();
 }
