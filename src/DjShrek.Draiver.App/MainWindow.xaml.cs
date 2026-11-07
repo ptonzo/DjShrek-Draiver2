@@ -95,6 +95,18 @@ public partial class MainWindow : Window
   catch(System.ComponentModel.Win32Exception){StatusText.Text="Операция отменена или не удалось получить права администратора.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Резервное копирование",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
+ private void RestoreDrivers_Click(object sender,RoutedEventArgs e)
+ {
+  var dialog=new OpenFolderDialog{Title="Выберите папку с ранее экспортированными драйверами",Multiselect=false};
+  if(dialog.ShowDialog(this)!=true)return;
+  var infCount=Directory.EnumerateFiles(dialog.FolderName,"*.inf",SearchOption.AllDirectories).Take(10001).Count();
+  if(infCount==0){MessageBox.Show("В выбранной папке не найдены INF-файлы.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+  if(infCount>10000){MessageBox.Show("В папке слишком много INF-файлов. Выберите конкретную папку резервной копии.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Warning);return;}
+  if(MessageBox.Show($"Найдено INF-файлов: {infCount}. Передать пакеты Windows для установки?\n\n{dialog.FolderName}\n\nWindows выберет только совместимые пакеты.","Подтверждение восстановления",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+  try{var result=_maintenance.RestoreDrivers(dialog.FolderName);StatusText.Text=result;MessageBox.Show(result,"Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);}
+  catch(System.ComponentModel.Win32Exception){StatusText.Text="Восстановление отменено в UAC.";}
+  catch(Exception ex){MessageBox.Show(ex.Message,"Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
  private void Install_Click(object sender,RoutedEventArgs e)
  {
   var dialog=new OpenFileDialog{Title="Выберите INF-файл драйвера",Filter="Файлы драйверов (*.inf)|*.inf",CheckFileExists=true};
