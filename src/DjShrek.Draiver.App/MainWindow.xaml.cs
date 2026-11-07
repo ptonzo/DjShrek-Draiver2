@@ -15,6 +15,10 @@ public partial class MainWindow : Window
  private readonly DeviceInventoryService _inventory=new();
  private readonly DriverMaintenanceService _maintenance=new();
  private readonly WindowsUpdateDriverService _windowsUpdate=new();
+ private readonly HardwareSensorService _sensors=new();
+ private readonly GameOptimizationService _gameProfile=new();
+ private readonly OemCatalogService _oemCatalog=new();
+ private OemSupport? _detectedOem;
  private readonly ObservableCollection<DriverUpdate> _driverUpdates=new();
  private readonly ObservableCollection<DeviceInfo> _devices=new();
  private readonly DispatcherTimer _monitorTimer=new(){Interval=TimeSpan.FromSeconds(5)};
@@ -22,7 +26,7 @@ public partial class MainWindow : Window
  public MainWindow()
  {
   InitializeComponent();DevicesGrid.ItemsSource=_devices;UpdatesGrid.ItemsSource=_driverUpdates;
-  Loaded+=async(_,_)=>{await RefreshAllAsync();_monitorTimer.Tick+=async(_,_)=>await RefreshMetricsAsync();_monitorTimer.Start();};
+  Loaded+=async(_,_)=>{await RefreshAllAsync();DetectOem();_monitorTimer.Tick+=async(_,_)=>await RefreshMetricsAsync();_monitorTimer.Start();};
   Closed+=(_,_)=>_monitorTimer.Stop();
  }
  private void ShowPanel(string title,string subtitle,string panel)
@@ -41,7 +45,7 @@ public partial class MainWindow : Window
  private async void Scan_Click(object sender,RoutedEventArgs e)=>await ScanDevicesAsync();
  private async Task RefreshMetricsAsync()
  {
-  try{var summary=await _inventory.GetSystemSummaryAsync();CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;ComputerValue.Text=summary.Computer;}
+  try{var summary=await _inventory.GetSystemSummaryAsync();CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;ComputerValue.Text=summary.Computer;var t=await Task.Run(()=>_sensors.ReadTemperatures());CpuTempValue.Text=t.Cpu;GpuTempValue.Text=t.Gpu;TemperatureNote.Text=t.Note;}
   catch(Exception ex){StatusText.Text="Мониторинг: "+ex.Message;}
  }
  private async Task RefreshAllAsync()
@@ -143,6 +147,33 @@ public partial class MainWindow : Window
    _driverUpdates.Clear();
   }catch(System.ComponentModel.Win32Exception){StatusText.Text="Установка отменена пользователем в UAC.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Установка обновлений драйверов",MessageBoxButton.OK,MessageBoxImage.Error);StatusText.Text="Ошибка установки обновлений.";}
+ }
+ private void DetectOem()
+ {
+  _detectedOem=_oemCatalog.Detect(ComputerValue.Text??"");
+  OemDetectText.Text=_detectedOem is null?"Производитель не распознан автоматически. Выберите каталог вручную.":$"Обнаружен производитель: {_detectedOem.Name}. Перед загрузкой проверьте точную модель устройства.";
+ }
+ private void OpenDetectedOem_Click(object sender,RoutedEventArgs e)
+ {
+  if(_detectedOem is null){OpenOemCatalog_Click(sender,e);return;}
+  try{_oemCatalog.Open(_detectedOem);}catch(Exception ex){MessageBox.Show(ex.Message,"Каталог драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
+ private void OpenOemCatalog_Click(object sender,RoutedEventArgs e)
+ {
+  var items=_oemCatalog.GetAll();var menu=string.Join(Environment.NewLine,items.Select((item,index)=>$"{index+1}. {item.Name}"));
+  var answer=Microsoft.VisualBasic.Interaction.InputBox("Введите номер каталога:\n"+menu,"Официальные каталоги","1");
+  if(!int.TryParse(answer,out var number)||number<1||number>items.Count)return;
+  try{_oemCatalog.Open(items[number-1]);}catch(Exception ex){MessageBox.Show(ex.Message,"Каталог драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
+ private void EnableGameProfile_Click(object sender,RoutedEventArgs e)
+ {
+  try{GameProfileText.Text=_gameProfile.Enable();StatusText.Text="Игровой профиль включён.";}
+  catch(Exception ex){MessageBox.Show(ex.Message,"Игровой профиль",MessageBoxButton.OK,MessageBoxImage.Error);}
+ }
+ private void RestoreGameProfile_Click(object sender,RoutedEventArgs e)
+ {
+  try{GameProfileText.Text=_gameProfile.Restore();StatusText.Text="Настройки игрового профиля восстановлены.";}
+  catch(Exception ex){MessageBox.Show(ex.Message,"Восстановление профиля",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
  private void WindowsUpdate_Click(object sender,RoutedEventArgs e)
  {
