@@ -9,7 +9,7 @@
     <Button Content="↻  Драйверы и backup" Click="Drivers_Click" HorizontalContentAlignment="Left" Background="Transparent"/>
     <Button Content="⚙  Диагностика" Click="Diagnostics_Click" HorizontalContentAlignment="Left" Background="Transparent"/>
     <Separator Margin="4,18" Background="#263653"/><TextBlock Text="ИНФОРМАЦИЯ" Foreground="#7185A8" FontWeight="Bold" FontSize="10" Margin="8,4,0,10"/>
-    <TextBlock Text="Версия 1.1.0" Foreground="#9BAAC4" Margin="8,0,0,6"/><TextBlock Text="Windows 10 / 11 x64" Foreground="#9BAAC4" Margin="8,0,0,6"/>
+    <TextBlock Text="Версия 1.2.0" Foreground="#9BAAC4" Margin="8,0,0,6"/><TextBlock Text="Windows 10 / 11 x64" Foreground="#9BAAC4" Margin="8,0,0,6"/>
     <TextBlock Text="Используются системные механизмы Windows. Установка драйверов требует отдельного подтверждения." Foreground="#7185A8" TextWrapping="Wrap" FontSize="11" Margin="8,18,8,0"/>
    </StackPanel></Border>
    <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
