@@ -41,7 +41,7 @@ public partial class MainWindow : Window
  private async void Scan_Click(object sender,RoutedEventArgs e)=>await ScanDevicesAsync();
  private async Task RefreshMetricsAsync()
  {
-  try{var summary=await _inventory.GetSystemSummaryAsync();CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;}
+  try{var summary=await _inventory.GetSystemSummaryAsync();CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;ComputerValue.Text=summary.Computer;}
   catch(Exception ex){StatusText.Text="Мониторинг: "+ex.Message;}
  }
  private async Task RefreshAllAsync()
@@ -51,7 +51,7 @@ public partial class MainWindow : Window
    StatusText.Text="Получение сведений о системе...";
    var summaryTask=_inventory.GetSystemSummaryAsync();var devicesTask=_inventory.ScanAsync();
    var summary=await summaryTask;var devices=await devicesTask;
-   CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;ApplyDevices(devices);
+   CpuValue.Text=summary.Cpu;MemoryValue.Text=summary.Memory;OsValue.Text=summary.Os;ComputerValue.Text=summary.Computer;ApplyDevices(devices);
    StatusText.Text=$"Обновлено: устройств {devices.Count}. Автообновление CPU/RAM — каждые 5 секунд.";
   }catch(Exception ex){StatusText.Text="Не удалось получить часть сведений.";MessageBox.Show(ex.Message,"Ошибка чтения Windows",MessageBoxButton.OK,MessageBoxImage.Warning);}
   finally{_scanRunning=false;}
@@ -75,7 +75,7 @@ public partial class MainWindow : Window
  {
   if(DevicesGrid==null)return;
   var query=DeviceSearch?.Text?.Trim()??"";var errorsOnly=ErrorsOnlyCheck?.IsChecked==true;
-  DevicesGrid.ItemsSource=_devices.Where(d=>(!errorsOnly||(!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0"))&&(query.Length==0||d.Name.Contains(query,StringComparison.OrdinalIgnoreCase)||d.Class.Contains(query,StringComparison.OrdinalIgnoreCase)||d.InstanceId.Contains(query,StringComparison.OrdinalIgnoreCase))).ToList();
+  DevicesGrid.ItemsSource=_devices.Where(d=>(!errorsOnly||(!string.IsNullOrWhiteSpace(d.Problem)&&d.Problem!="Нет"&&d.Problem!="0"))&&(query.Length==0||d.Name.Contains(query,StringComparison.OrdinalIgnoreCase)||d.Manufacturer.Contains(query,StringComparison.OrdinalIgnoreCase)||d.Class.Contains(query,StringComparison.OrdinalIgnoreCase)||d.DriverProvider.Contains(query,StringComparison.OrdinalIgnoreCase)||d.DriverVersion.Contains(query,StringComparison.OrdinalIgnoreCase)||d.InfName.Contains(query,StringComparison.OrdinalIgnoreCase)||d.InstanceId.Contains(query,StringComparison.OrdinalIgnoreCase))).ToList();
  }
  private void ExportDevices_Click(object sender,RoutedEventArgs e)
  {
@@ -83,8 +83,8 @@ public partial class MainWindow : Window
   if(dialog.ShowDialog(this)!=true)return;
   try{
    static string Q(string s) => "\"" + (s ?? "").Replace("\"", "\"\"") + "\"";
-   var sb=new StringBuilder();sb.AppendLine("Устройство;Класс;Состояние;Код ошибки;Instance ID");
-   foreach(var d in _devices)sb.AppendLine(string.Join(";",new[]{d.Name,d.Class,d.Status,d.Problem,d.InstanceId}.Select(Q)));
+   var sb=new StringBuilder();sb.AppendLine("Устройство;Производитель;Класс;Состояние;Код ошибки;Поставщик драйвера;Версия драйвера;Дата драйвера;INF;Подпись;Instance ID");
+   foreach(var d in _devices)sb.AppendLine(string.Join(";",new[]{d.Name,d.Manufacturer,d.Class,d.Status,d.Problem,d.DriverProvider,d.DriverVersion,d.DriverDate,d.InfName,d.Signature,d.InstanceId}.Select(Q)));
    File.WriteAllText(dialog.FileName,sb.ToString(),new UTF8Encoding(true));StatusText.Text="Отчёт сохранён: "+dialog.FileName;
   }catch(Exception ex){MessageBox.Show(ex.Message,"Экспорт CSV",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
@@ -101,11 +101,13 @@ public partial class MainWindow : Window
  {
   var dialog=new OpenFolderDialog{Title="Выберите папку с ранее экспортированными драйверами",Multiselect=false};
   if(dialog.ShowDialog(this)!=true)return;
-  var infCount=Directory.EnumerateFiles(dialog.FolderName,"*.inf",SearchOption.AllDirectories).Take(10001).Count();
-  if(infCount==0){MessageBox.Show("В выбранной папке не найдены INF-файлы.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);return;}
-  if(infCount>10000){MessageBox.Show("В папке слишком много INF-файлов. Выберите конкретную папку резервной копии.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Warning);return;}
-  if(MessageBox.Show($"Найдено INF-файлов: {infCount}. Передать пакеты Windows для установки?\n\n{dialog.FolderName}\n\nWindows выберет только совместимые пакеты.","Подтверждение восстановления",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
-  try{var result=_maintenance.RestoreDrivers(dialog.FolderName);StatusText.Text=result;MessageBox.Show(result,"Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);}
+  try{
+   var infCount=Directory.EnumerateFiles(dialog.FolderName,"*.inf",SearchOption.AllDirectories).Take(10001).Count();
+   if(infCount==0){MessageBox.Show("В выбранной папке не найдены INF-файлы.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+   if(infCount>10000){MessageBox.Show("В папке слишком много INF-файлов. Выберите конкретную папку резервной копии.","Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Warning);return;}
+   if(MessageBox.Show($"Найдено INF-файлов: {infCount}. Передать пакеты Windows для установки?\n\n{dialog.FolderName}\n\nWindows выберет только совместимые пакеты.","Подтверждение восстановления",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+   var result=_maintenance.RestoreDrivers(dialog.FolderName);StatusText.Text=result;MessageBox.Show(result,"Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Information);
+  }
   catch(System.ComponentModel.Win32Exception){StatusText.Text="Восстановление отменено в UAC.";}
   catch(Exception ex){MessageBox.Show(ex.Message,"Восстановление драйверов",MessageBoxButton.OK,MessageBoxImage.Error);}
  }
