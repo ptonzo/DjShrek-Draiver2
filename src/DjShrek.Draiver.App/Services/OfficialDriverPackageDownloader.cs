@@ -1,0 +1,125 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using DjShrek.Draiver.App.Models;
+
+namespace DjShrek.Draiver.App.Services;
+
+/// <summary>
+/// Resolves actual driver package links from an official vendor support page and
+/// downloads the original package. It never uses Windows Update or Microsoft Update Catalog.
+/// </summary>
+public sealed class OfficialDriverPackageDownloader
+{
+    private const long MaxPackageBytes = 2L * 1024 * 1024 * 1024;
+    private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab", ".7z" };
+    private static readonly HttpClient Client = new(new HttpClientHandler
+    {
+        AutomaticDecompression = DecompressionMethods.All,
+        AllowAutoRedirect = true,
+        MaxAutomaticRedirections = 8
+    })
+    {
+        Timeout = TimeSpan.FromMinutes(15)
+    };
+
+    static OfficialDriverPackageDownloader()
+    {
+        Client.DefaultRequestHeaders.UserAgent.ParseAdd("DjShrek-Draiver/1.8");
+        Client.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/octet-stream;q=0.9,*/*;q=0.7");
+    }
+
+    public async Task<IReadOnlyList<Uri>> FindPackageLinksAsync(string supportPageUrl, CancellationToken cancellationToken = default)
+    {
+        if (!InternetDriverCatalogService.IsOfficialVendorUrl(supportPageUrl))
+            throw new InvalidDataException("Источник не входит в список официальных сайтов производителей.");
+
+        using var response = await Client.GetAsync(supportPageUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        if (response.RequestMessage?.RequestUri is not { } finalPage || !IsTrustedVendorHost(finalPage.Host))
+            throw new InvalidDataException("Страница перенаправила на посторонний домен. Загрузка заблокирована.");
+
+        var mediaType = response.Content.Headers.ContentType?.MediaType ?? "";
+        if (!mediaType.Contains("html", StringComparison.OrdinalIgnoreCase) &&
+            !mediaType.Contains("xhtml", StringComparison.OrdinalIgnoreCase))
+            return IsPackageUri(finalPage) ? new[] { finalPage } : Array.Empty<Uri>();
+
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match match in Regex.Matches(html, @"(?:href|data-download-url)\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase))
+        {
+            var raw = WebUtility.HtmlDecode(match.Groups[1].Value).Replace("&amp;", "&", StringComparison.OrdinalIgnoreCase);
+            if (!Uri.TryCreate(finalPage, raw, out var link) || link.Scheme != Uri.UriSchemeHttps) continue;
+            if (!IsTrustedVendorHost(link.Host) || !IsPackageUri(link)) continue;
+            found.Add(link.AbsoluteUri);
+        }
+
+        return found.Select(x => new Uri(x)).Take(40).ToArray();
+    }
+
+    public async Task<(string FilePath, string Sha256, long Length)> DownloadAsync(
+        Uri packageUri, string destinationDirectory, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(packageUri);
+        if (packageUri.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(packageUri.Host) || !IsPackageUri(packageUri))
+            throw new InvalidDataException("Ссылка на пакет не прошла проверку домена, HTTPS и расширения.");
+
+        using var response = await Client.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var finalUri = response.RequestMessage?.RequestUri;
+        if (finalUri is null || finalUri.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(finalUri.Host))
+            throw new InvalidDataException("Загрузка перенаправлена на недоверенный домен.");
+        if (response.Content.Headers.ContentLength is > MaxPackageBytes)
+            throw new InvalidDataException("Размер пакета превышает допустимые 2 ГБ.");
+
+        var fileName = Path.GetFileName(finalUri.LocalPath);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Length > 180)
+            fileName = "driver-package" + Path.GetExtension(finalUri.LocalPath);
+        fileName = Regex.Replace(fileName, @"[^A-Za-z0-9А-Яа-я._() -]", "_");
+        if (!PackageExtensions.Contains(Path.GetExtension(fileName), StringComparer.OrdinalIgnoreCase))
+            throw new InvalidDataException("Сервер вернул файл с неподдерживаемым расширением.");
+
+        Directory.CreateDirectory(destinationDirectory);
+        var target = Path.Combine(Path.GetFullPath(destinationDirectory), fileName);
+        var temporary = target + ".download";
+        try
+        {
+            await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using (var output = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024, useAsync: true))
+            {
+                var buffer = new byte[128 * 1024];
+                long total = 0;
+                int read;
+                while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    total += read;
+                    if (total > MaxPackageBytes) throw new InvalidDataException("Загрузка остановлена: пакет превышает 2 ГБ.");
+                    await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
+                if (total == 0) throw new InvalidDataException("Производитель вернул пустой файл.");
+            }
+            File.Move(temporary, target, overwrite: true);
+            await using var verify = File.OpenRead(target);
+            var hash = Convert.ToHexString(await SHA256.HashDataAsync(verify, cancellationToken));
+            return (target, hash, new FileInfo(target).Length);
+        }
+        catch
+        {
+            if (File.Exists(temporary)) File.Delete(temporary);
+            throw;
+        }
+    }
+
+    private static bool IsPackageUri(Uri uri) =>
+        PackageExtensions.Contains(Path.GetExtension(uri.AbsolutePath), StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsTrustedVendorHost(string host)
+    {
+        host = host.TrimEnd('.').ToLowerInvariant();
+        return new[] { "intel.com", "nvidia.com", "amd.com", "dell.com", "hp.com",
+            "lenovo.com", "asus.com", "acer.com", "msi.com", "gigabyte.com",
+            "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com", "surface.com" }
+            .Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
+    }
+}
