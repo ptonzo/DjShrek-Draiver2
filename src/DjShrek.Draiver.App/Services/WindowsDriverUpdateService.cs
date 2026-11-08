@@ -178,7 +178,7 @@ public sealed class WindowsDriverUpdateService
 
     private static string ExtractVersion(string title)
     {
-        var match = Regex.Match(title, @"(?<!\\d)\\d+(?:\\.\\d+){1,3}(?!\\d)");
+        var match = Regex.Match(title, @"(?<!\d)\d+(?:\.\d+){1,3}(?!\d)");
         return match.Success ? match.Value : "Не указана в каталоге";
     }
 
