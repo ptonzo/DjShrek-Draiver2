@@ -637,7 +637,7 @@ public partial class MainWindow : Window
                     HardwareId = candidate.HardwareId,
                     DeviceName = device?.Name ?? "Устройство не сопоставлено",
                     CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
-                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Точное совпадение ID устройства",
+                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Hardware ID найден; пакет не проверен",
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
@@ -670,7 +670,7 @@ public partial class MainWindow : Window
     }
 
     private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
-        string.Equals(candidate.Compatibility, "Точное совпадение ID устройства", StringComparison.Ordinal);
+        string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&\n        Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) && source.Scheme == Uri.UriSchemeHttps;
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -684,8 +684,8 @@ public partial class MainWindow : Window
         if (!IsCandidateInstallable(candidate))
         {
             MessageBox.Show(
-                "Установка заблокирована: обновление не сопоставлено с устройством по точному Hardware ID. " +
-                "Выберите пакет с подтверждённым совпадением либо проверьте устройство вручную.",
+                "Действие заблокировано: результат не сопоставлён с устройством или ссылка не прошла проверку HTTPS. " +
+                "Выберите результат с корректным Hardware ID и официальной ссылкой.",
                 "Нельзя подтвердить совместимость", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -709,7 +709,7 @@ public partial class MainWindow : Window
 
         InstallSelectedDriverButton.IsEnabled = false;
         SearchDriverUpdatesButton.IsEnabled = false;
-        DriverUpdatesSummaryText.Text = "Загрузка и установка выбранного драйвера...";
+        DriverUpdatesSummaryText.Text = "Открытие страницы производителя...";
         try
         {
             if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)\n                throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");\n            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });\n            var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
