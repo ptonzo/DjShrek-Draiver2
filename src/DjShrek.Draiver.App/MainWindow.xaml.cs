@@ -44,6 +44,7 @@ public partial class MainWindow : Window
 
         DevicesGrid.ItemsSource = _devices;
         DriverUpdatesGrid.ItemsSource = _driverUpdates;
+        ConfigureDriverIgnoreMenu();
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
 
