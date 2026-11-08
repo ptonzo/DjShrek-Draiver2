@@ -75,6 +75,73 @@ public partial class MainWindow
         DriverUpdatesSummaryText.Text = "Устройство добавлено в список исключений. Его можно вернуть через контекстное меню списка.";
         AppendEvent("Устройство исключено из поиска обновлений: " + candidate.HardwareId);
     }
+    private readonly DriverUpdateIgnoreService _driverIgnore = new();
+
+    private void ConfigureDriverIgnoreMenu()
+    {
+        var menu = new System.Windows.Controls.ContextMenu();
+        var ignore = new System.Windows.Controls.MenuItem { Header = "Исключить обновления этого устройства" };
+        ignore.Click += (_, _) => IgnoreSelectedDriverDevice();
+        menu.Items.Add(ignore);
+
+        var ignored = new System.Windows.Controls.MenuItem { Header = "Список исключённых устройств" };
+        ignored.SubmenuOpened += (_, _) =>
+        {
+            ignored.Items.Clear();
+            var entries = _driverIgnore.GetIgnored();
+            if (entries.Count == 0)
+            {
+                ignored.Items.Add(new System.Windows.Controls.MenuItem { Header = "Список пуст", IsEnabled = false });
+                return;
+            }
+            foreach (var hardwareId in entries)
+            {
+                var restore = new System.Windows.Controls.MenuItem { Header = hardwareId };
+                restore.Click += (_, _) =>
+                {
+                    _driverIgnore.Restore(hardwareId);
+                    StatusText.Text = "Устройство возвращено в поиск обновлений.";
+                    AppendEvent("Снято исключение драйвера: " + hardwareId);
+                    _ = SearchDriverUpdatesAsync();
+                };
+                ignored.Items.Add(restore);
+            }
+            ignored.Items.Add(new System.Windows.Controls.Separator());
+            var restoreAll = new System.Windows.Controls.MenuItem { Header = "Восстановить все исключения" };
+            restoreAll.Click += (_, _) =>
+            {
+                _driverIgnore.RestoreAll();
+                StatusText.Text = "Все исключения сняты.";
+                AppendEvent("Список исключений драйверов очищен.");
+                _ = SearchDriverUpdatesAsync();
+            };
+            ignored.Items.Add(restoreAll);
+        };
+        menu.Items.Add(ignored);
+        DriverUpdatesGrid.ContextMenu = menu;
+    }
+
+    private void IgnoreSelectedDriverDevice()
+    {
+        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
+            string.IsNullOrWhiteSpace(candidate.HardwareId))
+        {
+            MessageBox.Show(this, "Выберите строку с аппаратным идентификатором устройства.",
+                "Исключения обновлений", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (MessageBox.Show(this,
+                $"Исключить устройство из последующих поисков обновлений?\\n\\n{candidate.DeviceName}\\n{candidate.HardwareId}",
+                "Исключить устройство", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        _driverIgnore.Ignore(candidate.HardwareId);
+        _driverUpdates.RemoveWhere(x => string.Equals(x.HardwareId, candidate.HardwareId, StringComparison.OrdinalIgnoreCase));
+        UpdatesCountText.Text = $"Исключено устройств: {_driverIgnore.GetIgnored().Count}.";
+        DriverUpdatesSummaryText.Text = "Устройство добавлено в список исключений. Его можно вернуть через контекстное меню списка.";
+        AppendEvent("Устройство исключено из поиска обновлений: " + candidate.HardwareId);
+    }
 
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
