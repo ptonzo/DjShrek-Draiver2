@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Win32;
 using DjShrek.Draiver.App.Services;
 
 namespace DjShrek.Draiver.App;
@@ -88,18 +89,76 @@ public partial class App : Application
                 throw new InvalidOperationException("PnP scan returned zero devices on the Windows runner.");
             checks.Add($"PASS: PnP inventory queried ({devices.Count} devices).");
 
-            var registry = new RegistryMaintenanceService().Scan();
-            checks.Add($"PASS: Run/RunOnce registry diagnostics queried read-only ({registry.Count} findings).");
+            var registryService = new RegistryMaintenanceService();
+            var registry = registryService.Scan();
+            checks.Add($"PASS: Run/RunOnce registry diagnostics queried ({registry.Count} findings).");
 
-            var junk = new JunkCleanupService().Scan(minimumAgeDays: 7);
+            // Exercise backup-before-repair against one uniquely named disposable HKCU Run value.
+            var testValueName = "DjShrekSelfTest-" + Guid.NewGuid().ToString("N");
+            var testValueData = Path.Combine(Path.GetTempPath(), "DjShrekSelfTest-Missing.exe");
+            try
+            {
+                using (var runKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: true))
+                    runKey!.SetValue(testValueName, testValueData, RegistryValueKind.String);
+                var finding = registryService.Scan().SingleOrDefault(x => x.Hive == "HKCU" &&
+                    x.ValueName == testValueName && x.Repairable)
+                    ?? throw new InvalidOperationException("Disposable missing startup value was not detected as repairable.");
+                var backupPath = registryService.Repair(finding);
+                if (!File.Exists(backupPath))
+                    throw new InvalidOperationException("Registry repair did not create its .reg backup.");
+                using var verifyKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: false);
+                if (verifyKey?.GetValue(testValueName) is not null)
+                    throw new InvalidOperationException("Disposable startup value remains after repair.");
+                checks.Add("PASS: HKCU startup repair created a .reg backup and removed only the test value.");
+            }
+            finally
+            {
+                using var runKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
+                runKey?.DeleteValue(testValueName, throwOnMissingValue: false);
+            }
+
+            var cleanupService = new JunkCleanupService();
+            var junk = cleanupService.Scan(minimumAgeDays: 7);
             if (junk.Any(item => string.IsNullOrWhiteSpace(item.Path)))
                 throw new InvalidOperationException("Temporary file scan returned an empty path.");
-            checks.Add($"PASS: temporary-file scan queried read-only ({junk.Count} candidate files).");
+            var testTempFile = Path.Combine(Path.GetTempPath(), "DjShrekSelfTest-" + Guid.NewGuid().ToString("N") + ".tmp");
+            try
+            {
+                File.WriteAllText(testTempFile, "DjShrek cleanup integration test");
+                File.SetLastWriteTimeUtc(testTempFile, DateTime.UtcNow.AddDays(-8));
+                var candidate = cleanupService.Scan(minimumAgeDays: 7)
+                    .SingleOrDefault(item => string.Equals(item.Path, testTempFile, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new InvalidOperationException("Disposable aged temp file was not found by scanner.");
+                var cleanupResult = cleanupService.Clean(new[] { candidate }, minimumAgeDays: 7);
+                if (cleanupResult.DeletedFiles != 1 || File.Exists(testTempFile))
+                    throw new InvalidOperationException("Cleanup integration test did not delete exactly its disposable test file.");
+                checks.Add("PASS: cleanup deleted exactly one generated 8-day-old temp test file.");
+            }
+            finally
+            {
+                if (File.Exists(testTempFile)) File.Delete(testTempFile);
+            }
 
             var driverPackages = new DriverMaintenanceService().ListDriverPackages();
             if (string.IsNullOrWhiteSpace(driverPackages))
                 throw new InvalidOperationException("pnputil returned an empty Driver Store listing.");
             checks.Add("PASS: Driver Store listing queried with pnputil /enum-drivers.");
+
+            var invalidInf = Path.Combine(Path.GetTempPath(), "DjShrekSelfTest-" + Guid.NewGuid().ToString("N") + ".inf");
+            try
+            {
+                File.WriteAllText(invalidInf, "[Version]" + Environment.NewLine + "Signature=\"$Windows NT$\"");
+                var rejected = false;
+                try { DriverMaintenanceService.ValidateSignedInfPackage(invalidInf); }
+                catch (InvalidDataException) { rejected = true; }
+                if (!rejected)
+                    throw new InvalidOperationException("Driver preflight accepted an INF without a signed catalog.");
+                checks.Add("PASS: driver preflight rejects an INF package without a catalog signature.");
+            }
+            finally
+            {
+                if (File.Exists(invalidInf)) File.Delete(invalidInf);
+            }
 
             var sensors = new HardwareSensorService().ReadMetrics();
             checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
