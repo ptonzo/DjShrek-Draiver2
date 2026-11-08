@@ -12,7 +12,9 @@ $installerPath = Join-Path $repoRoot 'installer\DjShrek-Draiver.iss'
 $iconPath = Join-Path $repoRoot 'assets\DjShrek-Draiver.ico'
 
 [xml]$xaml = Get-Content -LiteralPath $xamlPath -Raw
-$code = Get-Content -LiteralPath $codePath -Raw
+# WPF event handlers are intentionally split across partial MainWindow code-behind files.
+$code = (Get-ChildItem -LiteralPath (Split-Path -Parent $codePath) -Filter '*.cs' -File -Recurse |
+    ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
 $themeCode = Get-Content -LiteralPath $themePath -Raw
 $installer = Get-Content -LiteralPath $installerPath -Raw
 $license = Get-Content -LiteralPath $licensePath -Raw
