@@ -76,6 +76,7 @@ public static class ThemeManager
             new Point(0, 0), new Point(1, 1));
         resources["HeroBrush"] = hero;
         resources["ThemeIsLight"] = theme.Id is "02" or "07" or "08";
+        resources["PanelCornerRadius"] = theme.Id == "02" ? new CornerRadius(18) : theme.Id == "09" ? new CornerRadius(8) : new CornerRadius(12);
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(PreferencePath)!);
