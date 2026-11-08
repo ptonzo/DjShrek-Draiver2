@@ -539,6 +539,9 @@
                 <TextBlock Text="Установка найденных обновлений — только после вашего подтверждения"
                            TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
                            Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,10,0,0"/>
+                <TextBlock x:Name="StartupScanStatusText" Text="Готов к проверке устройств и драйверов"
+                           TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0"/>
             </StackPanel>
         </Grid>
     </Grid>
