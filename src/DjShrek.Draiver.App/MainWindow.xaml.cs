@@ -325,22 +325,22 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return;
         StartScanButton.IsEnabled = false;
-        StartupScanOverlay.Visibility = Visibility.Collapsed;
+        StartupScanStatusText.Text = "Сканирование оборудования и установленных драйверов...";
         try
         {
-            if (!await ScanDevicesAsync()) return;
-            if (_devices.Count == 0) return;
+            if (!await ScanDevicesAsync())
+            {
+                StartupScanStatusText.Text = "Сканирование устройств завершилось с ошибкой. Открывается основной интерфейс.";
+                return;
+            }
 
-            var errors = _devices.Count(IsProblemDevice);
-            var summary = $"Проверено устройств: {_devices.Count}. Устройств с ошибками: {errors}.";
-            var answer = MessageBox.Show(
-                summary + "\\n\\nТеперь запустить проверку актуальности драйверов через Snappy Driver Installer Origin? Будут загружены индексы и подобраны совместимые варианты. Автоматическая установка отключена.",
-                "Проверка актуальности драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (answer == MessageBoxResult.Yes)
-                await SearchDriverUpdatesAsync();
+            StartupScanStatusText.Text = $"Устройств проверено: {_devices.Count}. Поиск доступных обновлений драйверов...";
+            await SearchDriverUpdatesAsync();
+            StartupScanStatusText.Text = "Проверка завершена. Открывается DjShrek-Draiver.";
         }
         finally
         {
+            StartupScanOverlay.Visibility = Visibility.Collapsed;
             StartScanButton.IsEnabled = true;
         }
     }
