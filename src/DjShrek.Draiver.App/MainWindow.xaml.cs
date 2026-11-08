@@ -598,27 +598,70 @@ public partial class MainWindow : Window
         try
         {
             ShowPanel("drivers");
-            UpdatesCountText.Text = "Подготовка проверки актуальности драйверов...";
+            UpdatesCountText.Text = "Получение списка устройств и Hardware ID...";
             if (_devices.Count == 0)
             {
                 var devices = await _inventory.ScanAsync();
                 ApplyDevices(devices);
             }
-            UpdatesCountText.Text = $"Устройств найдено: {_devices.Count}. Запуск проверки версий драйверов...";
-            if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и сравнит установленные драйверы с доступными совместимыми пакетами. Автоматическая установка отключена: вы сможете просмотреть найденные варианты и подтвердить только нужные обновления вручную.",
-                "Поиск актуальных драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
+
+            var searchable = _devices.Where(x => x.HardwareIds is { Length: > 0 }).ToArray();
+            if (searchable.Length == 0)
+            {
+                UpdatesCountText.Text = "Нет устройств с доступными Hardware ID. Сначала проверьте диспетчер устройств.";
                 return;
-            UpdatesCountText.Text = "Загрузка индексов и поиск совместимых драйверов...";
-            var result = await new SdioEngineService().DownloadAndLaunchAsync();
-            UpdatesCountText.Text = result;
-            StatusText.Text = result;
-            AppendEvent("Выполнен поиск актуальных драйверов через проверенный движок SDIO.");
+            }
+
+            UpdatesCountText.Text = $"Поиск официальных страниц производителей для {searchable.Length} устройств...";
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            var results = await new InternetDriverCatalogService().SearchAsync(searchable, timeout.Token);
+            UpdatesCountText.Text = results.Count == 0
+                ? "Официальные страницы не найдены. Поисковая служба могла ограничить RSS-запросы; попробуйте каталоги производителей или SDIO."
+                : $"Найдено страниц производителей: {results.Count}. Это ссылки-кандидаты, а не подтверждённые обновления.";
+
+            StatusText.Text = UpdatesCountText.Text;
+            AppendEvent($"Поиск страниц производителей завершён: {results.Count} результатов для {searchable.Length} устройств.");
+
+            if (results.Count > 0)
+                new DriverSearchResultsWindow(results) { Owner = this }.ShowDialog();
+            else
+                MessageBox.Show(this, UpdatesCountText.Text, "Поиск драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (OperationCanceledException)
+        {
+            UpdatesCountText.Text = "Поиск остановлен или превысил лимит времени.";
+            StatusText.Text = UpdatesCountText.Text;
         }
         catch (Exception ex)
         {
             UpdatesCountText.Text = "Поиск драйверов не завершён.";
             MessageBox.Show(ex.Message, "DjShrek-Draiver", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally { _scanRunning = false; }
+    }
+
+    private async void LaunchSdio_Click(object sender, RoutedEventArgs e)
+    {
+        if (_scanRunning) return;
+        _scanRunning = true;
+        try
+        {
+            ShowPanel("drivers");
+            if (MessageBox.Show(
+                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и сравнит установленные драйверы с доступными совместимыми пакетами. Автоматическая установка отключена: вы сможете просмотреть найденные варианты и подтвердить только нужные обновления вручную.",
+                "Запуск SDIO", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
+                return;
+
+            UpdatesCountText.Text = "Загрузка и проверка SDIO, затем обновление индексов...";
+            var result = await new SdioEngineService().DownloadAndLaunchAsync();
+            UpdatesCountText.Text = result;
+            StatusText.Text = result;
+            AppendEvent("Запущен SDIO: обновлены индексы, автоматическая установка отключена.");
+        }
+        catch (Exception ex)
+        {
+            UpdatesCountText.Text = "SDIO не удалось запустить.";
+            MessageBox.Show(ex.Message, "SDIO", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally { _scanRunning = false; }
     }
