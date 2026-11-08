@@ -520,7 +520,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(ex.Message, "Экспорт CSV", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
-    private void Backup_Click(object sender, RoutedEventArgs e)
+    private async void Backup_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog { Title = "Выберите пустую папку для резервной копии драйверов", Multiselect = false };
         if (dialog.ShowDialog(this) != true) return;
@@ -535,7 +535,7 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Экспортировать сторонние пакеты драйверов в папку?\n\n{dialog.FolderName}",
                     "Подтверждение резервного копирования", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
-            var result = _maintenance.ExportDrivers(dialog.FolderName);
+            var result = await _maintenance.ExportDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Создана резервная копия драйверов: " + dialog.FolderName);
             MessageBox.Show(result, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -544,7 +544,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(ex.Message, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
-    private void RestoreDrivers_Click(object sender, RoutedEventArgs e)
+    private async void RestoreDrivers_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog { Title = "Выберите папку с ранее экспортированными драйверами", Multiselect = false };
         if (dialog.ShowDialog(this) != true) return;
@@ -565,7 +565,7 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Найдено INF-файлов: {count}. Передать совместимые пакеты Windows для установки?\n\n{dialog.FolderName}",
                     "Подтверждение восстановления", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
-            var result = _maintenance.RestoreDrivers(dialog.FolderName);
+            var result = await _maintenance.RestoreDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Выполнено восстановление драйверов из " + dialog.FolderName);
             MessageBox.Show(result, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -574,7 +574,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(ex.Message, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
-    private void Install_Click(object sender, RoutedEventArgs e)
+    private async void Install_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -588,7 +588,7 @@ public partial class MainWindow : Window
             return;
         try
         {
-            var result = _maintenance.InstallInf(dialog.FileName);
+            var result = await _maintenance.InstallInfAsync(dialog.FileName);
             StatusText.Text = result;
             MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
         }
