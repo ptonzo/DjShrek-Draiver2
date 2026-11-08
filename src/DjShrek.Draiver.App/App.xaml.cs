@@ -168,7 +168,7 @@ public partial class App : Application
             var sensors = new HardwareSensorService().ReadMetrics();
             checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
 
-            var defaultTheme = ThemeManager.Themes[0];
+            var defaultTheme = ThemeManager.Themes.First(x => x.Id == "02");
             ThemeManager.Apply(defaultTheme);
             themeSelector.SelectedValue = defaultTheme.Id;
             settingsSelector.SelectedValue = defaultTheme.Id;
