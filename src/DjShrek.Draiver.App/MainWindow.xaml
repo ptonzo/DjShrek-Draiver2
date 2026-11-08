@@ -81,7 +81,7 @@
                         <Separator Background="{DynamicResource BorderBrush}" Margin="0,0,0,13"/>
                         <TextBlock Text="DJSHREK CYBER CLUB" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                        <TextBlock Text="Версия 1.6.0" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,7,0,4"/>
+                        <TextBlock Text="Версия 1.7.0" Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="0,7,0,4"/>
                         <TextBlock Text="Windows 10 / 11 x64" Foreground="{DynamicResource MutedBrush}" FontSize="11"/>
                         <TextBlock Text="Установка драйверов выполняется только после проверки пакета и отдельного подтверждения."
                                    Foreground="{DynamicResource MutedBrush}" FontSize="10"
