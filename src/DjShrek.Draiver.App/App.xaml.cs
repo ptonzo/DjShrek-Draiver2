@@ -79,6 +79,15 @@ public partial class App : Application
             if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(ambiguousDevices, "PCI\\VEN_10DE&DEV_5678"), ambiguousDevices[1]))
                 throw new InvalidOperationException("A unique exact hardware ID was not matched when another device shared only a compatible ID.");
             checks.Add("PASS: ambiguous shared compatible IDs are rejected while unique hardware IDs remain matchable.");
+
+            if (!InternetDriverCatalogService.IsOfficialVendorUrl("https://download.nvidia.com/driver.exe") ||
+                !InternetDriverCatalogService.IsOfficialVendorUrl("https://support.lenovo.com/driver") ||
+                InternetDriverCatalogService.IsOfficialVendorUrl("http://download.nvidia.com/driver.exe") ||
+                InternetDriverCatalogService.IsOfficialVendorUrl("https://nvidia.com.attacker.example/driver") ||
+                InternetDriverCatalogService.IsOfficialVendorUrl("https://attacker-intel.com/driver") ||
+                InternetDriverCatalogService.IsOfficialVendorUrl("javascript:alert(1)"))
+                throw new InvalidOperationException("Official vendor URL validation accepted an unsafe URL or rejected a valid vendor URL.");
+            checks.Add("PASS: official vendor URL allowlist accepts legitimate subdomains and rejects lookalike, HTTP and script URLs.");
             
             // OEM detection must identify the system builder, not a component vendor.
             var oemCatalog = new OemCatalogService();
