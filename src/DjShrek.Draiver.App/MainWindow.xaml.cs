@@ -20,7 +20,7 @@ public partial class MainWindow : Window
     private readonly OemCatalogService _oemCatalog = new();
     private readonly RegistryMaintenanceService _registryService = new();
     private readonly JunkCleanupService _junkService = new();
-    private readonly WindowsDriverUpdateService _windowsDriverUpdates = new();
+    private readonly InternetDriverCatalogService _internetDriverCatalog = new();
 
         private readonly ObservableCollection<DeviceInfo> _devices = new();
     private readonly ObservableCollection<DriverUpdateCandidate> _driverUpdates = new();
@@ -617,11 +617,11 @@ public partial class MainWindow : Window
         _scanRunning = true;
         SearchDriverUpdatesButton.IsEnabled = false;
         InstallSelectedDriverButton.IsEnabled = false;
-        DriverUpdatesSummaryText.Text = "Подключение к Windows Update Agent. Проверка доступных драйверов...";
+        DriverUpdatesSummaryText.Text = "Поиск драйверов в интернете по Hardware ID устройств...";
         try
         {
             ShowPanel("drivers");
-            var candidates = await _windowsDriverUpdates.SearchAsync();
+            var candidates = await _internetDriverCatalog.SearchAsync(_devices);
             _driverUpdates.Clear();
             foreach (var candidate in candidates)
             {
@@ -647,17 +647,17 @@ public partial class MainWindow : Window
             var compatibleCount = _driverUpdates.Count(IsCandidateInstallable);
             var unmatchedCount = _driverUpdates.Count - compatibleCount;
             DriverUpdatesSummaryText.Text = candidates.Count == 0
-                ? "Windows Update не вернул доступных обновлений драйверов. Это не означает, что для всех устройств существуют самые новые OEM-драйверы."
+                ? "В официальных каталогах не найдены страницы драйверов по обнаруженным Hardware ID."
                 : $"Найдено пакетов: {candidates.Count}. Точное совпадение ID: {compatibleCount}. Без подтверждённого соответствия: {unmatchedCount}. Устанавливать можно только пакеты с точным совпадением.";
             UpdatesCountText.Text = candidates.Count == 0
                 ? "Обновления не найдены."
                 : $"Всего: {candidates.Count}  |  Совместимость подтверждена: {compatibleCount}  |  Требуют проверки: {unmatchedCount}";
             StatusText.Text = DriverUpdatesSummaryText.Text;
-            AppendEvent($"Windows Update Agent: найдено обновлений драйверов — {candidates.Count}.");
+            AppendEvent($"Интернет-поиск по Hardware ID: найдено страниц производителей — {candidates.Count}.");
         }
         catch (Exception ex)
         {
-            DriverUpdatesSummaryText.Text = "Поиск не завершён. Проверьте подключение и службу Windows Update.";
+            DriverUpdatesSummaryText.Text = "Интернет-поиск не завершён. Проверьте подключение.";
             UpdatesCountText.Text = "Ошибка поиска драйверов.";
             MessageBox.Show(ex.Message, "Поиск обновлений драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -701,7 +701,7 @@ public partial class MainWindow : Window
             string.IsNullOrWhiteSpace(candidate.DriverVersionDate) ? null : "Дата версии: " + candidate.DriverVersionDate
         }.Where(x => !string.IsNullOrWhiteSpace(x)));
         if (MessageBox.Show(
-            "Установить только выбранное обновление через Windows Update Agent?\n\n" + details +
+            "Открыть официальную страницу найденного драйвера?\n\n" + details +
             "\n\nПеред продолжением убедитесь, что это нужное устройство. Windows может запросить перезагрузку.",
             "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
@@ -711,7 +711,7 @@ public partial class MainWindow : Window
         DriverUpdatesSummaryText.Text = "Загрузка и установка выбранного драйвера...";
         try
         {
-            var result = await _windowsDriverUpdates.InstallAsync(candidate.UpdateId);
+            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)\n                throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");\n            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });\n            var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
             DriverUpdatesSummaryText.Text = result;
             StatusText.Text = result;
             AppendEvent("Результат установки драйвера: " + result);
@@ -720,7 +720,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            DriverUpdatesSummaryText.Text = "Установка не подтверждена Windows Update Agent.";
+            DriverUpdatesSummaryText.Text = "Не удалось открыть страницу производителя.";
             MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
