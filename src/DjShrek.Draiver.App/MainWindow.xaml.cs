@@ -641,7 +641,8 @@ public partial class MainWindow : Window
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
-                    IsDownloaded = candidate.IsDownloaded
+                    IsDownloaded = candidate.IsDownloaded,
+                    SourceUrl = candidate.SourceUrl
                 });
             }
             var compatibleCount = _driverUpdates.Count(IsCandidateInstallable);
