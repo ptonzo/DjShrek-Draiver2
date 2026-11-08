@@ -354,16 +354,12 @@ public partial class MainWindow : Window
         StatusText.Text = "Сбор показателей и сканирование устройств Windows...";
         try
         {
-            var metricsTask = _inventory.GetSystemMetricsAsync();
-            var devicesTask = _inventory.ScanAsync();
-            var hardwareTask = Task.Run(() => _sensors.ReadMetrics());
+            // Reuse the guarded monitoring path instead of opening a second sensor
+            // provider while the five-second dashboard refresh may already be running.
+            await RefreshMetricsAsync();
 
-            try { ApplySystemMetrics(await metricsTask); }
-            catch (Exception ex) { StatusText.Text = "Мониторинг: " + ex.Message; }
-
-            var devices = await devicesTask;
+            var devices = await _inventory.ScanAsync();
             ApplyDevices(devices);
-            ApplyHardwareMetrics(await hardwareTask);
             StatusText.Text = $"Готово. Обнаружено устройств: {devices.Count}. Мониторинг обновляется каждые 5 секунд.";
             AppendEvent($"Первичное сканирование: обнаружено устройств — {devices.Count}.");
             DetectOem();
