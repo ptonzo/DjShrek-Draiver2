@@ -655,17 +655,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
+        string.Equals(candidate.Compatibility, "Точное совпадение Hardware ID", StringComparison.Ordinal);
+
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate;
+        InstallSelectedDriverButton.IsEnabled =
+            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate && IsCandidateInstallable(candidate);
     }
 
     private async void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
     {
         if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate) return;
+        if (!IsCandidateInstallable(candidate))
+        {
+            MessageBox.Show(
+                "Установка заблокирована: обновление не сопоставлено с устройством по точному Hardware ID. " +
+                "Выберите пакет с подтверждённым совпадением либо проверьте устройство вручную.",
+                "Нельзя подтвердить совместимость", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
         var details = string.Join(Environment.NewLine, new[]
         {
             candidate.Title,
+            "Устройство: " + candidate.DeviceName,
+            "Текущая версия: " + candidate.CurrentVersion,
+            "Совместимость: " + candidate.Compatibility,
+            string.IsNullOrWhiteSpace(candidate.HardwareId) ? null : "Hardware ID: " + candidate.HardwareId,
             string.IsNullOrWhiteSpace(candidate.Manufacturer) ? null : "Производитель: " + candidate.Manufacturer,
             string.IsNullOrWhiteSpace(candidate.Model) ? null : "Модель: " + candidate.Model,
             string.IsNullOrWhiteSpace(candidate.Provider) ? null : "Поставщик: " + candidate.Provider,
