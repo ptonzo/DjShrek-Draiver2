@@ -605,7 +605,31 @@ public partial class MainWindow : Window
             ShowPanel("drivers");
             var candidates = await _windowsDriverUpdates.SearchAsync();
             _driverUpdates.Clear();
-            foreach (var candidate in candidates) _driverUpdates.Add(candidate);
+            foreach (var candidate in candidates)
+            {
+                var hardwareIds = candidate.HardwareId
+                    .Split(new[] { ',', ';', '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var device = _devices.FirstOrDefault(item =>
+                    item.HardwareIds.Concat(item.CompatibleIds).Any(id =>
+                        hardwareIds.Any(candidateId =>
+                            id.Contains(candidateId, StringComparison.OrdinalIgnoreCase) ||
+                            candidateId.Contains(id, StringComparison.OrdinalIgnoreCase))));
+                _driverUpdates.Add(new DriverUpdateCandidate
+                {
+                    UpdateId = candidate.UpdateId,
+                    Title = candidate.Title,
+                    Manufacturer = candidate.Manufacturer,
+                    Model = candidate.Model,
+                    Provider = candidate.Provider,
+                    DeviceClass = candidate.DeviceClass,
+                    HardwareId = candidate.HardwareId,
+                    CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
+                    AvailableVersion = candidate.AvailableVersion,
+                    DriverVersionDate = candidate.DriverVersionDate,
+                    Description = candidate.Description,
+                    IsDownloaded = candidate.IsDownloaded
+                });
+            }
             DriverUpdatesSummaryText.Text = candidates.Count == 0
                 ? "Windows Update не вернул доступных обновлений драйверов. Это не означает, что для всех устройств существуют самые новые OEM-драйверы."
                 : $"Найдено обновлений Windows Update: {candidates.Count}. Выберите строку, чтобы просмотреть и установить конкретный пакет.";
