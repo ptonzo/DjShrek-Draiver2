@@ -9,6 +9,27 @@ public sealed class DriverMaintenanceService
 {
     private const int MaxRestorePackages = 10000;
 
+    public Task<string> ExportDriversAsync(string destination, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ExportDrivers(destination);
+        }, cancellationToken);
+
+    public Task<string> InstallInfAsync(string infPath, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return InstallInf(infPath);
+        }, cancellationToken);
+
+    public Task<string> RestoreDriversAsync(string source, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return RestoreDrivers(source);
+        }, cancellationToken);
+
     public string ExportDrivers(string destination)
     {
         var target = Path.GetFullPath(destination);
