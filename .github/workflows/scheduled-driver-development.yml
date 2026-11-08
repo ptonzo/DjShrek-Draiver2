@@ -1,0 +1,118 @@
+name: Scheduled driver application development
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+concurrency:
+  group: djshrek-gemini-driver-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    outputs:
+      has_changes: ${{ steps.patch.outputs.has_changes }}
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/in-app-driver-update-center
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Gemini CLI on one bounded development task
+        uses: google-github-actions/run-gemini-cli@v0
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            Read .github/DRIVER_AGENT_PROMPT.md completely and follow it.
+            Select exactly one next task from its queue and implement it in this repository.
+            Do not run builds, tests, CI, installers, or driver installation.
+            Do not create commits. Only edit project files and update the development log.
+            Before finishing, inspect your changes for secrets, accidental files, and unrelated edits.
+            If no safe useful change can be completed, leave the working tree unchanged and explain why.
+      
+      - name: Export proposed changes
+        id: patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -N .
+          git diff --check
+          git diff --binary > /tmp/djshrek-gemini.patch
+          if [ -s /tmp/djshrek-gemini.patch ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+          mkdir -p /tmp/djshrek-gemini-artifact
+          cp /tmp/djshrek-gemini.patch /tmp/djshrek-gemini-artifact/changes.patch
+
+      - name: Upload proposed changes
+        if: steps.patch.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: djshrek-gemini-patch
+          path: /tmp/djshrek-gemini-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+  propose:
+    needs: develop
+    if: needs.develop.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/in-app-driver-update-center
+          fetch-depth: 0
+
+      - name: Download proposed changes
+        uses: actions/download-artifact@v4
+        with:
+          name: djshrek-gemini-patch
+          path: /tmp/djshrek-gemini-artifact
+
+      - name: Apply proposed changes
+        id: apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/djshrek-gemini-artifact/changes.patch ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git apply --check /tmp/djshrek-gemini-artifact/changes.patch
+          git apply /tmp/djshrek-gemini-artifact/changes.patch
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update development pull request
+        if: steps.apply.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: feature/in-app-driver-update-center
+          branch: gemini/automated-driver-development
+          delete-branch: false
+          commit-message: "Automated driver development"
+          title: "Автоматическая разработка: улучшения модуля драйверов"
+          body: |
+            Автоматически подготовленные изменения DjShrek-Draiver Cyber Club с помощью Gemini CLI.
+
+            - Задача выбирается из .github/DRIVER_AGENT_PROMPT.md.
+            - Изменения не сливаются автоматически.
+            - Сборка и тесты намеренно не запускались по указанию владельца.
+            - Перед слиянием необходим просмотр diff и последующая проверка на Windows 10/11 x64.
