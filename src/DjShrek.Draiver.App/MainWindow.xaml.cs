@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private OemSupport? _detectedOem;
     private bool _scanRunning;
     private bool _metricsRunning;
+    private bool _maintenanceRunning;
     private bool _initializing = true;
     private bool _syncingThemes;
     private string _currentPanel = "dashboard";
@@ -535,6 +536,8 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Экспортировать сторонние пакеты драйверов в папку?\n\n{dialog.FolderName}",
                     "Подтверждение резервного копирования", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
             var result = await _maintenance.ExportDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Создана резервная копия драйверов: " + dialog.FolderName);
@@ -542,6 +545,7 @@ public partial class MainWindow : Window
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Операция отменена в запросе UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
     private async void RestoreDrivers_Click(object sender, RoutedEventArgs e)
@@ -565,6 +569,8 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Найдено INF-файлов: {count}. Передать совместимые пакеты Windows для установки?\n\n{dialog.FolderName}",
                     "Подтверждение восстановления", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
             var result = await _maintenance.RestoreDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Выполнено восстановление драйверов из " + dialog.FolderName);
@@ -572,6 +578,7 @@ public partial class MainWindow : Window
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Восстановление отменено в UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
     private async void Install_Click(object sender, RoutedEventArgs e)
@@ -588,12 +595,15 @@ public partial class MainWindow : Window
             return;
         try
         {
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
             var result = await _maintenance.InstallInfAsync(dialog.FileName);
             StatusText.Text = result;
             MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Установка отменена в UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
