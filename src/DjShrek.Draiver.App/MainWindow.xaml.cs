@@ -50,7 +50,6 @@ public partial class MainWindow : Window
         SettingsThemeSelector.SelectedValue = selectedTheme;
         var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes[0];
         ThemeManager.Apply(theme);
-        HeroArtwork.SetTheme(theme);
         ThemeStatusText.Text = "Тема: " + theme.Name;
 
         _language = LoadLanguage();
@@ -117,7 +116,6 @@ public partial class MainWindow : Window
         try
         {
             ThemeManager.Apply(theme);
-            HeroArtwork.SetTheme(theme);
             otherSelector.SelectedValue = theme.Id;
             ThemeStatusText.Text = "Тема: " + theme.Name;
             StatusText.Text = "Оформление изменено: " + theme.Name;
@@ -448,6 +446,9 @@ public partial class MainWindow : Window
         _devices.Clear();
         foreach (var device in devices) _devices.Add(device);
         var errors = devices.Count(IsProblemDevice);
+        HeroDeviceCountText.Text = $"Устройства: {devices.Count}";
+        HeroIssueCountText.Text = $"Проблемы: {errors}";
+        HeroScanStatusText.Text = errors == 0 ? "Критические ошибки не обнаружены" : "Обнаружены устройства, требующие внимания";
         HealthSummary.Text = errors == 0
             ? $"Проверено устройств: {devices.Count}. Конфигурационные ошибки не обнаружены."
             : $"Проверено устройств: {devices.Count}. Проблемных устройств: {errors}. Откройте раздел «Драйверы и устройства» и включите фильтр ошибок.";
