@@ -65,6 +65,22 @@ public partial class App : Application
             if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "") is not null)
                 throw new InvalidOperationException("Empty hardware ID was incorrectly accepted.");
             checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");
+            
+            // OEM detection must identify the system builder, not a component vendor.
+            var oemCatalog = new OemCatalogService();
+            if (oemCatalog.Detect("Dell Inc. XPS 15")?.Name != "Dell")
+                throw new InvalidOperationException("Dell system manufacturer was not detected.");
+            if (oemCatalog.Detect("Hewlett-Packard HP Inc.")?.Name != "HP")
+                throw new InvalidOperationException("Hewlett-Packard system manufacturer was not detected.");
+            if (oemCatalog.Detect("Lenovo ThinkPad")?.Name != "Lenovo")
+                throw new InvalidOperationException("Lenovo system manufacturer was not detected.");
+            if (oemCatalog.Detect("Intel Corporation") is not null ||
+                oemCatalog.Detect("NVIDIA Corporation") is not null ||
+                oemCatalog.Detect("Advanced Micro Devices") is not null)
+                throw new InvalidOperationException("A CPU/GPU component vendor was incorrectly classified as the PC OEM.");
+            if (oemCatalog.Detect("Desktop Chipset HPQ-123") is not null)
+                throw new InvalidOperationException("An incidental HP substring was incorrectly classified as HP.");
+            checks.Add("PASS: OEM detection identifies PC manufacturers and rejects CPU/GPU vendors and incidental substrings.");
 
             if (ThemeManager.Themes.Count != 12)
                 throw new InvalidOperationException($"Expected 12 themes, got {ThemeManager.Themes.Count}.");
