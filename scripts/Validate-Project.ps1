@@ -54,6 +54,23 @@ if ($xamlText -match 'AppTheme\s*\{\s*Name') {
     throw 'Theme selector contains a technical record ToString display instead of a name binding.'
 }
 
+$quickActions = [regex]::Match($xamlText, '(?s)<TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ".*?<UniformGrid Columns="3" Rows="2">(?<body>.*?)</UniformGrid>')
+if (-not $quickActions.Success) { throw 'Dashboard quick actions block is missing.' }
+if ($quickActions.Groups['body'].Value -match '#[0-9A-Fa-f]{6,8}') {
+    throw 'Dashboard quick actions must use theme resources instead of fixed colors.'
+}
+if ($quickActions.Groups['body'].Value -notmatch 'DynamicResource AccentBrush') {
+    throw 'Dashboard quick actions are not connected to the selected theme.'
+}
+$startupOverlay = [regex]::Match($xamlText, '(?s)<Grid x:Name="StartupScanOverlay".*?</Grid>\s*</Grid>\s*</Window>')
+if (-not $startupOverlay.Success) { throw 'Startup scan overlay is missing or malformed.' }
+if ($startupOverlay.Value -match '#[0-9A-Fa-f]{6,8}') {
+    throw 'Startup scan turntable must use theme resources instead of fixed colors.'
+}
+if ($xamlText -notmatch 'DjShrek-Draiver Cyber Club 1\.7\.0' -or $xamlText -notmatch 'Версия 1\.7\.0') {
+    throw 'Visible application version labels are inconsistent with version 1.7.0.'
+}
+
 $eventAttributes = @('Click','TextChanged','Checked','Unchecked','SelectionChanged')
 $xpath = '//*[' + (($eventAttributes | ForEach-Object { '@' + $_ }) -join ' or ') + ']'
 $eventNames = @()

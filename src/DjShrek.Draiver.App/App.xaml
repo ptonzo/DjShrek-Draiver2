@@ -2,24 +2,25 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
-        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#070812"/>
-        <SolidColorBrush x:Key="HeaderBrush" Color="#101126"/>
-        <SolidColorBrush x:Key="SurfaceBrush" Color="#14162B"/>
-        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1B1B38"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#383064"/>
-        <SolidColorBrush x:Key="TextBrush" Color="#F7F4FF"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#A9A0C8"/>
-        <SolidColorBrush x:Key="AccentBrush" Color="#A52BFF"/>
-        <SolidColorBrush x:Key="AccentSecondaryBrush" Color="#27D9FF"/>
-        <SolidColorBrush x:Key="SuccessBrush" Color="#38E69A"/>
-        <SolidColorBrush x:Key="NavigationBrush" Color="#15102F"/>
+        <CornerRadius x:Key="PanelCornerRadius">18</CornerRadius>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#EAF1F8"/>
+        <SolidColorBrush x:Key="HeaderBrush" Color="#F5F9FE"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#F1F6FC"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#D5E2EF"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#182B43"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#60758C"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#1769D2"/>
+        <SolidColorBrush x:Key="AccentSecondaryBrush" Color="#3D91E8"/>
+        <SolidColorBrush x:Key="SuccessBrush" Color="#178A55"/>
+        <SolidColorBrush x:Key="NavigationBrush" Color="#E4EEF8"/>
         <LinearGradientBrush x:Key="HeroBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#28105C" Offset="0"/>
-            <GradientStop Color="#071D36" Offset="1"/>
+            <GradientStop Color="#DCEBFA" Offset="0"/>
+            <GradientStop Color="#F5FAFF" Offset="1"/>
         </LinearGradientBrush>
 
         <Style TargetType="{x:Type Button}">
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -34,7 +35,7 @@
                         <Border x:Name="Chrome" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                                CornerRadius="9" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                               RecognizesAccessKey="True"/>

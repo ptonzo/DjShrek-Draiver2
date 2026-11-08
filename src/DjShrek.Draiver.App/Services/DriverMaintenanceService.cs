@@ -9,6 +9,27 @@ public sealed class DriverMaintenanceService
 {
     private const int MaxRestorePackages = 10000;
 
+    public Task<string> ExportDriversAsync(string destination, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ExportDrivers(destination);
+        }, cancellationToken);
+
+    public Task<string> InstallInfAsync(string infPath, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return InstallInf(infPath);
+        }, cancellationToken);
+
+    public Task<string> RestoreDriversAsync(string source, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return RestoreDrivers(source);
+        }, cancellationToken);
+
     public string ExportDrivers(string destination)
     {
         var target = Path.GetFullPath(destination);
@@ -31,11 +52,8 @@ public sealed class DriverMaintenanceService
             throw new ArgumentException("Выберите существующий INF-файл драйвера.");
         ValidateSignedInfPackage(full);
         var result = RunElevated("pnputil.exe", $"/add-driver \"{full}\" /install");
-        var listing = ListDriverPackages();
         return result + Environment.NewLine +
-            (listing.Contains(Path.GetFileName(full), StringComparison.OrdinalIgnoreCase)
-                ? "Проверка Driver Store: исходное имя INF найдено в списке пакетов."
-                : "Windows приняла команду установки. Имя исходного INF не найдено в выводе Driver Store; проверьте диспетчер устройств и журнал PnP.");
+            "Команда pnputil завершилась без ошибки. Это не подтверждает, что устройство уже использует этот драйвер: проверьте версию и состояние устройства в диспетчере устройств.";
     }
 
     public string RestoreDrivers(string source)
@@ -99,14 +117,29 @@ public sealed class DriverMaintenanceService
         if (catalogNames.Count == 0)
             throw new InvalidDataException("В INF не указан каталог цифровой подписи (CatalogFile).");
         var catalogs = catalogNames.Select(name => Path.GetFullPath(Path.Combine(directory, name))).ToArray();
-        if (catalogs.Any(path => !path.StartsWith(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
-                StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidDataException("INF ссылается на каталог за пределами своей папки.");
-        var existing = catalogs.FirstOrDefault(File.Exists);
-        if (existing is null) throw new FileNotFoundException("Подписанный CAT-файл из INF не найден рядом с пакетом.");
-        var status = GetCatalogSignatureStatus(existing);
-        if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException($"Подпись каталога не подтверждена (статус: {status}). Установка заблокирована.");
+        foreach (var catalog in catalogs)
+        {
+            var relative = Path.GetRelativePath(directory, catalog);
+            if (Path.IsPathRooted(relative) ||
+                relative.Equals("..", StringComparison.Ordinal) ||
+                relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+                relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+                throw new InvalidDataException("INF ссылается на каталог за пределами своей папки.");
+        }
+
+        // INF files can declare OS-decorated CatalogFile entries. Validate every
+        // referenced catalog that is actually present, rather than accepting the
+        // first valid file while silently ignoring another invalid catalog.
+        var existing = catalogs.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        if (existing.Length == 0)
+            throw new FileNotFoundException("Подписанный CAT-файл из INF не найден рядом с пакетом.");
+
+        foreach (var catalog in existing)
+        {
+            var status = GetCatalogSignatureStatus(catalog);
+            if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"Подпись каталога '{Path.GetFileName(catalog)}' не подтверждена (статус: {status}). Установка заблокирована.");
+        }
     }
 
     private static string GetCatalogSignatureStatus(string catalogPath)

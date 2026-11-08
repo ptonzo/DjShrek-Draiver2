@@ -20,8 +20,10 @@ public partial class MainWindow : Window
     private readonly OemCatalogService _oemCatalog = new();
     private readonly RegistryMaintenanceService _registryService = new();
     private readonly JunkCleanupService _junkService = new();
+    private readonly WindowsDriverUpdateService _windowsDriverUpdates = new();
 
-    private readonly ObservableCollection<DeviceInfo> _devices = new();
+        private readonly ObservableCollection<DeviceInfo> _devices = new();
+    private readonly ObservableCollection<DriverUpdateCandidate> _driverUpdates = new();
     private readonly ObservableCollection<RegistryFinding> _registryFindings = new();
     private readonly ObservableCollection<JunkFileItem> _junkFiles = new();
 
@@ -29,6 +31,7 @@ public partial class MainWindow : Window
     private OemSupport? _detectedOem;
     private bool _scanRunning;
     private bool _metricsRunning;
+    private bool _maintenanceRunning;
     private bool _initializing = true;
     private bool _syncingThemes;
     private string _currentPanel = "dashboard";
@@ -39,15 +42,15 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         DevicesGrid.ItemsSource = _devices;
+        DriverUpdatesGrid.ItemsSource = _driverUpdates;
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
 
         var selectedTheme = ThemeManager.LoadPreference();
         ThemeSelector.SelectedValue = selectedTheme;
         SettingsThemeSelector.SelectedValue = selectedTheme;
-        var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes[0];
+        var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes.First(x => x.Id == "02");
         ThemeManager.Apply(theme);
-        HeroArtwork.SetTheme(theme);
         ThemeStatusText.Text = "Тема: " + theme.Name;
 
         _language = LoadLanguage();
@@ -114,7 +117,6 @@ public partial class MainWindow : Window
         try
         {
             ThemeManager.Apply(theme);
-            HeroArtwork.SetTheme(theme);
             otherSelector.SelectedValue = theme.Id;
             ThemeStatusText.Text = "Тема: " + theme.Name;
             StatusText.Text = "Оформление изменено: " + theme.Name;
@@ -139,7 +141,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Registry diagnostics", ["Computer cleanup"]="Computer cleanup", ["Settings"]="Settings",
                 ["Computer monitoring and maintenance tools"]="Computer monitoring and maintenance tools",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug and Play inventory, error filter and driver backup",
-                ["Online search for compatible packages by hardware IDs"]="Online search for compatible packages by hardware IDs",
+                ["Find available updates through Windows Update and install a selected package"]="Find available updates through Windows Update and install a selected package",
                 ["Windows startup entries diagnostics without silent changes"]="Windows startup entries diagnostics without silent changes",
                 ["Conservative cleanup of old temporary files"]="Conservative cleanup of old temporary files",
                 ["Application appearance and preferences"]="Application appearance and preferences"
@@ -149,7 +151,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Registrierungsdiagnose", ["Computer cleanup"]="Computerbereinigung", ["Settings"]="Einstellungen",
                 ["Computer monitoring and maintenance tools"]="Computerüberwachung und Wartungswerkzeuge",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug-and-Play-Inventar, Fehlerfilter und Treibersicherung",
-                ["Online search for compatible packages by hardware IDs"]="Online-Suche nach kompatiblen Paketen anhand der Hardware-IDs",
+                ["Find available driver updates through Windows Update and install the selected package"]="Search available driver updates through Windows Update and install the selected package",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnose der Windows-Autostart-Einträge ohne stille Änderungen",
                 ["Conservative cleanup of old temporary files"]="Sichere Bereinigung alter temporärer Dateien",
                 ["Application appearance and preferences"]="Darstellung und Einstellungen der Anwendung"
@@ -159,7 +161,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostic du registre", ["Computer cleanup"]="Nettoyage de l’ordinateur", ["Settings"]="Paramètres",
                 ["Computer monitoring and maintenance tools"]="Surveillance et maintenance de l’ordinateur",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventaire Plug-and-Play, filtre d’erreurs et sauvegarde des pilotes",
-                ["Online search for compatible packages by hardware IDs"]="Recherche en ligne de packages compatibles par identifiants matériels",
+                ["Find available driver updates through Windows Update and install the selected package"]="Verfügbare Treiberupdates über Windows Update suchen und das ausgewählte Paket installieren",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostic du démarrage Windows sans modification silencieuse",
                 ["Conservative cleanup of old temporary files"]="Nettoyage prudent des anciens fichiers temporaires",
                 ["Application appearance and preferences"]="Apparence et préférences de l’application"
@@ -169,7 +171,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnóstico del registro", ["Computer cleanup"]="Limpieza del equipo", ["Settings"]="Configuración",
                 ["Computer monitoring and maintenance tools"]="Supervisión y mantenimiento del equipo",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventario Plug and Play, filtro de errores y copia de controladores",
-                ["Online search for compatible packages by hardware IDs"]="Búsqueda en línea de paquetes compatibles por ID de hardware",
+                ["Find available driver updates through Windows Update and install the selected package"]="Rechercher les mises à jour de pilotes via Windows Update et installer le paquet sélectionné",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnóstico del inicio de Windows sin cambios silenciosos",
                 ["Conservative cleanup of old temporary files"]="Limpieza prudente de archivos temporales antiguos",
                 ["Application appearance and preferences"]="Apariencia y preferencias de la aplicación"
@@ -179,7 +181,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnóstico do registro", ["Computer cleanup"]="Limpeza do computador", ["Settings"]="Configurações",
                 ["Computer monitoring and maintenance tools"]="Monitoramento e manutenção do computador",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventário Plug and Play, filtro de erros e backup de drivers",
-                ["Online search for compatible packages by hardware IDs"]="Pesquisa on-line de pacotes compatíveis por IDs de hardware",
+                ["Find available driver updates through Windows Update and install the selected package"]="Buscar actualizaciones de controladores mediante Windows Update e instalar el paquete seleccionado",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnóstico da inicialização do Windows sem alterações silenciosas",
                 ["Conservative cleanup of old temporary files"]="Limpeza segura de arquivos temporários antigos",
                 ["Application appearance and preferences"]="Aparência e preferências do aplicativo"
@@ -189,7 +191,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostica del registro", ["Computer cleanup"]="Pulizia del computer", ["Settings"]="Impostazioni",
                 ["Computer monitoring and maintenance tools"]="Monitoraggio e manutenzione del computer",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventario Plug and Play, filtro errori e backup driver",
-                ["Online search for compatible packages by hardware IDs"]="Ricerca online di pacchetti compatibili tramite ID hardware",
+                ["Find available driver updates through Windows Update and install the selected package"]="Buscar atualizações de drivers pelo Windows Update e instalar o pacote selecionado",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostica dell’avvio di Windows senza modifiche silenziose",
                 ["Conservative cleanup of old temporary files"]="Pulizia prudente dei vecchi file temporanei",
                 ["Application appearance and preferences"]="Aspetto e preferenze dell’applicazione"
@@ -199,7 +201,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostyka rejestru", ["Computer cleanup"]="Czyszczenie komputera", ["Settings"]="Ustawienia",
                 ["Computer monitoring and maintenance tools"]="Monitorowanie komputera i narzędzia konserwacji",
                 ["Plug and Play inventory, error filter and driver backup"]="Lista urządzeń Plug and Play, filtr błędów i kopia sterowników",
-                ["Online search for compatible packages by hardware IDs"]="Wyszukiwanie zgodnych pakietów według identyfikatorów sprzętu",
+                ["Find available driver updates through Windows Update and install the selected package"]="Cercare gli aggiornamenti dei driver tramite Windows Update e installare il pacchetto selezionato",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostyka autostartu Windows bez cichych zmian",
                 ["Conservative cleanup of old temporary files"]="Bezpieczne czyszczenie starych plików tymczasowych",
                 ["Application appearance and preferences"]="Wygląd i preferencje aplikacji"
@@ -209,7 +211,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Kayıt Defteri Tanılama", ["Computer cleanup"]="Bilgisayar Temizliği", ["Settings"]="Ayarlar",
                 ["Computer monitoring and maintenance tools"]="Bilgisayar izleme ve bakım araçları",
                 ["Plug and Play inventory, error filter and driver backup"]="Tak ve Çalıştır envanteri, hata filtresi ve sürücü yedekleme",
-                ["Online search for compatible packages by hardware IDs"]="Donanım kimlikleriyle uyumlu paketleri çevrimiçi arama",
+                ["Find available driver updates through Windows Update and install the selected package"]="Wyszukaj aktualizacje sterowników przez Windows Update i zainstaluj wybrany pakiet",
                 ["Windows startup entries diagnostics without silent changes"]="Windows başlangıç girdilerini sessiz değişiklik yapmadan tanılama",
                 ["Conservative cleanup of old temporary files"]="Eski geçici dosyaların güvenli temizliği",
                 ["Application appearance and preferences"]="Uygulama görünümü ve tercihleri"
@@ -219,7 +221,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Діагностика реєстру", ["Computer cleanup"]="Очищення комп’ютера", ["Settings"]="Налаштування",
                 ["Computer monitoring and maintenance tools"]="Моніторинг комп’ютера та засоби обслуговування",
                 ["Plug and Play inventory, error filter and driver backup"]="Інвентаризація Plug and Play, фільтр помилок і резервна копія драйверів",
-                ["Online search for compatible packages by hardware IDs"]="Онлайн-пошук сумісних пакетів за апаратними ідентифікаторами",
+                ["Find available driver updates through Windows Update and install the selected package"]="Windows Update üzerinden sürücü güncellemelerini bul ve seçilen paketi yükle",
                 ["Windows startup entries diagnostics without silent changes"]="Перевірка автозапуску Windows без непомітних змін",
                 ["Conservative cleanup of old temporary files"]="Безпечне очищення старих тимчасових файлів",
                 ["Application appearance and preferences"]="Вигляд і параметри програми"
@@ -229,7 +231,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="注册表诊断", ["Computer cleanup"]="电脑清理", ["Settings"]="设置",
                 ["Computer monitoring and maintenance tools"]="电脑监控和维护工具",
                 ["Plug and Play inventory, error filter and driver backup"]="即插即用设备清单、错误筛选和驱动备份",
-                ["Online search for compatible packages by hardware IDs"]="通过硬件 ID 在线搜索兼容驱动包",
+                ["Find available driver updates through Windows Update and install the selected package"]="Пошук оновлень драйверів через Windows Update з установленням вибраного пакета",
                 ["Windows startup entries diagnostics without silent changes"]="检查 Windows 启动项，不进行静默修改",
                 ["Conservative cleanup of old temporary files"]="安全清理旧临时文件",
                 ["Application appearance and preferences"]="应用外观和偏好设置"
@@ -239,7 +241,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="レジストリ診断", ["Computer cleanup"]="PC のクリーンアップ", ["Settings"]="設定",
                 ["Computer monitoring and maintenance tools"]="PC の監視とメンテナンスツール",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug and Play インベントリ、エラーフィルター、ドライバーのバックアップ",
-                ["Online search for compatible packages by hardware IDs"]="ハードウェア ID による互換パッケージのオンライン検索",
+                ["Find available driver updates through Windows Update and install the selected package"]="通过 Windows Update 查找驱动程序更新并安装所选软件包",
                 ["Windows startup entries diagnostics without silent changes"]="サイレント変更を行わずに Windows のスタートアップを診断",
                 ["Conservative cleanup of old temporary files"]="古い一時ファイルを安全にクリーンアップ",
                 ["Application appearance and preferences"]="アプリケーションの外観と設定"
@@ -277,7 +279,7 @@ public partial class MainWindow : Window
         var titles = panel switch
         {
             "devices" => (Tr("Драйверы и устройства", "Devices and drivers"), Tr("Инвентаризация Plug and Play, фильтр ошибок и резервное копирование", "Plug and Play inventory, error filter and driver backup")),
-            "drivers" => (Tr("Обновления драйверов", "Driver updates"), Tr("Онлайн-поиск совместимых пакетов по аппаратным идентификаторам", "Online search for compatible packages by hardware IDs")),
+            "drivers" => (Tr("Обновления драйверов", "Driver updates"), Tr("Поиск доступных обновлений через Windows Update с установкой выбранного пакета", "Find available driver updates through Windows Update and install the selected package")),
             "registry" => (Tr("Проверка реестра", "Registry diagnostics"), Tr("Проверка разделов автозапуска Windows без скрытых изменений", "Windows startup entries diagnostics without silent changes")),
             "cleanup" => (Tr("Очистка компьютера", "Computer cleanup"), Tr("Безопасная очистка старых временных файлов", "Conservative cleanup of old temporary files")),
             "settings" => (Tr("Настройки", "Settings"), Tr("Оформление и параметры приложения", "Application appearance and preferences")),
@@ -295,6 +297,10 @@ public partial class MainWindow : Window
             button.BorderBrush = button == active
                 ? (System.Windows.Media.Brush)Application.Current.Resources["AccentSecondaryBrush"]
                 : (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"];
+            button.Foreground = button == active
+                ? System.Windows.Media.Brushes.White
+                : new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(theme.Text));
         }
     }
 
@@ -322,22 +328,22 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return;
         StartScanButton.IsEnabled = false;
-        StartupScanOverlay.Visibility = Visibility.Collapsed;
+        StartupScanStatusText.Text = "Сканирование оборудования и установленных драйверов...";
         try
         {
-            if (!await ScanDevicesAsync()) return;
-            if (_devices.Count == 0) return;
+            if (!await ScanDevicesAsync())
+            {
+                StartupScanStatusText.Text = "Сканирование устройств завершилось с ошибкой. Открывается основной интерфейс.";
+                return;
+            }
 
-            var errors = _devices.Count(IsProblemDevice);
-            var summary = $"Проверено устройств: {_devices.Count}. Устройств с ошибками: {errors}.";
-            var answer = MessageBox.Show(
-                summary + "\\n\\nТеперь запустить проверку актуальности драйверов через Snappy Driver Installer Origin? Будут загружены индексы и подобраны совместимые варианты. Автоматическая установка отключена.",
-                "Проверка актуальности драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (answer == MessageBoxResult.Yes)
-                await LaunchDriverUpdatesAsync();
+            StartupScanStatusText.Text = $"Устройств проверено: {_devices.Count}. Поиск доступных обновлений драйверов...";
+            await SearchDriverUpdatesAsync();
+            StartupScanStatusText.Text = "Проверка завершена. Открывается DjShrek-Draiver.";
         }
         finally
         {
+            StartupScanOverlay.Visibility = Visibility.Collapsed;
             StartScanButton.IsEnabled = true;
         }
     }
@@ -349,16 +355,12 @@ public partial class MainWindow : Window
         StatusText.Text = "Сбор показателей и сканирование устройств Windows...";
         try
         {
-            var metricsTask = _inventory.GetSystemMetricsAsync();
-            var devicesTask = _inventory.ScanAsync();
-            var hardwareTask = Task.Run(() => _sensors.ReadMetrics());
+            // Reuse the guarded monitoring path instead of opening a second sensor
+            // provider while the five-second dashboard refresh may already be running.
+            await RefreshMetricsAsync();
 
-            try { ApplySystemMetrics(await metricsTask); }
-            catch (Exception ex) { StatusText.Text = "Мониторинг: " + ex.Message; }
-
-            var devices = await devicesTask;
+            var devices = await _inventory.ScanAsync();
             ApplyDevices(devices);
-            ApplyHardwareMetrics(await hardwareTask);
             StatusText.Text = $"Готово. Обнаружено устройств: {devices.Count}. Мониторинг обновляется каждые 5 секунд.";
             AppendEvent($"Первичное сканирование: обнаружено устройств — {devices.Count}.");
             DetectOem();
@@ -377,12 +379,19 @@ public partial class MainWindow : Window
         _metricsRunning = true;
         try
         {
+            // Await both providers before releasing the guard. If one provider fails,
+            // the other may still be using hardware resources in the background.
             var metricsTask = _inventory.GetSystemMetricsAsync();
             var hardwareTask = Task.Run(() => _sensors.ReadMetrics());
+            await Task.WhenAll(metricsTask, hardwareTask);
             ApplySystemMetrics(await metricsTask);
             ApplyHardwareMetrics(await hardwareTask);
         }
-        catch (Exception ex) { StatusText.Text = "Мониторинг временно недоступен: " + ex.Message; }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Мониторинг временно недоступен: " + ex.Message;
+            AppendEvent("Не удалось обновить мониторинг: " + ex.GetType().Name);
+        }
         finally { _metricsRunning = false; }
     }
 
@@ -445,6 +454,9 @@ public partial class MainWindow : Window
         _devices.Clear();
         foreach (var device in devices) _devices.Add(device);
         var errors = devices.Count(IsProblemDevice);
+        HeroDeviceCountText.Text = $"Устройства: {devices.Count}";
+        HeroIssueCountText.Text = $"Проблемы: {errors}";
+        HeroScanStatusText.Text = errors == 0 ? "Критические ошибки не обнаружены" : "Обнаружены устройства, требующие внимания";
         HealthSummary.Text = errors == 0
             ? $"Проверено устройств: {devices.Count}. Конфигурационные ошибки не обнаружены."
             : $"Проверено устройств: {devices.Count}. Проблемных устройств: {errors}. Откройте раздел «Драйверы и устройства» и включите фильтр ошибок.";
@@ -509,7 +521,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(ex.Message, "Экспорт CSV", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
-    private void Backup_Click(object sender, RoutedEventArgs e)
+    private async void Backup_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog { Title = "Выберите пустую папку для резервной копии драйверов", Multiselect = false };
         if (dialog.ShowDialog(this) != true) return;
@@ -524,16 +536,19 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Экспортировать сторонние пакеты драйверов в папку?\n\n{dialog.FolderName}",
                     "Подтверждение резервного копирования", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
-            var result = _maintenance.ExportDrivers(dialog.FolderName);
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
+            var result = await _maintenance.ExportDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Создана резервная копия драйверов: " + dialog.FolderName);
             MessageBox.Show(result, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Операция отменена в запросе UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
-    private void RestoreDrivers_Click(object sender, RoutedEventArgs e)
+    private async void RestoreDrivers_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog { Title = "Выберите папку с ранее экспортированными драйверами", Multiselect = false };
         if (dialog.ShowDialog(this) != true) return;
@@ -554,16 +569,19 @@ public partial class MainWindow : Window
             if (MessageBox.Show($"Найдено INF-файлов: {count}. Передать совместимые пакеты Windows для установки?\n\n{dialog.FolderName}",
                     "Подтверждение восстановления", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
-            var result = _maintenance.RestoreDrivers(dialog.FolderName);
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
+            var result = await _maintenance.RestoreDriversAsync(dialog.FolderName);
             StatusText.Text = result;
             AppendEvent("Выполнено восстановление драйверов из " + dialog.FolderName);
             MessageBox.Show(result, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Восстановление отменено в UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Восстановление драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
-    private void Install_Click(object sender, RoutedEventArgs e)
+    private async void Install_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
@@ -577,50 +595,139 @@ public partial class MainWindow : Window
             return;
         try
         {
-            var result = _maintenance.InstallInf(dialog.FileName);
+            if (_maintenanceRunning) return;
+            _maintenanceRunning = true;
+            var result = await _maintenance.InstallInfAsync(dialog.FileName);
             StatusText.Text = result;
             MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Установка отменена в UAC."; }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error); }
+        finally { _maintenanceRunning = false; }
     }
 
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
-        if (_scanRunning) return;
-        await LaunchDriverUpdatesAsync();
+        await SearchDriverUpdatesAsync();
     }
 
-    private async Task LaunchDriverUpdatesAsync()
+    private async Task SearchDriverUpdatesAsync()
     {
         if (_scanRunning) return;
         _scanRunning = true;
+        SearchDriverUpdatesButton.IsEnabled = false;
+        InstallSelectedDriverButton.IsEnabled = false;
+        DriverUpdatesSummaryText.Text = "Подключение к Windows Update Agent. Проверка доступных драйверов...";
         try
         {
             ShowPanel("drivers");
-            UpdatesCountText.Text = "Подготовка проверки актуальности драйверов...";
-            if (_devices.Count == 0)
+            var candidates = await _windowsDriverUpdates.SearchAsync();
+            _driverUpdates.Clear();
+            foreach (var candidate in candidates)
             {
-                var devices = await _inventory.ScanAsync();
-                ApplyDevices(devices);
+                var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
+                _driverUpdates.Add(new DriverUpdateCandidate
+                {
+                    UpdateId = candidate.UpdateId,
+                    Title = candidate.Title,
+                    Manufacturer = candidate.Manufacturer,
+                    Model = candidate.Model,
+                    Provider = candidate.Provider,
+                    DeviceClass = candidate.DeviceClass,
+                    HardwareId = candidate.HardwareId,
+                    DeviceName = device?.Name ?? "Устройство не сопоставлено",
+                    CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
+                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Точное совпадение ID устройства",
+                    AvailableVersion = candidate.AvailableVersion,
+                    DriverVersionDate = candidate.DriverVersionDate,
+                    Description = candidate.Description,
+                    IsDownloaded = candidate.IsDownloaded
+                });
             }
-            UpdatesCountText.Text = $"Устройств найдено: {_devices.Count}. Запуск проверки версий драйверов...";
-            if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и сравнит установленные драйверы с доступными совместимыми пакетами. Автоматическая установка отключена: вы сможете просмотреть найденные варианты и подтвердить только нужные обновления вручную.",
-                "Поиск актуальных драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
-                return;
-            UpdatesCountText.Text = "Загрузка индексов и поиск совместимых драйверов...";
-            var result = await new SdioEngineService().DownloadAndLaunchAsync();
-            UpdatesCountText.Text = result;
-            StatusText.Text = result;
-            AppendEvent("Выполнен поиск актуальных драйверов через проверенный движок SDIO.");
+            var compatibleCount = _driverUpdates.Count(IsCandidateInstallable);
+            var unmatchedCount = _driverUpdates.Count - compatibleCount;
+            DriverUpdatesSummaryText.Text = candidates.Count == 0
+                ? "Windows Update не вернул доступных обновлений драйверов. Это не означает, что для всех устройств существуют самые новые OEM-драйверы."
+                : $"Найдено пакетов: {candidates.Count}. Точное совпадение ID: {compatibleCount}. Без подтверждённого соответствия: {unmatchedCount}. Устанавливать можно только пакеты с точным совпадением.";
+            UpdatesCountText.Text = candidates.Count == 0
+                ? "Обновления не найдены."
+                : $"Всего: {candidates.Count}  |  Совместимость подтверждена: {compatibleCount}  |  Требуют проверки: {unmatchedCount}";
+            StatusText.Text = DriverUpdatesSummaryText.Text;
+            AppendEvent($"Windows Update Agent: найдено обновлений драйверов — {candidates.Count}.");
         }
         catch (Exception ex)
         {
-            UpdatesCountText.Text = "Поиск драйверов не завершён.";
-            MessageBox.Show(ex.Message, "DjShrek-Draiver", MessageBoxButton.OK, MessageBoxImage.Error);
+            DriverUpdatesSummaryText.Text = "Поиск не завершён. Проверьте подключение и службу Windows Update.";
+            UpdatesCountText.Text = "Ошибка поиска драйверов.";
+            MessageBox.Show(ex.Message, "Поиск обновлений драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
         }
-        finally { _scanRunning = false; }
+        finally
+        {
+            SearchDriverUpdatesButton.IsEnabled = true;
+            _scanRunning = false;
+        }
+    }
+
+    private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
+        string.Equals(candidate.Compatibility, "Точное совпадение ID устройства", StringComparison.Ordinal);
+
+    private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        InstallSelectedDriverButton.IsEnabled =
+            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate && IsCandidateInstallable(candidate);
+    }
+
+    private async void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate) return;
+        if (!IsCandidateInstallable(candidate))
+        {
+            MessageBox.Show(
+                "Установка заблокирована: обновление не сопоставлено с устройством по точному Hardware ID. " +
+                "Выберите пакет с подтверждённым совпадением либо проверьте устройство вручную.",
+                "Нельзя подтвердить совместимость", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        var details = string.Join(Environment.NewLine, new[]
+        {
+            candidate.Title,
+            "Устройство: " + candidate.DeviceName,
+            "Текущая версия: " + candidate.CurrentVersion,
+            "Совместимость: " + candidate.Compatibility,
+            string.IsNullOrWhiteSpace(candidate.HardwareId) ? null : "Hardware ID: " + candidate.HardwareId,
+            string.IsNullOrWhiteSpace(candidate.Manufacturer) ? null : "Производитель: " + candidate.Manufacturer,
+            string.IsNullOrWhiteSpace(candidate.Model) ? null : "Модель: " + candidate.Model,
+            string.IsNullOrWhiteSpace(candidate.Provider) ? null : "Поставщик: " + candidate.Provider,
+            string.IsNullOrWhiteSpace(candidate.DriverVersionDate) ? null : "Дата версии: " + candidate.DriverVersionDate
+        }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        if (MessageBox.Show(
+            "Установить только выбранное обновление через Windows Update Agent?\n\n" + details +
+            "\n\nПеред продолжением убедитесь, что это нужное устройство. Windows может запросить перезагрузку.",
+            "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        InstallSelectedDriverButton.IsEnabled = false;
+        SearchDriverUpdatesButton.IsEnabled = false;
+        DriverUpdatesSummaryText.Text = "Загрузка и установка выбранного драйвера...";
+        try
+        {
+            var result = await _windowsDriverUpdates.InstallAsync(candidate.UpdateId);
+            DriverUpdatesSummaryText.Text = result;
+            StatusText.Text = result;
+            AppendEvent("Результат установки драйвера: " + result);
+            MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+            await SearchDriverUpdatesAsync();
+        }
+        catch (Exception ex)
+        {
+            DriverUpdatesSummaryText.Text = "Установка не подтверждена Windows Update Agent.";
+            MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            SearchDriverUpdatesButton.IsEnabled = true;
+            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected && IsCandidateInstallable(selected);
+        }
     }
 
     private void DetectOem()

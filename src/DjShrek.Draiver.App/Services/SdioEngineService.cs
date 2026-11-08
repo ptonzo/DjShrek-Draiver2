@@ -16,7 +16,7 @@ public sealed class SdioEngineService
     private const long MaxArchiveBytes = 100 * 1024 * 1024;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(5) };
 
-    public async Task<string> DownloadAndLaunchAsync(CancellationToken token = default)
+    public async Task<string> DownloadAndScanAsync(CancellationToken token = default)
     {
         var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "DjShrek-Draiver", "Engines", "SDIO", Version);
@@ -68,13 +68,16 @@ public sealed class SdioEngineService
         // SDIO's documented script interface supports downloading indexes separately from driver packs.
         // Installation is explicitly disabled in the script; only indexes and a device/driver report are requested.
         var workingDirectory = Path.GetDirectoryName(exe)!;
-        var scriptPath = Path.Combine(root, "DjShrek-refresh-indexes.txt");
+        var scriptPath = Path.Combine(root, "DjShrek-driver-scan.txt");
+        var logsDirectory = Path.Combine(workingDirectory, "logs");
+        Directory.CreateDirectory(logsDirectory);
         var deviceReport = Path.Combine(workingDirectory, "DjShrek-device-list.txt");
+        var snapshotReport = Path.Combine(workingDirectory, "DjShrek-driver-scan.snp");
         var script = string.Join(Environment.NewLine, new[]
         {
             "logdir logs",
             "logging on",
-            "verbose 128",
+            "verbose 28",
             "enableinstall off",
             "checkupdates",
             "onerror end",
@@ -83,6 +86,10 @@ public sealed class SdioEngineService
             "init",
             "onerror end",
             "writedevicelist DjShrek-device-list.txt",
+            "snapshot DjShrek-driver-scan.snp",
+            "select missing newer better",
+            "onerror end",
+            "logging off",
             "end"
         });
         await File.WriteAllTextAsync(scriptPath, script, token);
@@ -120,15 +127,11 @@ public sealed class SdioEngineService
 
         if (!File.Exists(deviceReport))
             throw new InvalidOperationException(
-                "SDIO не создал отчёт устройств после обновления индексов. Автоматическая установка не выполнялась. Проверьте журнал SDIO в папке logs.");
+                "SDIO не создал отчёт устройств после проверки. Автоматическая установка не выполнялась. Проверьте журнал SDIO в папке logs.");
+        if (!File.Exists(snapshotReport))
+            throw new InvalidOperationException(
+                "SDIO не создал снимок проверки. Результаты сопоставления не могут быть подтверждены. Автоматическая установка не выполнялась.");
 
-        var start = new ProcessStartInfo(exe)
-        {
-            UseShellExecute = true,
-            WorkingDirectory = workingDirectory
-        };
-        var gui = Process.Start(start);
-        if (gui is null) throw new InvalidOperationException("Индексы обновлены, но не удалось открыть окно SDIO.");
-        return $"Индексы SDIO обновлены. Отчёт оборудования сохранён: {deviceReport}. Открылось окно SDIO для просмотра найденных вариантов. Установка драйверов отключена на этапе автоматического сканирования и требует отдельного подтверждения в SDIO.";
+        return $"Проверка SDIO завершена в безопасном режиме. Установка драйверов не запускалась. Отчёт оборудования: {deviceReport}. Снимок сопоставления: {snapshotReport}. Журнал SDIO: {logsDirectory}. Выполнен только подбор missing/newer/better; отдельное окно SDIO не открывается. Встроенная таблица кандидатов будет включена после проверки формата фактических результатов SDIO.";
     }
 }

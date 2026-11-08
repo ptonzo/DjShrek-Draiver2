@@ -68,6 +68,6 @@ public sealed class HardwareSensorService
             if (isGpu && sensor.SensorType == SensorType.Load) gpuLoads.Add(sensor.Value.Value);
         }
         foreach (var child in hardware.SubHardware)
-            ReadHardware(child, cpuTemps, gpuTemps, gpuLoads, ref gpuName);
+            ReadHardwareSafely(child, cpuTemps, gpuTemps, gpuLoads, ref gpuName);
     }
 }

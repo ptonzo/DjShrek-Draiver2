@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using DjShrek.Draiver.App.Services;
+using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App;
 
@@ -45,6 +46,56 @@ public partial class App : Application
             }
             checks.Add("PASS: six WPF screens loaded.");
 
+            // Pure matching checks: exact hardware/compatible IDs match; substrings never do.
+            var matcherDevices = new[]
+            {
+                new DeviceInfo
+                {
+                    Name = "Test GPU",
+                    HardwareIds = new[] { "PCI\\VEN_10DE&DEV_1234" },
+                    CompatibleIds = new[] { "PCI\\VEN_10DE&CC_030000" }
+                }
+            };
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "PCI\\VEN_10DE&DEV_1234"), matcherDevices[0]))
+                throw new InvalidOperationException("Exact hardware ID was not matched.");
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "pci\\ven_10de&cc_030000"), matcherDevices[0]))
+                throw new InvalidOperationException("Case-insensitive compatible ID was not matched.");
+            if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "PCI\\VEN_10DE") is not null)
+                throw new InvalidOperationException("Partial hardware ID was incorrectly accepted.");
+            if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "") is not null)
+                throw new InvalidOperationException("Empty hardware ID was incorrectly accepted.");
+            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");            var ambiguousDevices = new[]
+            {
+                matcherDevices[0],
+                new DeviceInfo
+                {
+                    Name = "Second GPU",
+                    HardwareIds = new[] { "PCI\\VEN_10DE&DEV_5678" },
+                    CompatibleIds = new[] { "PCI\\VEN_10DE&CC_030000" }
+                }
+            };
+            if (DriverCompatibilityMatcher.FindExactMatch(ambiguousDevices, "PCI\\VEN_10DE&CC_030000") is not null)
+                throw new InvalidOperationException("A shared compatible ID was incorrectly assigned to one of multiple devices.");
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(ambiguousDevices, "PCI\\VEN_10DE&DEV_5678"), ambiguousDevices[1]))
+                throw new InvalidOperationException("A unique exact hardware ID was not matched when another device shared only a compatible ID.");
+            checks.Add("PASS: ambiguous shared compatible IDs are rejected while unique hardware IDs remain matchable.");
+            
+            // OEM detection must identify the system builder, not a component vendor.
+            var oemCatalog = new OemCatalogService();
+            if (oemCatalog.Detect("Dell Inc. XPS 15")?.Name != "Dell")
+                throw new InvalidOperationException("Dell system manufacturer was not detected.");
+            if (oemCatalog.Detect("Hewlett-Packard HP Inc.")?.Name != "HP")
+                throw new InvalidOperationException("Hewlett-Packard system manufacturer was not detected.");
+            if (oemCatalog.Detect("Lenovo ThinkPad")?.Name != "Lenovo")
+                throw new InvalidOperationException("Lenovo system manufacturer was not detected.");
+            if (oemCatalog.Detect("Intel Corporation") is not null ||
+                oemCatalog.Detect("NVIDIA Corporation") is not null ||
+                oemCatalog.Detect("Advanced Micro Devices") is not null)
+                throw new InvalidOperationException("A CPU/GPU component vendor was incorrectly classified as the PC OEM.");
+            if (oemCatalog.Detect("Desktop Chipset HPQ-123") is not null)
+                throw new InvalidOperationException("An incidental HP substring was incorrectly classified as HP.");
+            checks.Add("PASS: OEM detection identifies PC manufacturers and rejects CPU/GPU vendors and incidental substrings.");
+
             if (ThemeManager.Themes.Count != 12)
                 throw new InvalidOperationException($"Expected 12 themes, got {ThemeManager.Themes.Count}.");
 
@@ -73,8 +124,13 @@ public partial class App : Application
                 settingsSelector.SelectedValue = theme.Id;
             }
 
-            var artwork = window.FindName("HeroArtwork") as FrameworkElement;
-            if (artwork is null) throw new InvalidOperationException("Theme illustration is missing.");
+            var heroDeviceCount = window.FindName("HeroDeviceCountText") as TextBlock;
+            var heroIssueCount = window.FindName("HeroIssueCountText") as TextBlock;
+            var heroScanStatus = window.FindName("HeroScanStatusText") as TextBlock;
+            if (heroDeviceCount is null || heroIssueCount is null || heroScanStatus is null)
+                throw new InvalidOperationException("Live hardware status panel is incomplete.");
+            if (Application.Current.Resources["PanelCornerRadius"] is not CornerRadius)
+                throw new InvalidOperationException("Theme-specific panel geometry resource is missing.");
             checks.Add("PASS: all twelve named themes applied to dynamic WPF resources.");
 
             // Read-only Windows integration checks: no registry edits, file deletes, or driver installs.
@@ -163,7 +219,7 @@ public partial class App : Application
             var sensors = new HardwareSensorService().ReadMetrics();
             checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
 
-            var defaultTheme = ThemeManager.Themes[0];
+            var defaultTheme = ThemeManager.Themes.First(x => x.Id == "02");
             ThemeManager.Apply(defaultTheme);
             themeSelector.SelectedValue = defaultTheme.Id;
             settingsSelector.SelectedValue = defaultTheme.Id;

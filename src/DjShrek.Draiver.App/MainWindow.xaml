@@ -58,7 +58,7 @@
 
             <Border Grid.Column="0" Background="{DynamicResource NavigationBrush}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="13" Padding="12" Margin="0,0,16,0">
+                    CornerRadius="{DynamicResource PanelCornerRadius}" Padding="12" Margin="0,0,16,0">
                 <DockPanel LastChildFill="True">
                     <StackPanel DockPanel.Dock="Top">
                         <TextBlock Text="РАЗДЕЛЫ ПРОГРАММЫ" FontSize="10" FontWeight="Bold"
@@ -131,8 +131,19 @@
                                                         Background="{DynamicResource AccentSecondaryBrush}"/>
                                             </WrapPanel>
                                         </StackPanel>
-                                        <controls:ThemeArtwork x:Name="HeroArtwork" Grid.Column="1" Width="340" Height="170"
-                                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="8,0,0,0">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="LIVE HARDWARE STATUS" FontSize="10" FontWeight="Bold"
+                                                           Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                                <TextBlock x:Name="HeroDeviceCountText" Text="Устройства: —" FontSize="21"
+                                                           FontWeight="Bold" Margin="0,10,0,4"/>
+                                                <TextBlock x:Name="HeroIssueCountText" Text="Проблемы: —" FontSize="15"
+                                                           FontWeight="SemiBold" Margin="0,0,0,10"/>
+                                                <TextBlock x:Name="HeroScanStatusText" Text="Ожидание проверки оборудования"
+                                                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Border>
                                     </Grid>
                                 </Border>
 
@@ -141,7 +152,7 @@
                                         <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="CPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="CpuValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -149,7 +160,7 @@
                                             <TextBlock Text="Загрузка процессора" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="GPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="GpuValue" Text="Н/Д" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -157,7 +168,7 @@
                                             <TextBlock x:Name="GpuDetail" Text="Видеокарта" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="RAM" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="MemoryValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -165,7 +176,7 @@
                                             <TextBlock x:Name="MemoryDetail" Text="Использование памяти" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ДИСК C:" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="DiskValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -177,7 +188,7 @@
 
                                 <Grid Margin="0,0,0,14">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ОБОРУДОВАНИЕ И СИСТЕМА" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                             <TextBlock x:Name="OsValue" Text="Получение сведений о Windows..." FontSize="15" FontWeight="SemiBold" Margin="0,8,0,4"/>
@@ -187,7 +198,7 @@
                                             <TextBlock x:Name="UptimeValue" Text="Время работы: —" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ТЕМПЕРАТУРЫ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                             <TextBlock x:Name="CpuTempValue" Text="CPU  ·  Нет данных" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,6"/>
@@ -198,21 +209,70 @@
                                     </Border>
                                 </Grid>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,12"/>
-                                        <WrapPanel>
-                                            <Button Content="Сканировать устройства" Click="Scan_Click"/>
-                                            <Button Content="Резервная копия драйверов" Click="Backup_Click"/>
-                                            <Button Content="Онлайн-поиск драйверов" Click="AutoUpdateDrivers_Click"/>
-                                            <Button Content="Проверить реестр" Click="Registry_Click"/>
-                                            <Button Content="Проверить временные файлы" Click="Cleanup_Click"/>
-                                        </WrapPanel>
+                                        <UniformGrid Columns="3" Rows="2">
+                                            <Button Click="Scan_Click" Height="78" Margin="0,0,10,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" Foreground="White"
+                                                    ToolTip="Проверить подключённые устройства и их состояние">
+                                                <StackPanel>
+                                                    <TextBlock Text="01  ·  Сканирование устройств" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Проверка оборудования и ошибок" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="AutoUpdateDrivers_Click" Height="78" Margin="0,0,10,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentSecondaryBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"
+                                                    ToolTip="Найти совместимые обновления через Windows Update">
+                                                <StackPanel>
+                                                    <TextBlock Text="02  ·  Обновление драйверов" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Поиск доступных версий" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Backup_Click" Height="78" Margin="0,0,0,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"
+                                                    ToolTip="Сохранить установленные пакеты драйверов">
+                                                <StackPanel>
+                                                    <TextBlock Text="03  ·  Резервная копия" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Экспорт пакетов Driver Store" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Cleanup_Click" Height="78" Margin="0,0,10,0" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource SuccessBrush}" BorderBrush="{DynamicResource SuccessBrush}" Foreground="White"
+                                                    ToolTip="Найти старые временные файлы для безопасной очистки">
+                                                <StackPanel>
+                                                    <TextBlock Text="04  ·  Очистка системы" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Анализ временных файлов" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Registry_Click" Height="78" Margin="0,0,10,0" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"
+                                                    ToolTip="Проверить элементы автозапуска Windows">
+                                                <StackPanel>
+                                                    <TextBlock Text="05  ·  Проверка реестра" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Диагностика автозапуска" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="EnableGameProfile_Click" Height="78" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"
+                                                    ToolTip="Применить игровой профиль оптимизации">
+                                                <StackPanel>
+                                                    <TextBlock Text="06  ·  Игровой режим" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Профиль оптимизации ПК" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </UniformGrid>
                                         <TextBlock x:Name="HealthSummary" Text="Выполните сканирование для проверки состояния устройств."
                                                    Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,0,13"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,0,13"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЖУРНАЛ СОБЫТИЙ" FontSize="10" FontWeight="Bold"
@@ -266,7 +326,7 @@
                     <Grid x:Name="DriversPanel" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,13"
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,13"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЦЕНТР ОБНОВЛЕНИЙ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
@@ -274,24 +334,49 @@
                                         <TextBlock Text="Проверка выполняется по аппаратным идентификаторам. Перед установкой изучите список найденных пакетов."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                         <WrapPanel Margin="0,13,0,0">
-                                            <Button Content="Сканировать и открыть SDIO" Click="AutoUpdateDrivers_Click"/>
+                                            <Button x:Name="SearchDriverUpdatesButton" Content="Найти обновления драйверов" Click="AutoUpdateDrivers_Click"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
                                         <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="16" Margin="0,0,0,13"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="ДВИЖОК ПОИСКА SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                        <TextBlock Text="Официальный Snappy Driver Installer Origin загружается по запросу, архив проверяется по SHA-256. Индексы обновляются внутри SDIO. Выбор и установка пакетов подтверждаются пользователем в окне движка."
-                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
-                                        <TextBlock Text="DjShrek-Draiver не использует Windows Update Agent, WUAPI или Microsoft Update Catalog."
-                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                        <DockPanel LastChildFill="True">
+                                            <StackPanel>
+                                                <TextBlock Text="НАЙДЕННЫЕ ОБНОВЛЕНИЯ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                                <TextBlock x:Name="DriverUpdatesSummaryText" Text="Поиск ещё не выполнялся. Нажмите «Найти обновления драйверов»."
+                                                           Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                            <Button x:Name="InstallSelectedDriverButton" DockPanel.Dock="Right"
+                                                    Content="Установить выбранный драйвер" IsEnabled="False"
+                                                    Click="InstallSelectedDriver_Click" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <DataGrid x:Name="DriverUpdatesGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                                  SelectionMode="Single" CanUserSortColumns="True" Height="310"
+                                                  Margin="0,14,0,0" SelectionChanged="DriverUpdatesGrid_SelectionChanged">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Доступный драйвер" Binding="{Binding Title}" Width="2.2*"/>
+                                                <DataGridTextColumn Header="Текущая версия" Binding="{Binding CurrentVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Новая версия" Binding="{Binding AvailableVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Совместимость" Binding="{Binding Compatibility}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/>
+                                                <DataGridTextColumn Header="Модель" Binding="{Binding Model}" Width="1.2*"/>
+                                                <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
+                                                <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
+                                                <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
+                                                <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Text="Источник: Windows Update Agent / Microsoft Update. Сканирование ничего не устанавливает. Установка запускается только для выбранной строки после отдельного подтверждения."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ОФИЦИАЛЬНЫЕ ИНСТРУМЕНТЫ ПРОИЗВОДИТЕЛЕЙ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock x:Name="OemDetectText" Text="Определение производителя компьютера..." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,10"/>
@@ -302,7 +387,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="РЕЗЕРВНОЕ КОПИРОВАНИЕ И ВОССТАНОВЛЕНИЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock Text="Экспорт пакетов из Driver Store. Перед изменениями драйверов рекомендуется сохранить копию."
@@ -319,7 +404,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИГРОВОЙ ПРОФИЛЬ WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock Text="Включает Game Mode и схему высокой производительности с возможностью восстановления прежних настроек."
@@ -338,7 +423,7 @@
                     <Grid x:Name="RegistryPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                         <StackPanel Margin="0,0,0,12">
-                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="16" Margin="0,0,0,12"
+                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="16" Margin="0,0,0,12"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="ДИАГНОСТИКА АВТОЗАПУСКА WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -367,7 +452,7 @@
 
                     <Grid x:Name="CleanupPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,12"
+                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
                                 <TextBlock Text="БЕЗОПАСНАЯ ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -395,7 +480,7 @@
                     <Grid x:Name="SettingsPanel" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ПЕРСОНАЛИЗАЦИЯ DJSHREK" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="10"/>
@@ -404,7 +489,7 @@
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="12 ТЕМ ОФОРМЛЕНИЯ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -416,7 +501,7 @@
                                                   HorizontalAlignment="Left"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЯЗЫК ИНТЕРФЕЙСА" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -439,11 +524,11 @@
                                         </ComboBox>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИНФОРМАЦИЯ О ПРОГРАММЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                        <TextBlock Text="DjShrek-Draiver Cyber Club 1.6.0" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                                        <TextBlock Text="DjShrek-Draiver Cyber Club 1.7.0" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,5"/>
                                         <TextBlock Text="Windows 10 / 11 x64 · .NET 8 · локальный режим"
                                                    Foreground="{DynamicResource MutedBrush}"/>
                                         <TextBlock Text="Программа не удаляет системные компоненты и не устанавливает драйверы без подтверждения пользователя."
@@ -485,23 +570,23 @@
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Grid>
-                                <Ellipse Fill="#10131B" Stroke="{DynamicResource AccentBrush}" StrokeThickness="5"/>
-                                <Ellipse Margin="13" Fill="#202633" Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="2"/>
-                                <Ellipse Margin="27" Fill="#0B0E14" Stroke="#586174" StrokeThickness="2"/>
-                                <Ellipse Margin="42" Fill="#1C2430" Stroke="#394657" StrokeThickness="1"/>
-                                <Ellipse Margin="56" Fill="#111720" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
-                                <Ellipse Width="190" Height="190" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Fill="{DynamicResource HeaderBrush}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="5"/>
+                                <Ellipse Margin="13" Fill="{DynamicResource SurfaceAltBrush}" Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="2"/>
+                                <Ellipse Margin="27" Fill="{DynamicResource SurfaceBrush}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="2"/>
+                                <Ellipse Margin="42" Fill="{DynamicResource SurfaceAltBrush}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
+                                <Ellipse Margin="56" Fill="{DynamicResource HeaderBrush}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
+                                <Ellipse Width="190" Height="190" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="150" Height="150" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Width="150" Height="150" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="110" Height="110" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Width="110" Height="110" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="13" Height="13" Fill="#F4F6FA"
+                                <Ellipse Width="13" Height="13" Fill="{DynamicResource AccentSecondaryBrush}"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Border Background="#D90B1018" CornerRadius="14" Padding="24,14"
+                                <Border Background="{DynamicResource AccentBrush}" CornerRadius="14" Padding="24,14"
                                         HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,35">
                                     <TextBlock Text="СКАНИРОВАТЬ" FontSize="25" FontWeight="Black"
                                                Foreground="White" />
@@ -516,6 +601,9 @@
                 <TextBlock Text="Установка найденных обновлений — только после вашего подтверждения"
                            TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
                            Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,10,0,0"/>
+                <TextBlock x:Name="StartupScanStatusText" Text="Готов к проверке устройств и драйверов"
+                           TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0"/>
             </StackPanel>
         </Grid>
     </Grid>
