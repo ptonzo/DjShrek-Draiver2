@@ -8,6 +8,9 @@ namespace DjShrek.Draiver.App.Services;
 public sealed class DriverMaintenanceService
 {
     private const int MaxRestorePackages = 10000;
+    private static readonly TimeSpan DriverStoreTimeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan SignatureCheckTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ElevatedOperationTimeout = TimeSpan.FromMinutes(10);
 
     public Task<string> ExportDriversAsync(string destination, CancellationToken cancellationToken = default) =>
         Task.Run(() =>
@@ -94,7 +97,7 @@ public sealed class DriverMaintenanceService
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось запустить pnputil.");
         var outputTask = process.StandardOutput.ReadToEndAsync();
         var errorTask = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
+        WaitForExitOrKill(process, DriverStoreTimeout, "Получение списка пакетов Driver Store");
         var output = outputTask.GetAwaiter().GetResult();
         var error = errorTask.GetAwaiter().GetResult();
         if (process.ExitCode != 0)
@@ -155,12 +158,24 @@ public sealed class DriverMaintenanceService
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось проверить подпись CAT-файла.");
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
+        WaitForExitOrKill(process, SignatureCheckTimeout, "Проверка цифровой подписи CAT-файла");
         var output = stdoutTask.GetAwaiter().GetResult().Trim();
         var error = stderrTask.GetAwaiter().GetResult().Trim();
         if (process.ExitCode != 0)
             throw new InvalidOperationException("Проверка подписи завершилась ошибкой: " + error);
         return output;
+    }
+
+    private static void WaitForExitOrKill(Process process, TimeSpan timeout, string operation)
+    {
+        var milliseconds = checked((int)timeout.TotalMilliseconds);
+        if (process.WaitForExit(milliseconds)) return;
+
+        try { process.Kill(entireProcessTree: true); }
+        catch (InvalidOperationException) { }
+        catch (System.ComponentModel.Win32Exception) { }
+
+        throw new TimeoutException($"Операция «{operation}» превысила допустимое время ожидания ({timeout.TotalMinutes:0} мин.). Процесс остановлен. Повторите действие и проверьте состояние Windows.");
     }
 
     private static string RunElevated(string file, string arguments)
@@ -170,7 +185,7 @@ public sealed class DriverMaintenanceService
             UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Normal
         };
         using var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось запустить системную утилиту.");
-        process.WaitForExit();
+        WaitForExitOrKill(process, ElevatedOperationTimeout, "Системная операция pnputil");
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"Системная утилита завершилась с кодом {process.ExitCode}. Проверьте права администратора и журнал Windows.");
         return $"Операция pnputil завершена. Код возврата: {process.ExitCode}.";
