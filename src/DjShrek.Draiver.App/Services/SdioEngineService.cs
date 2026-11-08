@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 
 namespace DjShrek.Draiver.App.Services;
 
-/// <summary>Downloads the upstream SDIO utility on demand; no driver catalog is bundled.</summary>
+/// <summary>Downloads the upstream SDIO utility on demand; refreshes indexes only and never installs drivers.</summary>
 public sealed class SdioEngineService
 {
     private const string Version = "2.0.6.889";
@@ -61,11 +61,64 @@ public sealed class SdioEngineService
             }
             File.WriteAllText(marker, "SHA256 verified: " + Sha256);
         }
+
         var exe = Directory.EnumerateFiles(root, "SDIO_x64_*.exe", SearchOption.AllDirectories).FirstOrDefault();
         if (exe is null) throw new FileNotFoundException("В архиве SDIO не найден 64-битный исполняемый файл.");
-        var start = new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! };
-        var process = Process.Start(start);
-        if (process is null) throw new InvalidOperationException("Не удалось запустить SDIO.");
-        return "SDIO запущен. Обновите индексы в окне SDIO, выберите нужные драйверы и подтвердите установку там.";
+
+        // SDIO's documented script interface supports downloading indexes separately from driver packs.
+        // Installation is explicitly disabled in the script; only indexes and a device/driver report are requested.
+        var scriptPath = Path.Combine(root, "DjShrek-refresh-indexes.txt");
+        var deviceReport = Path.Combine(root, "DjShrek-device-list.txt");
+        var script = string.Join(Environment.NewLine, new[]
+        {
+            "logdir logs",
+            "logging on",
+            "verbose 128",
+            "enableinstall off",
+            "checkupdates",
+            "onerror end",
+            "get indexes",
+            "onerror end",
+            "init",
+            "onerror end",
+            "writedevicelist DjShrek-device-list.txt",
+            "end"
+        });
+        await File.WriteAllTextAsync(scriptPath, script, token);
+
+        var workingDirectory = Path.GetDirectoryName(exe)!;
+        var refresh = new ProcessStartInfo(exe)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = workingDirectory,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        refresh.ArgumentList.Add("-script:" + scriptPath);
+        using (var process = Process.Start(refresh) ?? throw new InvalidOperationException("Не удалось запустить обновление индексов SDIO."))
+        {
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(token);
+            var stderrTask = process.StandardError.ReadToEndAsync(token);
+            await process.WaitForExitAsync(token);
+            var stdout = await stdoutTask;
+            var stderr = await stderrTask;
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException(
+                    $"SDIO завершил обновление индексов с кодом {process.ExitCode}.\n{stderr}\n{stdout}\nЖурнал SDIO: {Path.Combine(workingDirectory, "logs")}");
+        }
+
+        if (!File.Exists(deviceReport))
+            throw new InvalidOperationException(
+                "SDIO не создал отчёт устройств после обновления индексов. Автоматическая установка не выполнялась. Проверьте журнал SDIO в папке logs.");
+
+        var start = new ProcessStartInfo(exe)
+        {
+            UseShellExecute = true,
+            WorkingDirectory = workingDirectory
+        };
+        var gui = Process.Start(start);
+        if (gui is null) throw new InvalidOperationException("Индексы обновлены, но не удалось открыть окно SDIO.");
+        return $"Индексы SDIO обновлены. Отчёт оборудования сохранён: {deviceReport}. Открылось окно SDIO для просмотра найденных вариантов. Установка драйверов отключена на этапе автоматического сканирования и требует отдельного подтверждения в SDIO.";
     }
 }
