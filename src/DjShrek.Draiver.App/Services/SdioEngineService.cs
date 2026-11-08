@@ -16,7 +16,7 @@ public sealed class SdioEngineService
     private const long MaxArchiveBytes = 100 * 1024 * 1024;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(5) };
 
-    public async Task<string> DownloadAndLaunchAsync(CancellationToken token = default)
+    public async Task<string> DownloadAndScanAsync(CancellationToken token = default)
     {
         var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "DjShrek-Draiver", "Engines", "SDIO", Version);
@@ -89,8 +89,6 @@ public sealed class SdioEngineService
             "snapshot DjShrek-driver-scan.snp",
             "select missing newer better",
             "onerror end",
-            "install",
-            "onerror end",
             "logging off",
             "end"
         });
@@ -134,13 +132,6 @@ public sealed class SdioEngineService
             throw new InvalidOperationException(
                 "SDIO не создал снимок проверки. Результаты сопоставления не могут быть подтверждены. Автоматическая установка не выполнялась.");
 
-        var start = new ProcessStartInfo(exe)
-        {
-            UseShellExecute = true,
-            WorkingDirectory = workingDirectory
-        };
-        var gui = Process.Start(start);
-        if (gui is null) throw new InvalidOperationException("Индексы обновлены, но не удалось открыть окно SDIO.");
-        return $"Проверка SDIO завершена в безопасном режиме: enableinstall off. Отчёт оборудования: {deviceReport}. Снимок сопоставления: {snapshotReport}. Журнал SDIO: {logsDirectory}. Команда выбора missing/newer/better выполнена без установки. Открылось окно SDIO для сверки результатов; установка не запускалась.";
+        return $"Проверка SDIO завершена в безопасном режиме. Установка драйверов не запускалась. Отчёт оборудования: {deviceReport}. Снимок сопоставления: {snapshotReport}. Журнал SDIO: {logsDirectory}. Выполнен только подбор missing/newer/better; отдельное окно SDIO не открывается. Встроенная таблица кандидатов будет включена после проверки формата фактических результатов SDIO.";
     }
 }
