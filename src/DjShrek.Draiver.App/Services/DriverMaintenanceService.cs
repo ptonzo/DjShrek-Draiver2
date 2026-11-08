@@ -85,7 +85,7 @@ public sealed class DriverMaintenanceService
         return string.IsNullOrWhiteSpace(output) ? "Windows не вернула список пакетов драйверов." : output;
     }
 
-    private static void ValidateSignedInfPackage(string infPath)
+    public static void ValidateSignedInfPackage(string infPath)
     {
         var directory = Path.GetDirectoryName(infPath)!;
         var catalogNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
