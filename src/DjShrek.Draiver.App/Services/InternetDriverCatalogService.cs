@@ -136,11 +136,12 @@ public sealed class InternetDriverCatalogService
         return null;
     }
 
-    private static string NormalizeVendorText(string value) =>
-        string.Join(' ', value.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ')
-            .ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries) is var words
-            ? string.Join(' ', words)
-            : string.Empty;
+    private static string NormalizeVendorText(string value)
+    {
+        var normalized = new string(value.ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray());
+        return string.Join(" ", normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
 
     private static IEnumerable<string> GetIds(DeviceInfo device) =>
         (device.HardwareIds ?? Array.Empty<string>())
