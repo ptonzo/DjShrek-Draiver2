@@ -278,4 +278,121 @@ public partial class MainWindow
             MessageBox.Show(this, ex.Message, "Проверка INF-пакета", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    private async void FindLenovoPacks_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StatusText.Text = "Определение модели Lenovo и версии Windows...";
+            var identity = await _lenovoCatalog.GetCurrentMachineIdentityAsync();
+            if (!identity.Manufacturer.Contains("Lenovo", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(identity.MachineType))
+            {
+                MessageBox.Show(this,
+                    "Автоматически определить четырёхзначный Machine Type Lenovo не удалось.\n\n" +
+                    $"Производитель: {identity.Manufacturer}\nМодель WMI: {identity.Model}\nProduct Name: {identity.ProductName}\n\n" +
+                    "Поиск пакетов не выполнялся. Не подставляйте случайный Machine Type вручную.",
+                    "Каталог Lenovo", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText.Text = "Модель Lenovo не определена.";
+                return;
+            }
+
+            StatusText.Text = $"Загрузка каталога Lenovo для {identity.MachineType}...";
+            var packs = await _lenovoCatalog.FindModelPacksAsync(identity.MachineType, identity.OperatingSystem);
+            if (packs.Count == 0)
+            {
+                MessageBox.Show(this,
+                    $"В официальном каталоге Lenovo не найден SCCM-пакет для Machine Type {identity.MachineType} и {identity.OperatingSystem}.\n" +
+                    $"Модель: {identity.ProductName}\nСборка Windows: {identity.OsBuild}",
+                    "Пакеты Lenovo не найдены", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusText.Text = "В каталоге Lenovo подходящие пакеты не найдены.";
+                return;
+            }
+
+            var dialog = new Window
+            {
+                Title = $"Пакеты Lenovo — {identity.MachineType}",
+                Owner = this,
+                Width = 820,
+                Height = 420,
+                MinWidth = 620,
+                MinHeight = 320,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = Background,
+                Foreground = Foreground
+            };
+            var panel = new DockPanel { Margin = new Thickness(16) };
+            var hint = new TextBlock
+            {
+                Text = $"Модель: {identity.ProductName} | Machine Type: {identity.MachineType} | {identity.OperatingSystem} (сборка {identity.OsBuild}).\nПакет предназначен для модели компьютера целиком; это не отдельный драйвер устройства. Перед установкой распакуйте его и проверьте INF/CAT.",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            DockPanel.SetDock(hint, Dock.Top);
+            panel.Children.Add(hint);
+
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            var download = new Button { Content = "Скачать оригинальный пакет", MinWidth = 190, Margin = new Thickness(6), IsDefault = true };
+            var cancel = new Button { Content = "Закрыть", MinWidth = 100, Margin = new Thickness(6), IsCancel = true };
+            buttons.Children.Add(download);
+            buttons.Children.Add(cancel);
+            DockPanel.SetDock(buttons, Dock.Bottom);
+            panel.Children.Add(buttons);
+
+            var list = new ListBox { ItemsSource = packs, DisplayMemberPath = "DisplayText", SelectedIndex = 0 };
+            panel.Children.Add(list);
+            dialog.Content = panel;
+
+            download.Click += async (_, _) =>
+            {
+                if (list.SelectedItem is not OemDriverPackCandidate selected) return;
+                var defaultName = Path.GetFileName(selected.PackageUri.LocalPath);
+                if (string.IsNullOrWhiteSpace(defaultName)) defaultName = $"Lenovo-{identity.MachineType}-SCCM.exe";
+                var save = new SaveFileDialog
+                {
+                    Title = "Сохранить оригинальный пакет Lenovo",
+                    FileName = defaultName,
+                    Filter = "Пакеты производителя (*.exe;*.zip;*.cab)|*.exe;*.zip;*.cab|Все файлы (*.*)|*.*",
+                    AddExtension = false,
+                    OverwritePrompt = true
+                };
+                if (save.ShowDialog(dialog) != true) return;
+
+                download.IsEnabled = false;
+                try
+                {
+                    var result = await _packageDownloader.DownloadAsync(selected.PackageUri, save.FileName);
+                    AppendEvent($"Загружен OEM-пакет Lenovo {identity.MachineType}: {Path.GetFileName(result.FilePath)}");
+                    MessageBox.Show(dialog,
+                        $"Оригинальный пакет загружен с официального домена Lenovo.\n\nФайл: {result.FilePath}\nРазмер: {result.Length:N0} байт\nSHA-256: {result.Sha256}\n\n" +
+                        "Хэш фиксирует целостность скачанного файла, но сам по себе не подтверждает цифровую подпись или совместимость отдельных INF.",
+                        "Загрузка завершена", MessageBoxButton.OK, MessageBoxImage.Information);
+                    dialog.DialogResult = true;
+                    StatusText.Text = "Пакет Lenovo загружен; требуется проверка INF/CAT.";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(dialog, ex.Message, "Ошибка загрузки пакета Lenovo",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                finally
+                {
+                    download.IsEnabled = true;
+                }
+            };
+
+            StatusText.Text = $"Найдено пакетов Lenovo: {packs.Count}.";
+            dialog.ShowDialog();
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText.Text = "Поиск пакетов Lenovo отменён.";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Не удалось получить каталог Lenovo.";
+            MessageBox.Show(this, ex.Message, "Каталог Lenovo", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
 }
