@@ -637,7 +637,7 @@ public partial class MainWindow : Window
                     HardwareId = candidate.HardwareId,
                     DeviceName = device?.Name ?? "Устройство не сопоставлено",
                     CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
-                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Hardware ID найден; пакет не проверен",
+                    Compatibility = device is null ? DriverUpdateCandidate.UnmatchedDeviceNotice : DriverUpdateCandidate.HardwareIdSearchNotice,
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
@@ -670,7 +670,7 @@ public partial class MainWindow : Window
     }
 
     private static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
-        string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&
+        string.Equals(candidate.Compatibility, DriverUpdateCandidate.HardwareIdSearchNotice, StringComparison.Ordinal) &&
         InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
