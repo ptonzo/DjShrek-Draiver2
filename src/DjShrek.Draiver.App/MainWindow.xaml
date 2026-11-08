@@ -486,7 +486,7 @@
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИНФОРМАЦИЯ О ПРОГРАММЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                        <TextBlock Text="DjShrek-Draiver Cyber Club 1.6.0" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                                        <TextBlock Text="DjShrek-Draiver Cyber Club 1.7.0" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,5"/>
                                         <TextBlock Text="Windows 10 / 11 x64 · .NET 8 · локальный режим"
                                                    Foreground="{DynamicResource MutedBrush}"/>
                                         <TextBlock Text="Программа не удаляет системные компоненты и не устанавливает драйверы без подтверждения пользователя."
@@ -528,12 +528,12 @@
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Grid>
-                                <Ellipse Fill="#10131B" Stroke="{DynamicResource AccentBrush}" StrokeThickness="5"/>
-                                <Ellipse Margin="13" Fill="#202633" Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="2"/>
-                                <Ellipse Margin="27" Fill="#0B0E14" Stroke="#586174" StrokeThickness="2"/>
-                                <Ellipse Margin="42" Fill="#1C2430" Stroke="#394657" StrokeThickness="1"/>
-                                <Ellipse Margin="56" Fill="#111720" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
-                                <Ellipse Width="190" Height="190" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Fill="{DynamicResource HeaderBrush}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="5"/>
+                                <Ellipse Margin="13" Fill="{DynamicResource SurfaceAltBrush}" Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="2"/>
+                                <Ellipse Margin="27" Fill="{DynamicResource SurfaceBrush}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="2"/>
+                                <Ellipse Margin="42" Fill="{DynamicResource SurfaceAltBrush}" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
+                                <Ellipse Margin="56" Fill="{DynamicResource HeaderBrush}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
+                                <Ellipse Width="190" Height="190" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Ellipse Width="150" Height="150" Stroke="#526071" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -542,9 +542,9 @@
                                 <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="13" Height="13" Fill="#F4F6FA"
+                                <Ellipse Width="13" Height="13" Fill="{DynamicResource AccentSecondaryBrush}"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Border Background="#D90B1018" CornerRadius="14" Padding="24,14"
+                                <Border Background="{DynamicResource AccentBrush}" CornerRadius="14" Padding="24,14"
                                         HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,35">
                                     <TextBlock Text="СКАНИРОВАТЬ" FontSize="25" FontWeight="Black"
                                                Foreground="White" />
