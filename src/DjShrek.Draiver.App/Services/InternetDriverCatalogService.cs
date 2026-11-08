@@ -67,7 +67,14 @@ public sealed class InternetDriverCatalogService
                     {
                         if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
                         var rawLink = (string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "link");
-                        if (!TryGetOfficialUri(rawLink, out var uri) || !seen.Add(uri.AbsoluteUri)) continue;
+                        if (!TryGetOfficialUri(rawLink, out var uri)) continue;
+                        // The same vendor page can legitimately serve multiple devices.
+                        // Deduplicate per PnP instance, not globally, or later devices
+                        // silently lose a valid lead from the results list.
+                        var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
+                            ? device.Name + "|" + device.Manufacturer
+                            : device.InstanceId;
+                        if (!seen.Add(deviceKey + "|" + uri.AbsoluteUri)) continue;
 
                         var title = Clean((string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "title"));
                         var description = Clean((string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "description"));
