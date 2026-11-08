@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly HardwareSensorService _sensors = new();
     private readonly GameOptimizationService _gameProfile = new();
     private readonly OemCatalogService _oemCatalog = new();
+    private readonly LenovoDriverPackCatalogService _lenovoCatalog = new();
     private readonly RegistryMaintenanceService _registryService = new();
     private readonly JunkCleanupService _junkService = new();
     private readonly InternetDriverCatalogService _internetDriverCatalog = new();
