@@ -3,10 +3,9 @@ using DjShrek.Draiver.App.Models;
 namespace DjShrek.Draiver.App.Services;
 
 /// <summary>
-/// Matches Windows Update metadata to enumerated Plug and Play devices.
-/// Only complete, case-insensitive hardware/compatible ID equality is accepted.
-/// Ambiguous matches are rejected so a package is never silently assigned to
-/// an arbitrary device when the same compatible ID is shared by several devices.
+/// Associates an internet search hit with a Plug and Play device.
+/// Only complete, case-insensitive identifier equality is accepted.
+/// Ambiguous matches are rejected rather than assigned to an arbitrary device.
 /// </summary>
 public static class DriverCompatibilityMatcher
 {
@@ -24,14 +23,14 @@ public static class DriverCompatibilityMatcher
         if (candidateIds.Count == 0) return null;
 
         var matches = devices
-            .Where(device => device.HardwareIds.Concat(device.CompatibleIds)
+            .Where(device => (device.HardwareIds ?? Array.Empty<string>())
+                .Concat(device.CompatibleIds ?? Array.Empty<string>())
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Select(Normalize)
                 .Any(candidateIds.Contains))
             .Take(2)
             .ToArray();
 
-        // A shared compatible ID is not sufficient to identify one physical device.
         return matches.Length == 1 ? matches[0] : null;
     }
 
