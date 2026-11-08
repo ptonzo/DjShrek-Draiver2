@@ -316,6 +316,7 @@
                                                   SelectionMode="Single" CanUserSortColumns="True" Height="310"
                                                   Margin="0,14,0,0" SelectionChanged="DriverUpdatesGrid_SelectionChanged">
                                             <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="1.5*"/>
                                                 <DataGridTextColumn Header="Доступный драйвер" Binding="{Binding Title}" Width="2.2*"/>
                                                 <DataGridTextColumn Header="Текущая версия" Binding="{Binding CurrentVersion}" Width="*"/>
                                                 <DataGridTextColumn Header="Новая версия" Binding="{Binding AvailableVersion}" Width="*"/>
