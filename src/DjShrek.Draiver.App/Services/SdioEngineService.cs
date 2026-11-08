@@ -86,7 +86,6 @@ public sealed class SdioEngineService
         });
         await File.WriteAllTextAsync(scriptPath, script, token);
 
-        var workingDirectory = Path.GetDirectoryName(exe)!;
         var refresh = new ProcessStartInfo(exe)
         {
             UseShellExecute = false,
