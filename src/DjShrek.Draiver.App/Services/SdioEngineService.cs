@@ -67,8 +67,9 @@ public sealed class SdioEngineService
 
         // SDIO's documented script interface supports downloading indexes separately from driver packs.
         // Installation is explicitly disabled in the script; only indexes and a device/driver report are requested.
+        var workingDirectory = Path.GetDirectoryName(exe)!;
         var scriptPath = Path.Combine(root, "DjShrek-refresh-indexes.txt");
-        var deviceReport = Path.Combine(root, "DjShrek-device-list.txt");
+        var deviceReport = Path.Combine(workingDirectory, "DjShrek-device-list.txt");
         var script = string.Join(Environment.NewLine, new[]
         {
             "logdir logs",
@@ -96,15 +97,25 @@ public sealed class SdioEngineService
         };
         refresh.ArgumentList.Add("-script:" + scriptPath);
         using (var process = Process.Start(refresh) ?? throw new InvalidOperationException("Не удалось запустить обновление индексов SDIO."))
+        using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(token);
-            var stderrTask = process.StandardError.ReadToEndAsync(token);
-            await process.WaitForExitAsync(token);
+            timeout.CancelAfter(TimeSpan.FromMinutes(20));
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(timeout.Token);
+            var stderrTask = process.StandardError.ReadToEndAsync(timeout.Token);
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+                throw new TimeoutException("SDIO не завершил обновление индексов за 20 минут. Установка драйверов не запускалась.");
+            }
             var stdout = await stdoutTask;
             var stderr = await stderrTask;
             if (process.ExitCode != 0)
                 throw new InvalidOperationException(
-                    $"SDIO завершил обновление индексов с кодом {process.ExitCode}.\n{stderr}\n{stdout}\nЖурнал SDIO: {Path.Combine(workingDirectory, "logs")}");
+                    $"SDIO завершил обновление индексов с кодом {process.ExitCode}.\\n{stderr}\\n{stdout}\\nЖурнал SDIO: {Path.Combine(workingDirectory, "logs")}");
         }
 
         if (!File.Exists(deviceReport))
