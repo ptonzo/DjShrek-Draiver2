@@ -270,8 +270,8 @@
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЦЕНТР ОБНОВЛЕНИЙ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="Поиск совместимых драйверов для обнаруженного оборудования" FontSize="20" FontWeight="Bold" Margin="0,6,0,5"/>
-                                        <TextBlock Text="Проверка выполняется по аппаратным идентификаторам. Перед установкой изучите список найденных пакетов."
+                                        <TextBlock Text="Поиск страниц производителей по Hardware ID обнаруженного оборудования" FontSize="20" FontWeight="Bold" Margin="0,6,0,5"/>
+                                        <TextBlock Text="Поиск выполняется по аппаратным идентификаторам. Найденные страницы производителей требуют ручной проверки версии и совместимости."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                         <WrapPanel Margin="0,13,0,0">
                                             <Button Content="Поиск в интернете по Hardware ID" Click="AutoUpdateDrivers_Click"/>
