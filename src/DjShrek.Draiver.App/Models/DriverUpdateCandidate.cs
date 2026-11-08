@@ -9,6 +9,8 @@ public sealed class DriverUpdateCandidate
     public string Provider { get; init; } = "";
     public string DeviceClass { get; init; } = "";
     public string HardwareId { get; init; } = "";
+    public string CurrentVersion { get; init; } = "Не сопоставлена";
+    public string AvailableVersion { get; init; } = "Не указана в каталоге";
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
     public bool IsDownloaded { get; init; }
