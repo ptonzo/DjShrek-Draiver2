@@ -127,7 +127,7 @@
                                                        Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                             <WrapPanel Margin="0,15,0,0">
                                                 <Button Content="Сканировать устройства" Click="Scan_Click"/>
-                                                <Button Content="Найти драйверы" Click="AutoUpdateDrivers_Click"
+                                                <Button Content="Найти драйверы" Click="AutoUpdateDrivers_Click"/>
                                             </WrapPanel>
                                         </StackPanel>
                                         <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
