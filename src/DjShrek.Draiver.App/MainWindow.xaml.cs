@@ -645,7 +645,7 @@ public partial class MainWindow : Window
                     SourceUrl = candidate.SourceUrl
                 });
             }
-            var compatibleCount = _driverUpdates.Count(IsCandidateInstallable);
+            var compatibleCount = _driverUpdates.Count(IsCandidateOpenable);
             var unmatchedCount = _driverUpdates.Count - compatibleCount;
             DriverUpdatesSummaryText.Text = candidates.Count == 0
                 ? "В официальных каталогах не найдены страницы драйверов по обнаруженным Hardware ID."
@@ -669,20 +669,20 @@ public partial class MainWindow : Window
         }
     }
 
-    private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
+    private static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
         string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&
         Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) && source.Scheme == Uri.UriSchemeHttps;
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         InstallSelectedDriverButton.IsEnabled =
-            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate && IsCandidateInstallable(candidate);
+            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate && IsCandidateOpenable(candidate);
     }
 
-    private async void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
+    private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
     {
         if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate) return;
-        if (!IsCandidateInstallable(candidate))
+        if (!IsCandidateOpenable(candidate))
         {
             MessageBox.Show(
                 "Действие заблокировано: результат не сопоставлён с устройством или ссылка не прошла проверку HTTPS. " +
@@ -704,7 +704,7 @@ public partial class MainWindow : Window
         }.Where(x => !string.IsNullOrWhiteSpace(x)));
         if (MessageBox.Show(
             "Открыть официальную страницу найденного драйвера?\n\n" + details +
-            "\n\nПеред продолжением убедитесь, что это нужное устройство. Windows может запросить перезагрузку.",
+            "\n\nПроверьте точную модель устройства, поддерживаемую версию Windows и цифровую подпись пакета. Программа не устанавливает драйвер с этой страницы автоматически.",
             "Открытие сайта производителя", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
 
@@ -720,8 +720,7 @@ public partial class MainWindow : Window
             DriverUpdatesSummaryText.Text = result;
             StatusText.Text = result;
             AppendEvent("Открыта страница производителя: " + result);
-            MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
-            await SearchDriverUpdatesAsync();
+            MessageBox.Show(result, "Страница производителя", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
@@ -731,7 +730,7 @@ public partial class MainWindow : Window
         finally
         {
             SearchDriverUpdatesButton.IsEnabled = true;
-            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected && IsCandidateInstallable(selected);
+            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected && IsCandidateOpenable(selected);
         }
     }
 
