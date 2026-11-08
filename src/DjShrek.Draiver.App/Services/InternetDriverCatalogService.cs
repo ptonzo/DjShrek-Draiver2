@@ -110,24 +110,37 @@ public sealed class InternetDriverCatalogService
         return string.Join(" ", parts);
     }
 
-    private static string? GetVendorDomain(DeviceInfo device, string hardwareId)
+    internal static string? GetVendorDomain(DeviceInfo device, string hardwareId)
     {
-        var text = (device.Manufacturer + " " + device.DriverProvider + " " + hardwareId).ToLowerInvariant();
-        if (text.Contains("nvidia") || hardwareId.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase)) return "nvidia.com";
-        if (text.Contains("amd") || text.Contains("advanced micro") || hardwareId.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase)) return "amd.com";
-        if (text.Contains("intel") || hardwareId.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase)) return "intel.com";
-        if (text.Contains("realtek") || hardwareId.Contains("VEN_10EC", StringComparison.OrdinalIgnoreCase)) return "realtek.com";
-        if (text.Contains("qualcomm") || hardwareId.Contains("VEN_168C", StringComparison.OrdinalIgnoreCase)) return "qualcomm.com";
-        if (text.Contains("broadcom") || hardwareId.Contains("VEN_14E4", StringComparison.OrdinalIgnoreCase)) return "broadcom.com";
-        if (text.Contains("mediatek") || hardwareId.Contains("VEN_14C3", StringComparison.OrdinalIgnoreCase)) return "mediatek.com";
-        if (text.Contains("dell") || text.Contains("alienware")) return "dell.com";
-        if (text.Contains("hewlett") || text.Contains(" hp ")) return "hp.com";
-        if (text.Contains("lenovo") || text.Contains("thinkpad")) return "lenovo.com";
-        if (text.Contains("asus")) return "asus.com";
-        if (text.Contains("acer")) return "acer.com";
-        if (text.Contains("msi") || text.Contains("micro-star")) return "msi.com";
+        // Hardware vendor IDs take priority over descriptive names. Manufacturer strings
+        // are tokenized so "HP" and "MSI" work without matching unrelated words.
+        var text = NormalizeVendorText(device.Manufacturer + " " + device.DriverProvider);
+        bool HasToken(string token) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Contains(token, StringComparer.Ordinal);
+        bool HasPhrase(string phrase) => text.Contains(phrase, StringComparison.Ordinal);
+
+        if (hardwareId.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase) || HasToken("nvidia")) return "nvidia.com";
+        if (hardwareId.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase) || HasToken("amd") || HasPhrase("advanced micro devices")) return "amd.com";
+        if (hardwareId.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) || HasToken("intel")) return "intel.com";
+        if (hardwareId.Contains("VEN_10EC", StringComparison.OrdinalIgnoreCase) || HasToken("realtek")) return "realtek.com";
+        if (hardwareId.Contains("VEN_168C", StringComparison.OrdinalIgnoreCase) || HasToken("qualcomm") || HasToken("atheros")) return "qualcomm.com";
+        if (hardwareId.Contains("VEN_14E4", StringComparison.OrdinalIgnoreCase) || HasToken("broadcom")) return "broadcom.com";
+        if (hardwareId.Contains("VEN_14C3", StringComparison.OrdinalIgnoreCase) || HasToken("mediatek")) return "mediatek.com";
+        if (HasToken("dell") || HasToken("alienware")) return "dell.com";
+        if (HasToken("hp") || HasPhrase("hewlett packard")) return "hp.com";
+        if (HasToken("lenovo") || HasToken("thinkpad")) return "lenovo.com";
+        if (HasToken("asus")) return "asus.com";
+        if (HasToken("acer")) return "acer.com";
+        if (HasToken("msi") || HasPhrase("micro star")) return "msi.com";
+        if (HasToken("gigabyte") || HasToken("aorus")) return "gigabyte.com";
         return null;
     }
+
+    private static string NormalizeVendorText(string value) =>
+        string.Join(' ', value.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ')
+            .ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries) is var words
+            ? string.Join(' ', words)
+            : string.Empty;
 
     private static IEnumerable<string> GetIds(DeviceInfo device) =>
         (device.HardwareIds ?? Array.Empty<string>())
