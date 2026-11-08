@@ -316,7 +316,7 @@ public partial class MainWindow : Window
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowPanel("settings");
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAllAsync();
-    private async void Scan_Click(object sender, RoutedEventArgs e) => await ScanDevicesAsync();
+    private async void Scan_Click(object sender, RoutedEventArgs e) { await ScanDevicesAsync(); }
 
     private async void StartScan_Click(object sender, RoutedEventArgs e)
     {
@@ -325,7 +325,7 @@ public partial class MainWindow : Window
         StartupScanOverlay.Visibility = Visibility.Collapsed;
         try
         {
-            await ScanDevicesAsync();
+            if (!await ScanDevicesAsync()) return;
             if (_devices.Count == 0) return;
 
             var errors = _devices.Count(IsProblemDevice);
@@ -417,9 +417,9 @@ public partial class MainWindow : Window
         TemperatureNote.Text = metrics.Note;
     }
 
-    private async Task ScanDevicesAsync()
+    private async Task<bool> ScanDevicesAsync()
     {
-        if (_scanRunning) return;
+        if (_scanRunning) return false;
         _scanRunning = true;
         try
         {
@@ -429,11 +429,13 @@ public partial class MainWindow : Window
             StatusText.Text = $"Сканирование завершено. Устройств: {devices.Count}.";
             AppendEvent($"Сканирование устройств завершено: {devices.Count}.");
             ShowPanel("devices");
+            return true;
         }
         catch (Exception ex)
         {
             StatusText.Text = "Сканирование не завершено.";
             MessageBox.Show(ex.Message, "Сканирование устройств", MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
         }
         finally { _scanRunning = false; }
     }
