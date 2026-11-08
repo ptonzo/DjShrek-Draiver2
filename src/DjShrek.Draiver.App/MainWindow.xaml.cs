@@ -20,8 +20,10 @@ public partial class MainWindow : Window
     private readonly OemCatalogService _oemCatalog = new();
     private readonly RegistryMaintenanceService _registryService = new();
     private readonly JunkCleanupService _junkService = new();
+    private readonly WindowsDriverUpdateService _windowsDriverUpdates = new();
 
-    private readonly ObservableCollection<DeviceInfo> _devices = new();
+        private readonly ObservableCollection<DeviceInfo> _devices = new();
+    private readonly ObservableCollection<DriverUpdateCandidate> _driverUpdates = new();
     private readonly ObservableCollection<RegistryFinding> _registryFindings = new();
     private readonly ObservableCollection<JunkFileItem> _junkFiles = new();
 
@@ -39,6 +41,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         DevicesGrid.ItemsSource = _devices;
+        DriverUpdatesGrid.ItemsSource = _driverUpdates;
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
 
@@ -587,40 +590,86 @@ public partial class MainWindow : Window
 
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
-        if (_scanRunning) return;
-        await LaunchDriverUpdatesAsync();
+        await SearchDriverUpdatesAsync();
     }
 
-    private async Task LaunchDriverUpdatesAsync()
+    private async Task SearchDriverUpdatesAsync()
     {
         if (_scanRunning) return;
         _scanRunning = true;
+        SearchDriverUpdatesButton.IsEnabled = false;
+        InstallSelectedDriverButton.IsEnabled = false;
+        DriverUpdatesSummaryText.Text = "Подключение к Windows Update Agent. Проверка доступных драйверов...";
         try
         {
             ShowPanel("drivers");
-            UpdatesCountText.Text = "Подготовка проверки актуальности драйверов...";
-            if (_devices.Count == 0)
-            {
-                var devices = await _inventory.ScanAsync();
-                ApplyDevices(devices);
-            }
-            UpdatesCountText.Text = $"Устройств найдено: {_devices.Count}. Запуск проверки версий драйверов...";
-            if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и выполнит безопасный подбор missing/newer/better. Установка отключена. Результаты сохраняются в отчёты DjShrek; отдельное окно SDIO не открывается. Встроенная таблица кандидатов появится после проверки формата фактических результатов.",
-                "Поиск актуальных драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
-                return;
-            UpdatesCountText.Text = "Загрузка индексов и поиск совместимых драйверов...";
-            var result = await new SdioEngineService().DownloadAndScanAsync();
-            UpdatesCountText.Text = result;
-            StatusText.Text = result;
-            AppendEvent("Выполнен поиск актуальных драйверов через проверенный движок SDIO.");
+            var candidates = await _windowsDriverUpdates.SearchAsync();
+            _driverUpdates.Clear();
+            foreach (var candidate in candidates) _driverUpdates.Add(candidate);
+            DriverUpdatesSummaryText.Text = candidates.Count == 0
+                ? "Windows Update не вернул доступных обновлений драйверов. Это не означает, что для всех устройств существуют самые новые OEM-драйверы."
+                : $"Найдено обновлений Windows Update: {candidates.Count}. Выберите строку, чтобы просмотреть и установить конкретный пакет.";
+            UpdatesCountText.Text = $"Найдено обновлений: {candidates.Count}";
+            StatusText.Text = DriverUpdatesSummaryText.Text;
+            AppendEvent($"Windows Update Agent: найдено обновлений драйверов — {candidates.Count}.");
         }
         catch (Exception ex)
         {
-            UpdatesCountText.Text = "Поиск драйверов не завершён.";
-            MessageBox.Show(ex.Message, "DjShrek-Draiver", MessageBoxButton.OK, MessageBoxImage.Error);
+            DriverUpdatesSummaryText.Text = "Поиск не завершён. Проверьте подключение и службу Windows Update.";
+            UpdatesCountText.Text = "Ошибка поиска драйверов.";
+            MessageBox.Show(ex.Message, "Поиск обновлений драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
         }
-        finally { _scanRunning = false; }
+        finally
+        {
+            SearchDriverUpdatesButton.IsEnabled = true;
+            _scanRunning = false;
+        }
+    }
+
+    private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate;
+    }
+
+    private async void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate) return;
+        var details = string.Join(Environment.NewLine, new[]
+        {
+            candidate.Title,
+            string.IsNullOrWhiteSpace(candidate.Manufacturer) ? null : "Производитель: " + candidate.Manufacturer,
+            string.IsNullOrWhiteSpace(candidate.Model) ? null : "Модель: " + candidate.Model,
+            string.IsNullOrWhiteSpace(candidate.Provider) ? null : "Поставщик: " + candidate.Provider,
+            string.IsNullOrWhiteSpace(candidate.DriverVersionDate) ? null : "Дата версии: " + candidate.DriverVersionDate
+        }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        if (MessageBox.Show(
+            "Установить только выбранное обновление через Windows Update Agent?\n\n" + details +
+            "\n\nПеред продолжением убедитесь, что это нужное устройство. Windows может запросить перезагрузку.",
+            "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        InstallSelectedDriverButton.IsEnabled = false;
+        SearchDriverUpdatesButton.IsEnabled = false;
+        DriverUpdatesSummaryText.Text = "Загрузка и установка выбранного драйвера...";
+        try
+        {
+            var result = await _windowsDriverUpdates.InstallAsync(candidate.UpdateId);
+            DriverUpdatesSummaryText.Text = result;
+            StatusText.Text = result;
+            AppendEvent("Результат установки драйвера: " + result);
+            MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+            await SearchDriverUpdatesAsync();
+        }
+        catch (Exception ex)
+        {
+            DriverUpdatesSummaryText.Text = "Установка не подтверждена Windows Update Agent.";
+            MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            SearchDriverUpdatesButton.IsEnabled = true;
+            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate;
+        }
     }
 
     private void DetectOem()
