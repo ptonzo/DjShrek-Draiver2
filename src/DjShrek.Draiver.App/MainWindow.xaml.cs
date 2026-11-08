@@ -606,11 +606,11 @@ public partial class MainWindow : Window
             }
             UpdatesCountText.Text = $"Устройств найдено: {_devices.Count}. Запуск проверки версий драйверов...";
             if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и сравнит установленные драйверы с доступными совместимыми пакетами. Автоматическая установка отключена: вы сможете просмотреть найденные варианты и подтвердить только нужные обновления вручную.",
+                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и выполнит безопасный подбор missing/newer/better. Установка отключена. Результаты сохраняются в отчёты DjShrek; отдельное окно SDIO не открывается. Встроенная таблица кандидатов появится после проверки формата фактических результатов.",
                 "Поиск актуальных драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
                 return;
             UpdatesCountText.Text = "Загрузка индексов и поиск совместимых драйверов...";
-            var result = await new SdioEngineService().DownloadAndLaunchAsync();
+            var result = await new SdioEngineService().DownloadAndScanAsync();
             UpdatesCountText.Text = result;
             StatusText.Text = result;
             AppendEvent("Выполнен поиск актуальных драйверов через проверенный движок SDIO.");
