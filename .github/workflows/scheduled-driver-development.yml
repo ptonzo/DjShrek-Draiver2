@@ -6,7 +6,7 @@ on:
     - cron: "17 6 * * *"
 
 concurrency:
-  group: djshrek-codex-driver-development
+  group: djshrek-gemini-driver-development
   cancel-in-progress: false
 
 permissions:
@@ -28,15 +28,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Run Codex on one bounded development task
-        uses: openai/codex-action@v1
+      - name: Run Gemini CLI on one bounded development task
+        uses: google-github-actions/run-gemini-cli@v0
         with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .github/DRIVER_AGENT_PROMPT.md
-          output-file: /tmp/codex-summary.md
-          permission-profile: ":workspace"
-          safety-strategy: drop-sudo
-
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            Read .github/DRIVER_AGENT_PROMPT.md completely and follow it.
+            Select exactly one next task from its queue and implement it in this repository.
+            Do not run builds, tests, CI, installers, or driver installation.
+            Do not create commits. Only edit project files and update the development log.
+            Before finishing, inspect your changes for secrets, accidental files, and unrelated edits.
+            If no safe useful change can be completed, leave the working tree unchanged and explain why.
+      
       - name: Export proposed changes
         id: patch
         shell: bash
@@ -44,24 +47,21 @@ jobs:
           set -euo pipefail
           git add -N .
           git diff --check
-          git diff --binary > /tmp/djshrek-codex.patch
-          if [ -s /tmp/djshrek-codex.patch ]; then
+          git diff --binary > /tmp/djshrek-gemini.patch
+          if [ -s /tmp/djshrek-gemini.patch ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
-          mkdir -p /tmp/djshrek-codex-artifact
-          cp /tmp/djshrek-codex.patch /tmp/djshrek-codex-artifact/changes.patch
-          if [ -f /tmp/codex-summary.md ]; then
-            cp /tmp/codex-summary.md /tmp/djshrek-codex-artifact/summary.md
-          fi
+          mkdir -p /tmp/djshrek-gemini-artifact
+          cp /tmp/djshrek-gemini.patch /tmp/djshrek-gemini-artifact/changes.patch
 
-      - name: Upload proposed patch
+      - name: Upload proposed changes
         if: steps.patch.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: djshrek-codex-patch
-          path: /tmp/djshrek-codex-artifact/
+          name: djshrek-gemini-patch
+          path: /tmp/djshrek-gemini-artifact/
           if-no-files-found: error
           retention-days: 7
 
@@ -83,20 +83,20 @@ jobs:
       - name: Download proposed changes
         uses: actions/download-artifact@v4
         with:
-          name: djshrek-codex-patch
-          path: /tmp/djshrek-codex-artifact
+          name: djshrek-gemini-patch
+          path: /tmp/djshrek-gemini-artifact
 
       - name: Apply proposed changes
         id: apply
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -s /tmp/djshrek-codex-artifact/changes.patch ]; then
+          if [ ! -s /tmp/djshrek-gemini-artifact/changes.patch ]; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git apply --check /tmp/djshrek-codex-artifact/changes.patch
-          git apply /tmp/djshrek-codex-artifact/changes.patch
+          git apply --check /tmp/djshrek-gemini-artifact/changes.patch
+          git apply /tmp/djshrek-gemini-artifact/changes.patch
           echo "has_changes=true" >> "$GITHUB_OUTPUT"
 
       - name: Create or update development pull request
@@ -105,12 +105,12 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: feature/in-app-driver-update-center
-          branch: codex/automated-driver-development
+          branch: gemini/automated-driver-development
           delete-branch: false
           commit-message: "Automated driver development"
           title: "Автоматическая разработка: улучшения модуля драйверов"
           body: |
-            Автоматически подготовленные изменения DjShrek-Draiver Cyber Club.
+            Автоматически подготовленные изменения DjShrek-Draiver Cyber Club с помощью Gemini CLI.
 
             - Задача выбирается из .github/DRIVER_AGENT_PROMPT.md.
             - Изменения не сливаются автоматически.
