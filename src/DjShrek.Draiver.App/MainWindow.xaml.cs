@@ -669,7 +669,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
+    internal static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
         string.Equals(candidate.Compatibility, DriverUpdateCandidate.HardwareIdSearchNotice, StringComparison.Ordinal) &&
         InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
 
