@@ -608,7 +608,7 @@ public partial class MainWindow : Window
             foreach (var candidate in candidates)
             {
                 var hardwareIds = candidate.HardwareId
-                    .Split(new[] { ',', ';', '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    .Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 var device = _devices.FirstOrDefault(item =>
                     item.HardwareIds.Concat(item.CompatibleIds).Any(id =>
                         hardwareIds.Any(candidateId =>
