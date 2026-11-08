@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Microsoft.Win32;
 using DjShrek.Draiver.App.Services;
+using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App;
 
@@ -44,6 +45,26 @@ public partial class App : Application
                     throw new InvalidOperationException("Missing application screen: " + name);
             }
             checks.Add("PASS: six WPF screens loaded.");
+
+            // Pure matching checks: exact hardware/compatible IDs match; substrings never do.
+            var matcherDevices = new[]
+            {
+                new DeviceInfo
+                {
+                    Name = "Test GPU",
+                    HardwareIds = new[] { "PCI\\VEN_10DE&DEV_1234" },
+                    CompatibleIds = new[] { "PCI\\VEN_10DE&CC_030000" }
+                }
+            };
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "PCI\\VEN_10DE&DEV_1234"), matcherDevices[0]))
+                throw new InvalidOperationException("Exact hardware ID was not matched.");
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "pci\\ven_10de&cc_030000"), matcherDevices[0]))
+                throw new InvalidOperationException("Case-insensitive compatible ID was not matched.");
+            if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "PCI\\VEN_10DE") is not null)
+                throw new InvalidOperationException("Partial hardware ID was incorrectly accepted.");
+            if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "") is not null)
+                throw new InvalidOperationException("Empty hardware ID was incorrectly accepted.");
+            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");
 
             if (ThemeManager.Themes.Count != 12)
                 throw new InvalidOperationException($"Expected 12 themes, got {ThemeManager.Themes.Count}.");
