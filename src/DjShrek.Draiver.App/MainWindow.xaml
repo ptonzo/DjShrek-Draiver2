@@ -339,7 +339,6 @@
                                                     Background="{DynamicResource AccentSecondaryBrush}"/>
                                             <Button Content="Скачать пакет с сайта производителя" Click="DownloadOfficialDriverPackage_Click"
                                                     Background="{DynamicResource SuccessBrush}"/>
-                                            <Button Content="Безопасно распаковать ZIP" Click="ExtractDriverZip_Click"
                                                     Background="{DynamicResource AccentSecondaryBrush}"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
