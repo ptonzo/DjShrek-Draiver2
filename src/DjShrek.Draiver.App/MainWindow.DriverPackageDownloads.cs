@@ -53,7 +53,7 @@ public partial class MainWindow
             if (dialog.ShowDialog(this) != true) return;
 
             StatusText.Text = "Загрузка оригинального пакета с сайта производителя...";
-            var downloaded = await _packageDownloader.DownloadAsync(selected, Path.GetDirectoryName(dialog.FileName)!);
+            var downloaded = await _packageDownloader.DownloadAsync(selected, dialog.FileName);
             candidate.PackageUrl = selected.AbsoluteUri;
             candidate.PackageFileName = downloaded.FilePath;
             candidate.PackageSha256 = downloaded.Sha256;
