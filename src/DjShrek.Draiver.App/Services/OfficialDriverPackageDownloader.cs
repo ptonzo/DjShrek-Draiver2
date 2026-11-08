@@ -59,7 +59,7 @@ public sealed class OfficialDriverPackageDownloader
     }
 
     public async Task<(string FilePath, string Sha256, long Length)> DownloadAsync(
-        Uri packageUri, string destinationDirectory, CancellationToken cancellationToken = default)
+        Uri packageUri, string destinationFilePath, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(packageUri);
         if (packageUri.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(packageUri.Host) || !IsPackageUri(packageUri))
@@ -80,8 +80,10 @@ public sealed class OfficialDriverPackageDownloader
         if (!PackageExtensions.Contains(Path.GetExtension(fileName), StringComparer.OrdinalIgnoreCase))
             throw new InvalidDataException("Сервер вернул файл с неподдерживаемым расширением.");
 
-        Directory.CreateDirectory(destinationDirectory);
-        var target = Path.Combine(Path.GetFullPath(destinationDirectory), fileName);
+        var target = Path.GetFullPath(destinationFilePath);
+        if (!PackageExtensions.Contains(Path.GetExtension(target), StringComparer.OrdinalIgnoreCase))
+            throw new InvalidDataException("Выбранный путь имеет неподдерживаемое расширение.");
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         var temporary = target + ".download";
         try
         {
