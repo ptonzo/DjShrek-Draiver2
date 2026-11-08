@@ -9,20 +9,19 @@ public sealed class HardwareSensorService
 {
     public HardwareMetrics ReadMetrics()
     {
+        var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
         try
         {
-            var computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
             computer.Open();
             var cpuTemperatures = new List<float>();
             var gpuTemperatures = new List<float>();
             var gpuLoads = new List<float>();
             var gpuName = "";
             foreach (var hardware in computer.Hardware)
-                ReadHardware(hardware, cpuTemperatures, gpuTemperatures, gpuLoads, ref gpuName);
+                ReadHardwareSafely(hardware, cpuTemperatures, gpuTemperatures, gpuLoads, ref gpuName);
 
-            computer.Close();
-            var cpu = cpuTemperatures.Where(x => x > 0 && x < 120).DefaultIfEmpty(-1).Max();
-            var gpu = gpuTemperatures.Where(x => x > 0 && x < 120).DefaultIfEmpty(-1).Max();
+            var cpu = cpuTemperatures.Where(x => x >= 0 && x < 120).DefaultIfEmpty(-1).Max();
+            var gpu = gpuTemperatures.Where(x => x >= 0 && x < 120).DefaultIfEmpty(-1).Max();
             var load = gpuLoads.Where(x => x >= 0 && x <= 100).DefaultIfEmpty(-1).Max();
             return new HardwareMetrics(
                 cpu >= 0 ? $"{cpu:0} °C" : "Нет данных",
@@ -35,6 +34,20 @@ public sealed class HardwareSensorService
         {
             return new HardwareMetrics("Нет данных", "Нет данных", "Н/Д", "",
                 "Аппаратные датчики недоступны: " + ex.Message);
+        }
+        finally
+        {
+            try { computer.Close(); } catch { /* Sensor provider cleanup must not crash the UI. */ }
+        }
+    }
+
+    private static void ReadHardwareSafely(IHardware hardware, List<float> cpuTemps,
+        List<float> gpuTemps, List<float> gpuLoads, ref string gpuName)
+    {
+        try { ReadHardware(hardware, cpuTemps, gpuTemps, gpuLoads, ref gpuName); }
+        catch
+        {
+            // Some motherboard/GPU sensor endpoints fail independently; continue with other devices.
         }
     }
 
