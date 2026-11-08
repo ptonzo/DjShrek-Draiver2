@@ -214,17 +214,17 @@
                                         <TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,12"/>
                                         <UniformGrid Columns="3" Rows="2">
                                             <Button Content="Сканировать устройства" Click="Scan_Click" Height="62" Margin="0,0,8,8"
-                                                    Background="#FFE52DB8" BorderBrush="#FFFF79D5" Foreground="White"/>
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" Foreground="White"/>
                                             <Button Content="Найти и установить драйверы" Click="AutoUpdateDrivers_Click" Height="62" Margin="0,0,8,8"
-                                                    Background="#FF0878E8" BorderBrush="#FF42A5F5" Foreground="White"/>
+                                                    Background="{DynamicResource AccentSecondaryBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"/>
                                             <Button Content="Резервная копия драйверов" Click="Backup_Click" Height="62" Margin="0,0,0,8"
-                                                    Background="#FF873BE8" BorderBrush="#FFB58BFF" Foreground="White"/>
+                                                    Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"/>
                                             <Button Content="Очистка системы" Click="Cleanup_Click" Height="62" Margin="0,0,8,0"
-                                                    Background="#FF20A45A" BorderBrush="#FF66D995" Foreground="White"/>
+                                                    Background="{DynamicResource SuccessBrush}" BorderBrush="{DynamicResource SuccessBrush}" Foreground="White"/>
                                             <Button Content="Проверка реестра" Click="Registry_Click" Height="62" Margin="0,0,8,0"
-                                                    Background="#FFFF941F" BorderBrush="#FFFFC06A" Foreground="White"/>
+                                                    Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"/>
                                             <Button Content="Игровая оптимизация" Click="EnableGameProfile_Click" Height="62"
-                                                    Background="#FF00AFC8" BorderBrush="#FF53E5F5" Foreground="White"/>
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"/>
                                         </UniformGrid>
                                         <TextBlock x:Name="HealthSummary" Text="Выполните сканирование для проверки состояния устройств."
                                                    Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0" TextWrapping="Wrap"/>
