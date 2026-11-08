@@ -572,7 +572,7 @@ public partial class MainWindow : Window
             var attention = devices.Count(IsProblemDevice);
             UpdatesCountText.Text = $"Устройств найдено: {devices.Count}; с кодами ошибок: {attention}.";
             if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO). Архив проверяется по SHA-256, после запуска SDIO обновит свои онлайн-индексы и подберёт драйверы по Hardware ID.\n\nПроверьте каждое предложение в окне SDIO и подтвердите установку самостоятельно. Автоматическая установка всех предложений без проверки отключена.\n\nПродолжить?",
+                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. Программа обновит только индексы SDIO и создаст отчёт об оборудовании. Установка драйверов на этом этапе явно отключена. Затем откроется SDIO для просмотра найденных вариантов.\n\nПроверьте совместимость каждого предложения и подтверждайте установку только нужных драйверов вручную.\n\nПродолжить?",
                 "Онлайн-поиск драйверов", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
             UpdatesCountText.Text = "Загрузка и проверка SDIO...";
