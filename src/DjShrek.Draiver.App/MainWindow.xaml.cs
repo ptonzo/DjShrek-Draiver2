@@ -627,10 +627,14 @@ public partial class MainWindow : Window
                     IsDownloaded = candidate.IsDownloaded
                 });
             }
+            var compatibleCount = _driverUpdates.Count(IsCandidateInstallable);
+            var unmatchedCount = _driverUpdates.Count - compatibleCount;
             DriverUpdatesSummaryText.Text = candidates.Count == 0
                 ? "Windows Update не вернул доступных обновлений драйверов. Это не означает, что для всех устройств существуют самые новые OEM-драйверы."
-                : $"Найдено обновлений Windows Update: {candidates.Count}. Выберите строку, чтобы просмотреть и установить конкретный пакет.";
-            UpdatesCountText.Text = $"Найдено обновлений: {candidates.Count}";
+                : $"Найдено пакетов: {candidates.Count}. Точное совпадение ID: {compatibleCount}. Без подтверждённого соответствия: {unmatchedCount}. Устанавливать можно только пакеты с точным совпадением.";
+            UpdatesCountText.Text = candidates.Count == 0
+                ? "Обновления не найдены."
+                : $"Всего: {candidates.Count}  |  Совместимость подтверждена: {compatibleCount}  |  Требуют проверки: {unmatchedCount}";
             StatusText.Text = DriverUpdatesSummaryText.Text;
             AppendEvent($"Windows Update Agent: найдено обновлений драйверов — {candidates.Count}.");
         }
