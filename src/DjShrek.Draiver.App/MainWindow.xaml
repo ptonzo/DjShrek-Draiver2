@@ -4,7 +4,7 @@
         xmlns:services="clr-namespace:DjShrek.Draiver.App.Services"
         xmlns:controls="clr-namespace:DjShrek.Draiver.App.Controls"
         Title="DjShrek-Draiver Cyber Club"
-        Height="900" Width="1480" MinHeight="760" MinWidth="1180"
+        Height="940" Width="1640" MinHeight="820" MinWidth="1280"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBackgroundBrush}"
         Foreground="{DynamicResource TextBrush}"
@@ -111,19 +111,19 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
                                 <Border Background="{DynamicResource HeroBrush}" CornerRadius="14"
-                                        Padding="22" Margin="0,0,0,14" MinHeight="154"
+                                        Padding="22" Margin="0,0,0,14" MinHeight="190"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="220"/>
+                                            <ColumnDefinition Width="350"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="DJSHREK CYBER CLUB" FontSize="10" FontWeight="Bold"
                                                        Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                            <TextBlock Text="Центр управления компьютером" FontSize="25"
+                                            <TextBlock Text="Добро пожаловать в DjShrek-Draiver!" FontSize="25"
                                                        FontWeight="Black" Margin="0,5,0,4"/>
-                                            <TextBlock Text="Контроль оборудования, драйверов и состояния Windows в одном окне."
+                                            <TextBlock Text="Ваш ПК под контролем — мониторинг, драйверы и обслуживание в одном центре."
                                                        Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                             <WrapPanel Margin="0,15,0,0">
                                                 <Button Content="Сканировать устройства" Click="Scan_Click"/>
@@ -131,7 +131,7 @@
                                                         Background="{DynamicResource AccentSecondaryBrush}"/>
                                             </WrapPanel>
                                         </StackPanel>
-                                        <controls:ThemeArtwork x:Name="HeroArtwork" Grid.Column="1" Width="210" Height="138"
+                                        <controls:ThemeArtwork x:Name="HeroArtwork" Grid.Column="1" Width="340" Height="170"
                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
