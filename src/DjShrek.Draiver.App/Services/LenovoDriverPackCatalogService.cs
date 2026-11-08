@@ -93,7 +93,6 @@ public sealed class LenovoDriverPackCatalogService
 
                 var packageVersion = FirstNonEmpty(
                     (string?)pack.Attribute("packageVersion"),
-                    (string?)pack.Attribute("version"),
                     "Каталог не указывает версию пакета");
                 var releaseDate = FirstNonEmpty(
                     (string?)pack.Attribute("date"),
@@ -149,7 +148,8 @@ public sealed class LenovoDriverPackCatalogService
         new(value.Trim().ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
 
     private static string NormalizeOs(string value) =>
-        value.Replace(" ", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal)
+        value.Replace("Windows", "Win", StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", "", StringComparison.Ordinal).Replace("-", "", StringComparison.Ordinal)
             .ToLowerInvariant();
 
     private static bool OsMatches(string catalogValue, string requestedValue)
