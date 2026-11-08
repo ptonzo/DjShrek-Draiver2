@@ -337,7 +337,7 @@ public partial class MainWindow : Window
                 summary + "\\n\\nТеперь запустить проверку актуальности драйверов через Snappy Driver Installer Origin? Будут загружены индексы и подобраны совместимые варианты. Автоматическая установка отключена.",
                 "Проверка актуальности драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information);
             if (answer == MessageBoxResult.Yes)
-                await LaunchDriverUpdatesAsync();
+                await SearchDriverUpdatesAsync();
         }
         finally
         {
