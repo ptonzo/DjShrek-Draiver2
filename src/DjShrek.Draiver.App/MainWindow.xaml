@@ -464,5 +464,59 @@
                            Foreground="{DynamicResource AccentSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
             </DockPanel>
         </Border>
+
+        <!-- Startup scan screen: the main workspace remains covered until the user starts the scan. -->
+        <Grid x:Name="StartupScanOverlay" Grid.RowSpan="3" Panel.ZIndex="100"
+              Background="{DynamicResource AppBackgroundBrush}" Visibility="Visible">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Width="560">
+                <TextBlock Text="DJSHREK · CYBER CLUB" FontSize="15" FontWeight="Black"
+                           Foreground="{DynamicResource AccentSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,0,0,18"/>
+                <Button x:Name="StartScanButton" Click="StartScan_Click"
+                        Width="360" Height="360" HorizontalAlignment="Center"
+                        Background="Transparent" BorderThickness="0" Padding="0"
+                        Cursor="Hand" ToolTip="Нажмите, чтобы начать сканирование устройств и драйверов">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Ellipse Fill="#10131B" Stroke="{DynamicResource AccentBrush}" StrokeThickness="5"/>
+                                <Ellipse Margin="13" Fill="#202633" Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="2"/>
+                                <Ellipse Margin="27" Fill="#0B0E14" Stroke="#586174" StrokeThickness="2"/>
+                                <Ellipse Margin="42" Fill="#1C2430" Stroke="#394657" StrokeThickness="1"/>
+                                <Ellipse Margin="56" Fill="#111720" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
+                                <Ellipse Width="190" Height="190" Stroke="#526071" StrokeThickness="1"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="150" Height="150" Stroke="#526071" StrokeThickness="1"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="110" Height="110" Stroke="#526071" StrokeThickness="1"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
+                                         Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="13" Height="13" Fill="#F4F6FA"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Background="#D90B1018" CornerRadius="14" Padding="24,14"
+                                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,35">
+                                    <TextBlock Text="СКАНИРОВАТЬ" FontSize="25" FontWeight="Black"
+                                               Foreground="White" />
+                                </Border>
+                            </Grid>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <TextBlock Text="Нажмите на DJ-тарелку, чтобы проверить устройства и найти актуальные драйверы"
+                           TextWrapping="Wrap" TextAlignment="Center" FontSize="15"
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,22,0,0"/>
+                <TextBlock Text="Установка найденных обновлений — только после вашего подтверждения"
+                           TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
+                           Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
