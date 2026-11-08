@@ -296,6 +296,10 @@ public partial class MainWindow : Window
             button.BorderBrush = button == active
                 ? (System.Windows.Media.Brush)Application.Current.Resources["AccentSecondaryBrush"]
                 : (System.Windows.Media.Brush)Application.Current.Resources["BorderBrush"];
+            button.Foreground = button == active
+                ? System.Windows.Media.Brushes.White
+                : new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(theme.Text));
         }
     }
 
