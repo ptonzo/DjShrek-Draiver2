@@ -151,7 +151,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Registrierungsdiagnose", ["Computer cleanup"]="Computerbereinigung", ["Settings"]="Einstellungen",
                 ["Computer monitoring and maintenance tools"]="Computerüberwachung und Wartungswerkzeuge",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug-and-Play-Inventar, Fehlerfilter und Treibersicherung",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Search available driver updates through Windows Update and install the selected package",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Search manufacturer websites by Hardware ID; manually verify packages",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnose der Windows-Autostart-Einträge ohne stille Änderungen",
                 ["Conservative cleanup of old temporary files"]="Sichere Bereinigung alter temporärer Dateien",
                 ["Application appearance and preferences"]="Darstellung und Einstellungen der Anwendung"
@@ -161,7 +161,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostic du registre", ["Computer cleanup"]="Nettoyage de l’ordinateur", ["Settings"]="Paramètres",
                 ["Computer monitoring and maintenance tools"]="Surveillance et maintenance de l’ordinateur",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventaire Plug-and-Play, filtre d’erreurs et sauvegarde des pilotes",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Verfügbare Treiberupdates über Windows Update suchen und das ausgewählte Paket installieren",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Herstellerseiten per Hardware-ID durchsuchen; Pakete manuell prüfen",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostic du démarrage Windows sans modification silencieuse",
                 ["Conservative cleanup of old temporary files"]="Nettoyage prudent des anciens fichiers temporaires",
                 ["Application appearance and preferences"]="Apparence et préférences de l’application"
@@ -171,7 +171,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnóstico del registro", ["Computer cleanup"]="Limpieza del equipo", ["Settings"]="Configuración",
                 ["Computer monitoring and maintenance tools"]="Supervisión y mantenimiento del equipo",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventario Plug and Play, filtro de errores y copia de controladores",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Rechercher les mises à jour de pilotes via Windows Update et installer le paquet sélectionné",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Rechercher les sites des fabricants par identifiant matériel; vérifier manuellement",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnóstico del inicio de Windows sin cambios silenciosos",
                 ["Conservative cleanup of old temporary files"]="Limpieza prudente de archivos temporales antiguos",
                 ["Application appearance and preferences"]="Apariencia y preferencias de la aplicación"
@@ -181,7 +181,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnóstico do registro", ["Computer cleanup"]="Limpeza do computador", ["Settings"]="Configurações",
                 ["Computer monitoring and maintenance tools"]="Monitoramento e manutenção do computador",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventário Plug and Play, filtro de erros e backup de drivers",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Buscar actualizaciones de controladores mediante Windows Update e instalar el paquete seleccionado",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Buscar sitios de fabricantes por ID de hardware; verificar manualmente",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnóstico da inicialização do Windows sem alterações silenciosas",
                 ["Conservative cleanup of old temporary files"]="Limpeza segura de arquivos temporários antigos",
                 ["Application appearance and preferences"]="Aparência e preferências do aplicativo"
@@ -191,7 +191,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostica del registro", ["Computer cleanup"]="Pulizia del computer", ["Settings"]="Impostazioni",
                 ["Computer monitoring and maintenance tools"]="Monitoraggio e manutenzione del computer",
                 ["Plug and Play inventory, error filter and driver backup"]="Inventario Plug and Play, filtro errori e backup driver",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Buscar atualizações de drivers pelo Windows Update e instalar o pacote selecionado",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Buscar sites dos fabricantes por ID de hardware; verificar manualmente",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostica dell’avvio di Windows senza modifiche silenziose",
                 ["Conservative cleanup of old temporary files"]="Pulizia prudente dei vecchi file temporanei",
                 ["Application appearance and preferences"]="Aspetto e preferenze dell’applicazione"
@@ -201,7 +201,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Diagnostyka rejestru", ["Computer cleanup"]="Czyszczenie komputera", ["Settings"]="Ustawienia",
                 ["Computer monitoring and maintenance tools"]="Monitorowanie komputera i narzędzia konserwacji",
                 ["Plug and Play inventory, error filter and driver backup"]="Lista urządzeń Plug and Play, filtr błędów i kopia sterowników",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Cercare gli aggiornamenti dei driver tramite Windows Update e installare il pacchetto selezionato",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Cercare i siti dei produttori tramite ID hardware; verificare manualmente",
                 ["Windows startup entries diagnostics without silent changes"]="Diagnostyka autostartu Windows bez cichych zmian",
                 ["Conservative cleanup of old temporary files"]="Bezpieczne czyszczenie starych plików tymczasowych",
                 ["Application appearance and preferences"]="Wygląd i preferencje aplikacji"
@@ -211,7 +211,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Kayıt Defteri Tanılama", ["Computer cleanup"]="Bilgisayar Temizliği", ["Settings"]="Ayarlar",
                 ["Computer monitoring and maintenance tools"]="Bilgisayar izleme ve bakım araçları",
                 ["Plug and Play inventory, error filter and driver backup"]="Tak ve Çalıştır envanteri, hata filtresi ve sürücü yedekleme",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Wyszukaj aktualizacje sterowników przez Windows Update i zainstaluj wybrany pakiet",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Szukaj stron producentów według identyfikatora sprzętu; sprawdź ręcznie",
                 ["Windows startup entries diagnostics without silent changes"]="Windows başlangıç girdilerini sessiz değişiklik yapmadan tanılama",
                 ["Conservative cleanup of old temporary files"]="Eski geçici dosyaların güvenli temizliği",
                 ["Application appearance and preferences"]="Uygulama görünümü ve tercihleri"
@@ -221,7 +221,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Діагностика реєстру", ["Computer cleanup"]="Очищення комп’ютера", ["Settings"]="Налаштування",
                 ["Computer monitoring and maintenance tools"]="Моніторинг комп’ютера та засоби обслуговування",
                 ["Plug and Play inventory, error filter and driver backup"]="Інвентаризація Plug and Play, фільтр помилок і резервна копія драйверів",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Windows Update üzerinden sürücü güncellemelerini bul ve seçilen paketi yükle",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Donanım kimliğine göre üretici sitelerinde ara; paketleri elle doğrula",
                 ["Windows startup entries diagnostics without silent changes"]="Перевірка автозапуску Windows без непомітних змін",
                 ["Conservative cleanup of old temporary files"]="Безпечне очищення старих тимчасових файлів",
                 ["Application appearance and preferences"]="Вигляд і параметри програми"
@@ -231,7 +231,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="注册表诊断", ["Computer cleanup"]="电脑清理", ["Settings"]="设置",
                 ["Computer monitoring and maintenance tools"]="电脑监控和维护工具",
                 ["Plug and Play inventory, error filter and driver backup"]="即插即用设备清单、错误筛选和驱动备份",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Пошук оновлень драйверів через Windows Update з установленням вибраного пакета",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="Пошук сайтів виробників за апаратним ID; ручна перевірка",
                 ["Windows startup entries diagnostics without silent changes"]="检查 Windows 启动项，不进行静默修改",
                 ["Conservative cleanup of old temporary files"]="安全清理旧临时文件",
                 ["Application appearance and preferences"]="应用外观和偏好设置"
@@ -241,7 +241,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="レジストリ診断", ["Computer cleanup"]="PC のクリーンアップ", ["Settings"]="設定",
                 ["Computer monitoring and maintenance tools"]="PC の監視とメンテナンスツール",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug and Play インベントリ、エラーフィルター、ドライバーのバックアップ",
-                ["Search manufacturer websites by Hardware ID; manually verify packages"]="通过 Windows Update 查找驱动程序更新并安装所选软件包",
+                ["Search manufacturer websites by Hardware ID; manually verify packages"]="按硬件 ID 搜索制造商网站；手动验证驱动程序",
                 ["Windows startup entries diagnostics without silent changes"]="サイレント変更を行わずに Windows のスタートアップを診断",
                 ["Conservative cleanup of old temporary files"]="古い一時ファイルを安全にクリーンアップ",
                 ["Application appearance and preferences"]="アプリケーションの外観と設定"
