@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
@@ -59,7 +58,7 @@ public sealed class WindowsDriverUpdateService
                         Provider = provider,
                         DeviceClass = deviceClass,
                         HardwareId = hardwareId,
-                        AvailableVersion = ExtractVersion(title),
+                        AvailableVersion = "Версия не указана в метаданных",
                         DriverVersionDate = versionDate,
                         Description = description,
                         IsDownloaded = downloaded
@@ -174,12 +173,6 @@ public sealed class WindowsDriverUpdateService
             ReleaseCom(searcher);
             ReleaseCom(session);
         }
-    }
-
-    private static string ExtractVersion(string title)
-    {
-        var match = Regex.Match(title, @"(?<!\d)\d+(?:\.\d+){1,3}(?!\d)");
-        return match.Success ? match.Value : "Не указана в каталоге";
     }
 
     private static string SafeString(Func<string?> getter)
