@@ -584,22 +584,60 @@ public partial class MainWindow : Window
 
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
+        if (DevicesGrid.SelectedItem is not DeviceInfo device)
+        {
+            MessageBox.Show("Сначала выберите конкретное устройство на вкладке «Устройства». Установка без выбранного устройства запрещена.",
+                "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         var dialog = new OpenFileDialog
         {
-            Title = "Выберите INF-файл драйвера",
+            Title = "Выберите INF-файл пакета для выбранного устройства",
             Filter = "Файлы драйверов (*.inf)|*.inf",
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) != true) return;
-        if (MessageBox.Show($"Установить выбранный INF-пакет через pnputil?\n\n{dialog.FileName}\n\nПеред продолжением программа проверит подпись CAT-файла. Убедитесь, что пакет предназначен для этого устройства.",
-                "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
+        if (_maintenanceRunning) return;
+
         try
         {
-            if (_maintenanceRunning) return;
             _maintenanceRunning = true;
+            StatusText.Text = "Проверка INF, Hardware ID, архитектуры и подписи каталога...";
+            var report = await Task.Run(() => _infPackageInspector.Inspect(dialog.FileName, device));
+            var warnings = report.Warnings.Count == 0
+                ? "Замечаний нет."
+                : string.Join(Environment.NewLine, report.Warnings.Select(x => "• " + x));
+            var details =
+                $"Устройство: {device.Name}{Environment.NewLine}" +
+                $"INF: {Path.GetFileName(report.InfPath)}{Environment.NewLine}" +
+                $"Поставщик: {report.Provider}{Environment.NewLine}" +
+                $"Версия: {report.DriverVersion} ({report.DriverDate}){Environment.NewLine}" +
+                $"Совпадение: {report.MatchKind} — {report.MatchedHardwareId}{Environment.NewLine}" +
+                $"Архитектура: {(report.ArchitectureApplicable ? "подходит" : "не подходит")}{Environment.NewLine}" +
+                $"Подпись CAT: {report.CatalogSignature}{Environment.NewLine}" +
+                $"SHA-256 INF: {report.InfSha256}{Environment.NewLine}" +
+                $"SHA-256 CAT: {(string.IsNullOrWhiteSpace(report.CatalogSha256) ? "не рассчитан" : report.CatalogSha256)}{Environment.NewLine}{Environment.NewLine}" +
+                $"Замечания:{Environment.NewLine}{warnings}";
+
+            if (!report.IsInstallableForDevice)
+            {
+                MessageBox.Show(details + Environment.NewLine + Environment.NewLine +
+                    "Установка заблокирована: пакет не прошёл обязательные проверки.",
+                    "Пакет не допущен к установке", MessageBoxButton.OK, MessageBoxImage.Warning);
+                StatusText.Text = "Установка заблокирована проверкой INF-пакета.";
+                AppendEvent($"Блокировка установки INF для {device.Name}: {report.MatchKind}, CAT={report.CatalogSignature}.");
+                return;
+            }
+
+            if (MessageBox.Show(details + Environment.NewLine + Environment.NewLine +
+                    "Совпадение Hardware ID точное, CAT-подпись действительна. Передать пакет Windows для установки?",
+                    "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+
             var result = await _maintenance.InstallInfAsync(dialog.FileName);
             StatusText.Text = result;
+            AppendEvent($"Установка INF для {device.Name}: {result}");
             MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Установка отменена в UAC."; }
@@ -607,275 +645,4 @@ public partial class MainWindow : Window
         finally { _maintenanceRunning = false; }
     }
 
-    private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
-    {
-        await SearchDriverUpdatesAsync();
-    }
-
-    private async Task SearchDriverUpdatesAsync()
-    {
-        if (_scanRunning) return;
-        _scanRunning = true;
-        SearchDriverUpdatesButton.IsEnabled = false;
-        InstallSelectedDriverButton.IsEnabled = false;
-        DriverUpdatesSummaryText.Text = "Поиск драйверов в интернете по Hardware ID устройств...";
-        try
-        {
-            ShowPanel("drivers");
-            var candidates = await _internetDriverCatalog.SearchAsync(_devices);
-            _driverUpdates.Clear();
-            foreach (var candidate in candidates)
-            {
-                var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
-                _driverUpdates.Add(new DriverUpdateCandidate
-                {
-                    UpdateId = candidate.UpdateId,
-                    Title = candidate.Title,
-                    Manufacturer = candidate.Manufacturer,
-                    Model = candidate.Model,
-                    Provider = candidate.Provider,
-                    DeviceClass = candidate.DeviceClass,
-                    HardwareId = candidate.HardwareId,
-                    DeviceName = device?.Name ?? "Устройство не сопоставлено",
-                    CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
-                    Compatibility = device is null ? DriverUpdateCandidate.UnmatchedDeviceNotice : DriverUpdateCandidate.HardwareIdSearchNotice,
-                    AvailableVersion = candidate.AvailableVersion,
-                    DriverVersionDate = candidate.DriverVersionDate,
-                    Description = candidate.Description,
-                    IsDownloaded = candidate.IsDownloaded,
-                    SourceUrl = candidate.SourceUrl
-                });
-            }
-            var compatibleCount = _driverUpdates.Count(IsCandidateOpenable);
-            var unmatchedCount = _driverUpdates.Count - compatibleCount;
-            DriverUpdatesSummaryText.Text = candidates.Count == 0
-                ? "На официальных сайтах производителей не найдены страницы по обнаруженным Hardware ID."
-                : $"Найдено страниц: {candidates.Count}. Результат связан с устройством по Hardware ID: {compatibleCount}. Проверить вручную: {unmatchedCount}. Автоматическая установка из результатов поиска не выполняется.";
-            UpdatesCountText.Text = candidates.Count == 0
-                ? "Обновления не найдены."
-                : $"Всего: {candidates.Count}  |  Есть ссылка производителя: {compatibleCount}  |  Требуют проверки: {unmatchedCount}";
-            StatusText.Text = DriverUpdatesSummaryText.Text;
-            AppendEvent($"Интернет-поиск по Hardware ID: найдено страниц производителей — {candidates.Count}.");
-        }
-        catch (Exception ex)
-        {
-            DriverUpdatesSummaryText.Text = "Интернет-поиск не завершён. Проверьте подключение.";
-            UpdatesCountText.Text = "Ошибка поиска драйверов.";
-            MessageBox.Show(ex.Message, "Поиск обновлений драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        finally
-        {
-            SearchDriverUpdatesButton.IsEnabled = true;
-            _scanRunning = false;
-        }
-    }
-
-    internal static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
-        string.Equals(candidate.Compatibility, DriverUpdateCandidate.HardwareIdSearchNotice, StringComparison.Ordinal) &&
-        InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
-
-    private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        InstallSelectedDriverButton.IsEnabled =
-            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate && IsCandidateOpenable(candidate);
-    }
-
-    private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
-    {
-        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate) return;
-        if (!IsCandidateOpenable(candidate))
-        {
-            MessageBox.Show(
-                "Действие заблокировано: результат не сопоставлён с устройством или ссылка не прошла проверку HTTPS. " +
-                "Выберите результат с корректным Hardware ID и официальной ссылкой.",
-                "Нельзя подтвердить совместимость", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-        var details = string.Join(Environment.NewLine, new[]
-        {
-            candidate.Title,
-            "Устройство: " + candidate.DeviceName,
-            "Текущая версия: " + candidate.CurrentVersion,
-            "Совместимость: " + candidate.Compatibility,
-            string.IsNullOrWhiteSpace(candidate.HardwareId) ? null : "Hardware ID: " + candidate.HardwareId,
-            string.IsNullOrWhiteSpace(candidate.Manufacturer) ? null : "Производитель: " + candidate.Manufacturer,
-            string.IsNullOrWhiteSpace(candidate.Model) ? null : "Модель: " + candidate.Model,
-            string.IsNullOrWhiteSpace(candidate.Provider) ? null : "Поставщик: " + candidate.Provider,
-            string.IsNullOrWhiteSpace(candidate.DriverVersionDate) ? null : "Дата версии: " + candidate.DriverVersionDate
-        }.Where(x => !string.IsNullOrWhiteSpace(x)));
-        if (MessageBox.Show(
-            "Открыть официальную страницу найденного драйвера?\n\n" + details +
-            "\n\nПроверьте точную модель устройства, поддерживаемую версию Windows и цифровую подпись пакета. Программа не устанавливает драйвер с этой страницы автоматически.",
-            "Открытие сайта производителя", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-
-        InstallSelectedDriverButton.IsEnabled = false;
-        SearchDriverUpdatesButton.IsEnabled = false;
-        DriverUpdatesSummaryText.Text = "Открытие страницы производителя...";
-        try
-        {
-            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source))
-                throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });
-            var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
-            DriverUpdatesSummaryText.Text = result;
-            StatusText.Text = result;
-            AppendEvent("Открыта страница производителя: " + result);
-            MessageBox.Show(result, "Страница производителя", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            DriverUpdatesSummaryText.Text = "Не удалось открыть страницу производителя.";
-            MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-        finally
-        {
-            SearchDriverUpdatesButton.IsEnabled = true;
-            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected && IsCandidateOpenable(selected);
-        }
-    }
-
-    private void DetectOem()
-    {
-        _detectedOem = _oemCatalog.Detect(ComputerValue.Text ?? "");
-        OemDetectText.Text = _detectedOem is null
-            ? "Производитель компьютера не распознан автоматически. Выберите производителя вручную."
-            : $"Обнаружен производитель: {_detectedOem.Name}. Перед загрузкой проверьте точную модель устройства.";
-    }
-
-    private void OpenDetectedOem_Click(object sender, RoutedEventArgs e)
-    {
-        if (_detectedOem is null) { OpenOemCatalog_Click(sender, e); return; }
-        try { _oemCatalog.Open(_detectedOem); }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private void OpenOemCatalog_Click(object sender, RoutedEventArgs e)
-    {
-        var items = _oemCatalog.GetAll();
-        var menu = string.Join(Environment.NewLine, items.Select((item, index) => $"{index + 1}. {item.Name}"));
-        var answer = Microsoft.VisualBasic.Interaction.InputBox("Введите номер каталога:\n" + menu, "Официальные каталоги производителей", "1");
-        if (!int.TryParse(answer, out var number) || number < 1 || number > items.Count) return;
-        try { _oemCatalog.Open(items[number - 1]); }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private void EnableGameProfile_Click(object sender, RoutedEventArgs e)
-    {
-        try { GameProfileText.Text = _gameProfile.Enable(); StatusText.Text = "Игровой профиль Windows включён."; }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Игровой профиль", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private void RestoreGameProfile_Click(object sender, RoutedEventArgs e)
-    {
-        try { GameProfileText.Text = _gameProfile.Restore(); StatusText.Text = "Прежние параметры игрового профиля восстановлены."; }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Восстановление профиля", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private void ListPackages_Click(object sender, RoutedEventArgs e)
-    {
-        try { PackagesText.Text = _maintenance.ListDriverPackages(); StatusText.Text = "Список пакетов Driver Store обновлён."; }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Driver Store", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private async void RegistryScan_Click(object sender, RoutedEventArgs e)
-    {
-        RegistrySummaryText.Text = "Проверка четырёх разделов Run/RunOnce...";
-        try
-        {
-            var findings = await Task.Run(() => _registryService.Scan());
-            _registryFindings.Clear();
-            foreach (var finding in findings) _registryFindings.Add(finding);
-            var errors = findings.Count(x => x.Severity == "Ошибка");
-            RegistrySummaryText.Text = findings.Count == 0
-                ? "Подозрительных записей не обнаружено. Реестр не изменялся."
-                : $"Найдено замечаний: {findings.Count}; подтверждённых ошибок: {errors}. HKLM доступен только для просмотра.";
-            StatusText.Text = "Проверка автозапуска завершена. Изменений в реестре не выполнялось.";
-            AppendEvent($"Проверка Run/RunOnce: найдено замечаний — {findings.Count}.");
-        }
-        catch (Exception ex)
-        {
-            RegistrySummaryText.Text = "Проверка не завершена.";
-            MessageBox.Show(ex.Message, "Проверка реестра", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private async void RegistryRepair_Click(object sender, RoutedEventArgs e)
-    {
-        if (RegistryGrid.SelectedItem is not RegistryFinding finding)
-        {
-            MessageBox.Show("Сначала выберите строку с ошибкой.", "Проверка реестра", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-        if (!finding.Repairable)
-        {
-            MessageBox.Show("Автоматическое исправление доступно только для подтверждённой ошибки в HKCU. Системные записи HKLM доступны только для просмотра.",
-                "Проверка реестра", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-        if (MessageBox.Show(
-            $"Удалить только выбранную запись автозапуска?\n\nРаздел: {finding.Hive}\\{finding.SubKey}\nИмя: {finding.ValueName}\nЗначение: {finding.ValueData}\n\nПеред изменением будет сохранена резервная копия .reg.",
-            "Подтверждение исправления", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-        try
-        {
-            var backup = await Task.Run(() => _registryService.Repair(finding));
-            AppendEvent("Исправлена запись автозапуска; backup: " + backup);
-            MessageBox.Show("Запись удалена. Резервная копия:\n" + backup, "Исправление реестра", MessageBoxButton.OK, MessageBoxImage.Information);
-            await Task.Run(() => { });
-            RegistryScan_Click(sender, e);
-        }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Исправление реестра", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-
-    private async void JunkScan_Click(object sender, RoutedEventArgs e)
-    {
-        JunkSummaryText.Text = "Идёт проверка временных папок. Файлы не удаляются...";
-        try
-        {
-            var files = await Task.Run(() => _junkService.Scan(minimumAgeDays: 7));
-            _junkFiles.Clear();
-            foreach (var file in files) _junkFiles.Add(file);
-            var total = files.Sum(x => x.Size);
-            JunkSummaryText.Text = $"Найдено файлов старше 7 дней: {files.Count}. Потенциально освобождаемо: {JunkFileItem.FormatBytes(total)}. Отметьте файлы для удаления.";
-            StatusText.Text = "Проверка временных файлов завершена. Ничего не удалено.";
-            AppendEvent($"Проверка временных файлов: найдено файлов — {files.Count}, объём — {JunkFileItem.FormatBytes(total)}.");
-        }
-        catch (Exception ex)
-        {
-            JunkSummaryText.Text = "Проверка не завершена.";
-            MessageBox.Show(ex.Message, "Очистка компьютера", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private async void JunkClean_Click(object sender, RoutedEventArgs e)
-    {
-        JunkGrid.CommitEdit(DataGridEditingUnit.Cell, true);
-        JunkGrid.CommitEdit(DataGridEditingUnit.Row, true);
-        var selected = _junkFiles.Where(x => x.Selected).ToArray();
-        if (selected.Length == 0)
-        {
-            MessageBox.Show("Отметьте файлы, которые требуется удалить.", "Очистка компьютера", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-        var amount = selected.Sum(x => x.Size);
-        if (MessageBox.Show(
-            $"Удалить {selected.Length} временных файлов старше 7 дней?\nПотенциально освободится: {JunkFileItem.FormatBytes(amount)}.\n\nЗагрузки, документы, фотографии и браузерные данные не затрагиваются.",
-            "Подтверждение очистки", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            return;
-        try
-        {
-            var result = await Task.Run(() => _junkService.Clean(selected, minimumAgeDays: 7));
-            JunkSummaryText.Text = $"Удалено: {result.DeletedFiles}; освобождено: {JunkFileItem.FormatBytes(result.FreedBytes)}; пропущено: {result.SkippedFiles}.";
-            AppendEvent($"Очистка завершена: удалено файлов — {result.DeletedFiles}; освобождено — {JunkFileItem.FormatBytes(result.FreedBytes)}.");
-            if (result.Errors.Count > 0)
-                MessageBox.Show(string.Join(Environment.NewLine, result.Errors.Take(10)), "Очистка завершена с замечаниями", MessageBoxButton.OK, MessageBoxImage.Warning);
-            await Task.Delay(100);
-            var remaining = await Task.Run(() => _junkService.Scan(minimumAgeDays: 7));
-            _junkFiles.Clear();
-            foreach (var file in remaining) _junkFiles.Add(file);
-            StatusText.Text = "Очистка завершена. Повторное сканирование выполнено.";
-        }
-        catch (Exception ex) { MessageBox.Show(ex.Message, "Очистка компьютера", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
 }
