@@ -127,7 +127,7 @@ public sealed class DriverPackageArchiveExtractor
         var normalized = entryName.Replace('\\', '/');
         if (normalized.StartsWith("/", StringComparison.Ordinal) ||
             normalized.StartsWith("//", StringComparison.Ordinal) ||
-            normalized.Contains(':', StringComparison.Ordinal))
+            normalized.Contains(':'))
             throw new InvalidDataException("Архив содержит абсолютный или дисковый путь.");
 
         var segments = normalized.Split('/');
