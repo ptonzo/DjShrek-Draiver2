@@ -274,20 +274,41 @@
                                         <TextBlock Text="Проверка выполняется по аппаратным идентификаторам. Перед установкой изучите список найденных пакетов."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                         <WrapPanel Margin="0,13,0,0">
-                                            <Button Content="Проверить драйверы" Click="AutoUpdateDrivers_Click"/>
+                                            <Button x:Name="SearchDriverUpdatesButton" Content="Найти обновления драйверов" Click="AutoUpdateDrivers_Click"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
                                         <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="16" Margin="0,0,0,13"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="ДВИЖОК ПОИСКА SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                        <TextBlock Text="Официальный Snappy Driver Installer Origin загружается по запросу, архив проверяется по SHA-256. Индексы обновляются в фоновом режиме. Установка отключена. DjShrek сохраняет отчёт оборудования, снимок и журналы; отдельное окно SDIO не открывается. Встроенный список кандидатов пока не включён: сначала требуется проверить реальный формат выдачи SDIO."
-                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
-                                        <TextBlock Text="DjShrek-Draiver не использует Windows Update Agent, WUAPI или Microsoft Update Catalog."
-                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
+                                        <DockPanel LastChildFill="True">
+                                            <StackPanel>
+                                                <TextBlock Text="НАЙДЕННЫЕ ОБНОВЛЕНИЯ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                                <TextBlock x:Name="DriverUpdatesSummaryText" Text="Поиск ещё не выполнялся. Нажмите «Найти обновления драйверов»."
+                                                           Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0"/>
+                                            </StackPanel>
+                                            <Button x:Name="InstallSelectedDriverButton" DockPanel.Dock="Right"
+                                                    Content="Установить выбранный драйвер" IsEnabled="False"
+                                                    Click="InstallSelectedDriver_Click" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                        <DataGrid x:Name="DriverUpdatesGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                                                  SelectionMode="Single" CanUserSortColumns="True" Height="310"
+                                                  Margin="0,14,0,0" SelectionChanged="DriverUpdatesGrid_SelectionChanged">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Доступный драйвер" Binding="{Binding Title}" Width="2.4*"/>
+                                                <DataGridTextColumn Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/>
+                                                <DataGridTextColumn Header="Модель" Binding="{Binding Model}" Width="1.2*"/>
+                                                <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
+                                                <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
+                                                <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
+                                                <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Text="Источник: Windows Update Agent / Microsoft Update. Сканирование ничего не устанавливает. Установка запускается только для выбранной строки после отдельного подтверждения."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
 
