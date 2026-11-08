@@ -335,7 +335,7 @@
                                         <WrapPanel Margin="0,13,0,0">
                                             <Button x:Name="SearchDriverUpdatesButton" Content="Найти обновления драйверов" Click="AutoUpdateDrivers_Click"/>
                                             <Button Content="Проверить INF-пакет" Click="InspectInfPackage_Click"/>
-                                            <Button Content="Скачать пакет с сайта производителя" Click="DownloadOfficialDriverPackage_Click"/>
+                                            <Button Content="Скачать пакет с сайта производителя" Click="DownloadOfficialDriverPackage_Click"
                                                     Background="{DynamicResource SuccessBrush}"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
