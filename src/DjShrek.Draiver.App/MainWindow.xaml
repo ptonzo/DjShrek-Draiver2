@@ -213,18 +213,60 @@
                                     <StackPanel>
                                         <TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,12"/>
                                         <UniformGrid Columns="3" Rows="2">
-                                            <Button Content="Сканировать устройства" Click="Scan_Click" Height="62" Margin="0,0,8,8"
-                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" Foreground="White"/>
-                                            <Button Content="Найти и установить драйверы" Click="AutoUpdateDrivers_Click" Height="62" Margin="0,0,8,8"
-                                                    Background="{DynamicResource AccentSecondaryBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"/>
-                                            <Button Content="Резервная копия драйверов" Click="Backup_Click" Height="62" Margin="0,0,0,8"
-                                                    Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"/>
-                                            <Button Content="Очистка системы" Click="Cleanup_Click" Height="62" Margin="0,0,8,0"
-                                                    Background="{DynamicResource SuccessBrush}" BorderBrush="{DynamicResource SuccessBrush}" Foreground="White"/>
-                                            <Button Content="Проверка реестра" Click="Registry_Click" Height="62" Margin="0,0,8,0"
-                                                    Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"/>
-                                            <Button Content="Игровая оптимизация" Click="EnableGameProfile_Click" Height="62"
-                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"/>
+                                            <Button Click="Scan_Click" Height="78" Margin="0,0,10,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentBrush}" Foreground="White"
+                                                    ToolTip="Проверить подключённые устройства и их состояние">
+                                                <StackPanel>
+                                                    <TextBlock Text="01  ·  Сканирование устройств" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Проверка оборудования и ошибок" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="AutoUpdateDrivers_Click" Height="78" Margin="0,0,10,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentSecondaryBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"
+                                                    ToolTip="Найти совместимые обновления через Windows Update">
+                                                <StackPanel>
+                                                    <TextBlock Text="02  ·  Обновление драйверов" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Поиск доступных версий" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Backup_Click" Height="78" Margin="0,0,0,10" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"
+                                                    ToolTip="Сохранить установленные пакеты драйверов">
+                                                <StackPanel>
+                                                    <TextBlock Text="03  ·  Резервная копия" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Экспорт пакетов Driver Store" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Cleanup_Click" Height="78" Margin="0,0,10,0" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource SuccessBrush}" BorderBrush="{DynamicResource SuccessBrush}" Foreground="White"
+                                                    ToolTip="Найти старые временные файлы для безопасной очистки">
+                                                <StackPanel>
+                                                    <TextBlock Text="04  ·  Очистка системы" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Анализ временных файлов" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="Registry_Click" Height="78" Margin="0,0,10,0" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource HeaderBrush}" BorderBrush="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextBrush}"
+                                                    ToolTip="Проверить элементы автозапуска Windows">
+                                                <StackPanel>
+                                                    <TextBlock Text="05  ·  Проверка реестра" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Диагностика автозапуска" FontSize="10" Foreground="{DynamicResource MutedBrush}" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Click="EnableGameProfile_Click" Height="78" Padding="15,10"
+                                                    HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                                    Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource AccentSecondaryBrush}" Foreground="White"
+                                                    ToolTip="Применить игровой профиль оптимизации">
+                                                <StackPanel>
+                                                    <TextBlock Text="06  ·  Игровой режим" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Профиль оптимизации ПК" FontSize="10" Opacity="0.82" Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Button>
                                         </UniformGrid>
                                         <TextBlock x:Name="HealthSummary" Text="Выполните сканирование для проверки состояния устройств."
                                                    Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0" TextWrapping="Wrap"/>
