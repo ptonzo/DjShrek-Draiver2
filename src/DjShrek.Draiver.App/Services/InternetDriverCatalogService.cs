@@ -84,7 +84,7 @@ public sealed class InternetDriverCatalogService
                             HardwareId = hardwareId,
                             DeviceName = device.Name,
                             CurrentVersion = device.DriverVersion,
-                            Compatibility = "Найдено упоминание Hardware ID; совместимость пакета не подтверждена",
+                            Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
                             AvailableVersion = "Не подтверждена — проверьте на сайте производителя",
                             Description = description,
                             SourceUrl = uri.AbsoluteUri
