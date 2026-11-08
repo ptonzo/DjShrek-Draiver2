@@ -670,7 +670,8 @@ public partial class MainWindow : Window
     }
 
     private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
-        string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&\n        Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) && source.Scheme == Uri.UriSchemeHttps;
+        string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&
+        Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) && source.Scheme == Uri.UriSchemeHttps;
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -712,7 +713,10 @@ public partial class MainWindow : Window
         DriverUpdatesSummaryText.Text = "Открытие страницы производителя...";
         try
         {
-            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)\n                throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");\n            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });\n            var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
+            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)
+                throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });
+            var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
             DriverUpdatesSummaryText.Text = result;
             StatusText.Text = result;
             AppendEvent("Результат установки драйвера: " + result);
