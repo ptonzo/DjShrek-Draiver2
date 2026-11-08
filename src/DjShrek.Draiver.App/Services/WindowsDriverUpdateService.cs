@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using DjShrek.Draiver.App.Models;
 
@@ -45,7 +46,7 @@ public sealed class WindowsDriverUpdateService
                     string provider = SafeString(() => Convert.ToString(update.DriverProvider));
                     string deviceClass = SafeString(() => Convert.ToString(update.DriverClass));
                     string hardwareId = SafeString(() => Convert.ToString(update.DriverHardwareID));
-                    string versionDate = SafeString(() => Convert.ToString(update.DriverVerDate));
+                    string versionDate = SafeDateString(() => update.DriverVerDate);
                     string description = SafeString(() => Convert.ToString(update.Description));
                     bool downloaded = false;
                     try { downloaded = (bool)update.IsDownloaded; } catch { }
@@ -173,6 +174,21 @@ public sealed class WindowsDriverUpdateService
             ReleaseCom(searcher);
             ReleaseCom(session);
         }
+    }
+
+    private static string SafeDateString(Func<object?> getter)
+    {
+        try
+        {
+            var value = getter();
+            if (value is null) return "";
+            if (value is DateTime dateTime)
+                return dateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if (value is DateTimeOffset dateTimeOffset)
+                return dateTimeOffset.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+        }
+        catch { return ""; }
     }
 
     private static string SafeString(Func<string?> getter)
