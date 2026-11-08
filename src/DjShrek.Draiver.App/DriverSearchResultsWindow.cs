@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App;
@@ -18,7 +17,8 @@ public sealed class DriverSearchResultsWindow : Window
         MinWidth = 900;
         MinHeight = 500;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = System.Windows.Media.Brushes.WhiteSmoke;
+        SetResourceReference(BackgroundProperty, "AppBackgroundBrush");
+        SetResourceReference(ForegroundProperty, "TextBrush");
 
         var root = new DockPanel { Margin = new Thickness(14) };
         var note = new TextBlock
@@ -28,6 +28,7 @@ public sealed class DriverSearchResultsWindow : Window
             Margin = new Thickness(0, 0, 0, 12),
             FontSize = 13
         };
+        note.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         DockPanel.SetDock(note, Dock.Top);
         root.Children.Add(note);
 
@@ -55,7 +56,12 @@ public sealed class DriverSearchResultsWindow : Window
         _grid.Columns.Add(Column("Текущая версия", "CurrentVersion", 105));
         _grid.Columns.Add(Column("Hardware ID", "HardwareId", 220));
         _grid.Columns.Add(Column("Страница", "PageTitle", 240));
+        _grid.Columns.Add(Column("Описание", "Snippet", 280));
         _grid.Columns.Add(Column("Домен", "Host", 130));
+        _grid.Columns.Add(Column("Проверка", "Verification", 300));
+        _grid.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
+        _grid.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+        _grid.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
         _grid.MouseDoubleClick += (_, _) => OpenSelected();
         root.Children.Add(_grid);
         Content = root;
