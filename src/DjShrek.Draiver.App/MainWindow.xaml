@@ -535,9 +535,9 @@
                                 <Ellipse Margin="56" Fill="{DynamicResource HeaderBrush}" Stroke="{DynamicResource AccentBrush}" StrokeThickness="2"/>
                                 <Ellipse Width="190" Height="190" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="150" Height="150" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Width="150" Height="150" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="110" Height="110" Stroke="#526071" StrokeThickness="1"
+                                <Ellipse Width="110" Height="110" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
