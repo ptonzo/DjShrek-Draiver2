@@ -625,6 +625,7 @@ public partial class MainWindow : Window
                     DeviceClass = candidate.DeviceClass,
                     HardwareId = candidate.HardwareId,
                     CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
+                    Compatibility = device is null ? "Предложено Windows Update; ID не сопоставлен" : "Hardware ID совпадает",
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
