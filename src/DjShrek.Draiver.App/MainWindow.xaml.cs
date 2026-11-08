@@ -62,7 +62,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             DetectOem();
-            await RefreshAllAsync();
+            await RefreshMetricsAsync();
             _monitorTimer.Tick += async (_, _) => await RefreshMetricsAsync();
             _monitorTimer.Start();
         };
@@ -318,6 +318,30 @@ public partial class MainWindow : Window
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAllAsync();
     private async void Scan_Click(object sender, RoutedEventArgs e) => await ScanDevicesAsync();
 
+    private async void StartScan_Click(object sender, RoutedEventArgs e)
+    {
+        if (_scanRunning) return;
+        StartScanButton.IsEnabled = false;
+        StartupScanOverlay.Visibility = Visibility.Collapsed;
+        try
+        {
+            await ScanDevicesAsync();
+            if (_devices.Count == 0) return;
+
+            var errors = _devices.Count(IsProblemDevice);
+            var summary = $"Проверено устройств: {_devices.Count}. Устройств с ошибками: {errors}.";
+            var answer = MessageBox.Show(
+                summary + "\\n\\nТеперь запустить проверку актуальности драйверов через Snappy Driver Installer Origin? Будут загружены индексы и подобраны совместимые варианты. Автоматическая установка отключена.",
+                "Проверка актуальности драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information);
+            if (answer == MessageBoxResult.Yes)
+                await LaunchDriverUpdatesAsync();
+        }
+        finally
+        {
+            StartScanButton.IsEnabled = true;
+        }
+    }
+
     private async Task RefreshAllAsync()
     {
         if (_scanRunning) return;
@@ -562,28 +586,36 @@ public partial class MainWindow : Window
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
         if (_scanRunning) return;
+        await LaunchDriverUpdatesAsync();
+    }
+
+    private async Task LaunchDriverUpdatesAsync()
+    {
+        if (_scanRunning) return;
         _scanRunning = true;
         try
         {
             ShowPanel("drivers");
-            UpdatesCountText.Text = "Сканирование оборудования...";
-            var devices = await _inventory.ScanAsync();
-            ApplyDevices(devices);
-            var attention = devices.Count(IsProblemDevice);
-            UpdatesCountText.Text = $"Устройств найдено: {devices.Count}; с кодами ошибок: {attention}.";
+            UpdatesCountText.Text = "Подготовка проверки актуальности драйверов...";
+            if (_devices.Count == 0)
+            {
+                var devices = await _inventory.ScanAsync();
+                ApplyDevices(devices);
+            }
+            UpdatesCountText.Text = $"Устройств найдено: {_devices.Count}. Запуск проверки версий драйверов...";
             if (MessageBox.Show(
-                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. Программа обновит только индексы SDIO и создаст отчёт об оборудовании. Установка драйверов на этом этапе явно отключена. Затем откроется SDIO для просмотра найденных вариантов.\n\nПроверьте совместимость каждого предложения и подтверждайте установку только нужных драйверов вручную.\n\nПродолжить?",
-                "Онлайн-поиск драйверов", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                "Будет загружен официальный Snappy Driver Installer Origin (SDIO), архив будет проверен по SHA-256. SDIO обновит индексы и сравнит установленные драйверы с доступными совместимыми пакетами. Автоматическая установка отключена: вы сможете просмотреть найденные варианты и подтвердить только нужные обновления вручную.",
+                "Поиск актуальных драйверов", MessageBoxButton.YesNo, MessageBoxImage.Information) != MessageBoxResult.Yes)
                 return;
-            UpdatesCountText.Text = "Загрузка и проверка SDIO...";
+            UpdatesCountText.Text = "Загрузка индексов и поиск совместимых драйверов...";
             var result = await new SdioEngineService().DownloadAndLaunchAsync();
             UpdatesCountText.Text = result;
             StatusText.Text = result;
-            AppendEvent("Запущен проверенный движок SDIO для онлайн-поиска драйверов.");
+            AppendEvent("Выполнен поиск актуальных драйверов через проверенный движок SDIO.");
         }
         catch (Exception ex)
         {
-            UpdatesCountText.Text = "Онлайн-поиск не завершён.";
+            UpdatesCountText.Text = "Поиск драйверов не завершён.";
             MessageBox.Show(ex.Message, "DjShrek-Draiver", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally { _scanRunning = false; }
