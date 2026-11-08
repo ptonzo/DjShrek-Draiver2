@@ -54,8 +54,11 @@ public sealed class DriverMaintenanceService
         if (!File.Exists(full) || !string.Equals(Path.GetExtension(full), ".inf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Выберите существующий INF-файл драйвера.");
         ValidateSignedInfPackage(full);
+        // Driver Booster-style safety stage: create a Windows restore point before
+        // changing the Driver Store. If Windows cannot create it, abort installation.
+        CreateSystemRestorePoint();
         var result = RunElevated("pnputil.exe", $"/add-driver \"{full}\" /install");
-        return result + Environment.NewLine +
+        return "Точка восстановления Windows создана перед установкой." + Environment.NewLine + result + Environment.NewLine +
             "Команда pnputil завершилась без ошибки. Это не подтверждает, что устройство уже использует этот драйвер: проверьте версию и состояние устройства в диспетчере устройств.";
     }
 
@@ -173,6 +176,31 @@ public sealed class DriverMaintenanceService
         if (process.ExitCode != 0)
             throw new InvalidOperationException("Проверка подписи завершилась ошибкой: " + error);
         return output;
+    }
+
+    private static void CreateSystemRestorePoint()
+    {
+        const string description = "DjShrek Driver Update";
+        var escaped = description.Replace("'", "''");
+        var script = "$ErrorActionPreference='Stop'; " +
+                     "Enable-ComputerRestore -Drive $env:SystemDrive -ErrorAction SilentlyContinue; " +
+                     $"Checkpoint-Computer -Description '{escaped}' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop";
+        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        var start = new ProcessStartInfo("powershell.exe",
+            $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encoded}")
+        {
+            UseShellExecute = true,
+            Verb = "runas",
+            WindowStyle = ProcessWindowStyle.Hidden
+        };
+
+        using var process = Process.Start(start)
+            ?? throw new InvalidOperationException("Не удалось запустить создание точки восстановления Windows.");
+        WaitForExitOrKill(process, TimeSpan.FromMinutes(3), "Создание точки восстановления Windows");
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException(
+                "Windows не смогла создать точку восстановления. Установка драйвера отменена. " +
+                "Проверьте, включена ли защита системы и доступно ли место для точек восстановления.");
     }
 
     private static void WaitForExitOrKill(Process process, TimeSpan timeout, string operation)
