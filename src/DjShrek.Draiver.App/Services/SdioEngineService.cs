@@ -115,7 +115,7 @@ public sealed class SdioEngineService
             var stderr = await stderrTask;
             if (process.ExitCode != 0)
                 throw new InvalidOperationException(
-                    $"SDIO завершил обновление индексов с кодом {process.ExitCode}.\\n{stderr}\\n{stdout}\\nЖурнал SDIO: {Path.Combine(workingDirectory, "logs")}");
+                    $"SDIO завершил обновление индексов с кодом {process.ExitCode}.\n{stderr}\n{stdout}\nЖурнал SDIO: {Path.Combine(workingDirectory, "logs")}");
         }
 
         if (!File.Exists(deviceReport))
