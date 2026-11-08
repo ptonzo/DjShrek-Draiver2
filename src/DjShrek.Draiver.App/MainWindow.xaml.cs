@@ -48,7 +48,7 @@ public partial class MainWindow : Window
         var selectedTheme = ThemeManager.LoadPreference();
         ThemeSelector.SelectedValue = selectedTheme;
         SettingsThemeSelector.SelectedValue = selectedTheme;
-        var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes[0];
+        var theme = ThemeManager.Themes.FirstOrDefault(x => x.Id == selectedTheme) ?? ThemeManager.Themes.First(x => x.Id == "02");
         ThemeManager.Apply(theme);
         ThemeStatusText.Text = "Тема: " + theme.Name;
 
