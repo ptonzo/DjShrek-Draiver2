@@ -48,12 +48,12 @@ public static class ThemeManager
     {
         try
         {
-            if (!File.Exists(PreferencePath)) return Themes[0].Id;
+            if (!File.Exists(PreferencePath)) return "09";
             var saved = File.ReadAllText(PreferencePath).Trim();
             return Themes.FirstOrDefault(x => x.Id == saved)?.Id ??
-                   Themes.FirstOrDefault(x => x.Name == saved)?.Id ?? Themes[0].Id;
+                   Themes.FirstOrDefault(x => x.Name == saved)?.Id ?? "09";
         }
-        catch { return Themes[0].Id; }
+        catch { return "09"; }
     }
 
     public static void Apply(AppTheme theme)
