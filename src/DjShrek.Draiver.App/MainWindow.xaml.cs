@@ -648,7 +648,7 @@ public partial class MainWindow : Window
             var compatibleCount = _driverUpdates.Count(IsCandidateOpenable);
             var unmatchedCount = _driverUpdates.Count - compatibleCount;
             DriverUpdatesSummaryText.Text = candidates.Count == 0
-                ? "В официальных каталогах не найдены страницы драйверов по обнаруженным Hardware ID."
+                ? "На официальных сайтах производителей не найдены страницы по обнаруженным Hardware ID."
                 : $"Найдено страниц: {candidates.Count}. Результат связан с устройством по Hardware ID: {compatibleCount}. Проверить вручную: {unmatchedCount}. Автоматическая установка из результатов поиска не выполняется.";
             UpdatesCountText.Text = candidates.Count == 0
                 ? "Обновления не найдены."
@@ -671,7 +671,7 @@ public partial class MainWindow : Window
 
     private static bool IsCandidateOpenable(DriverUpdateCandidate candidate) =>
         string.Equals(candidate.Compatibility, "Hardware ID найден; пакет не проверен", StringComparison.Ordinal) &&
-        Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) && source.Scheme == Uri.UriSchemeHttps;
+        InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -713,7 +713,7 @@ public partial class MainWindow : Window
         DriverUpdatesSummaryText.Text = "Открытие страницы производителя...";
         try
         {
-            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source) || source.Scheme != Uri.UriSchemeHttps)
+            if (string.IsNullOrWhiteSpace(candidate.SourceUrl) || !InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl) || !Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var source))
                 throw new InvalidOperationException("Ссылка на страницу производителя недействительна.");
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(source.AbsoluteUri) { UseShellExecute = true });
             var result = "Открыта страница производителя. Сверьте модель, версию Windows и подпись пакета перед загрузкой и установкой.";
