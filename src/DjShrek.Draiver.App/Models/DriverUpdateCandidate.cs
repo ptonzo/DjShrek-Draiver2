@@ -17,7 +17,7 @@ public sealed class DriverUpdateCandidate
     public string AvailableVersion { get; init; } = "Не указана в каталоге";
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
-    public bool IsDownloaded { get; init; }
+    public bool IsDownloaded { get; set; }
     public string SourceUrl { get; init; } = "";
     public string PackageUrl { get; set; } = "";
     public string PackageFileName { get; set; } = "";
