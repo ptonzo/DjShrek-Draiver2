@@ -73,8 +73,13 @@ public partial class App : Application
                 settingsSelector.SelectedValue = theme.Id;
             }
 
-            var artwork = window.FindName("HeroArtwork") as FrameworkElement;
-            if (artwork is null) throw new InvalidOperationException("Theme illustration is missing.");
+            var heroDeviceCount = window.FindName("HeroDeviceCountText") as TextBlock;
+            var heroIssueCount = window.FindName("HeroIssueCountText") as TextBlock;
+            var heroScanStatus = window.FindName("HeroScanStatusText") as TextBlock;
+            if (heroDeviceCount is null || heroIssueCount is null || heroScanStatus is null)
+                throw new InvalidOperationException("Live hardware status panel is incomplete.");
+            if (Application.Current.Resources["PanelCornerRadius"] is not CornerRadius)
+                throw new InvalidOperationException("Theme-specific panel geometry resource is missing.");
             checks.Add("PASS: all twelve named themes applied to dynamic WPF resources.");
 
             // Read-only Windows integration checks: no registry edits, file deletes, or driver installs.
