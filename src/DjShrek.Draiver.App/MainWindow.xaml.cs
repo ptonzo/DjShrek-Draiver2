@@ -382,12 +382,19 @@ public partial class MainWindow : Window
         _metricsRunning = true;
         try
         {
+            // Await both providers before releasing the guard. If one provider fails,
+            // the other may still be using hardware resources in the background.
             var metricsTask = _inventory.GetSystemMetricsAsync();
             var hardwareTask = Task.Run(() => _sensors.ReadMetrics());
+            await Task.WhenAll(metricsTask, hardwareTask);
             ApplySystemMetrics(await metricsTask);
             ApplyHardwareMetrics(await hardwareTask);
         }
-        catch (Exception ex) { StatusText.Text = "Мониторинг временно недоступен: " + ex.Message; }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Мониторинг временно недоступен: " + ex.Message;
+            AppendEvent("Не удалось обновить мониторинг: " + ex.GetType().Name);
+        }
         finally { _metricsRunning = false; }
     }
 
