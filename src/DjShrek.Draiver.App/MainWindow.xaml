@@ -58,7 +58,7 @@
 
             <Border Grid.Column="0" Background="{DynamicResource NavigationBrush}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="13" Padding="12" Margin="0,0,16,0">
+                    CornerRadius="{DynamicResource PanelCornerRadius}" Padding="12" Margin="0,0,16,0">
                 <DockPanel LastChildFill="True">
                     <StackPanel DockPanel.Dock="Top">
                         <TextBlock Text="РАЗДЕЛЫ ПРОГРАММЫ" FontSize="10" FontWeight="Bold"
@@ -141,7 +141,7 @@
                                         <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="CPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="CpuValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -149,7 +149,7 @@
                                             <TextBlock Text="Загрузка процессора" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="GPU" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="GpuValue" Text="Н/Д" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -157,7 +157,7 @@
                                             <TextBlock x:Name="GpuDetail" Text="Видеокарта" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,9,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="RAM" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="MemoryValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -165,7 +165,7 @@
                                             <TextBlock x:Name="MemoryDetail" Text="Использование памяти" Foreground="{DynamicResource MutedBrush}" FontSize="10" Margin="0,7,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="3" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ДИСК C:" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="11"/>
                                             <TextBlock x:Name="DiskValue" Text="—" FontSize="29" FontWeight="Bold" Margin="0,7,0,5"/>
@@ -177,7 +177,7 @@
 
                                 <Grid Margin="0,0,0,14">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="1.35*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,10,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ОБОРУДОВАНИЕ И СИСТЕМА" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                             <TextBlock x:Name="OsValue" Text="Получение сведений о Windows..." FontSize="15" FontWeight="SemiBold" Margin="0,8,0,4"/>
@@ -187,7 +187,7 @@
                                             <TextBlock x:Name="UptimeValue" Text="Время работы: —" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                         <StackPanel>
                                             <TextBlock Text="ТЕМПЕРАТУРЫ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                             <TextBlock x:Name="CpuTempValue" Text="CPU  ·  Нет данных" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,6"/>
@@ -198,7 +198,7 @@
                                     </Border>
                                 </Grid>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,14" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="БЫСТРЫЕ ДЕЙСТВИЯ" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,0,0,12"/>
                                         <WrapPanel>
@@ -212,7 +212,7 @@
                                                    Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="15" Margin="0,0,0,13"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="15" Margin="0,0,0,13"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЖУРНАЛ СОБЫТИЙ" FontSize="10" FontWeight="Bold"
@@ -266,7 +266,7 @@
                     <Grid x:Name="DriversPanel" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,13"
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,13"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЦЕНТР ОБНОВЛЕНИЙ ДРАЙВЕРОВ" Foreground="{DynamicResource AccentSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
@@ -281,7 +281,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="16" Margin="0,0,0,13"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="16" Margin="0,0,0,13"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <DockPanel LastChildFill="True">
@@ -314,7 +314,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ОФИЦИАЛЬНЫЕ ИНСТРУМЕНТЫ ПРОИЗВОДИТЕЛЕЙ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock x:Name="OemDetectText" Text="Определение производителя компьютера..." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,10"/>
@@ -325,7 +325,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="РЕЗЕРВНОЕ КОПИРОВАНИЕ И ВОССТАНОВЛЕНИЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock Text="Экспорт пакетов из Driver Store. Перед изменениями драйверов рекомендуется сохранить копию."
@@ -342,7 +342,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИГРОВОЙ ПРОФИЛЬ WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock Text="Включает Game Mode и схему высокой производительности с возможностью восстановления прежних настроек."
@@ -361,7 +361,7 @@
                     <Grid x:Name="RegistryPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                         <StackPanel Margin="0,0,0,12">
-                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="16" Margin="0,0,0,12"
+                            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="16" Margin="0,0,0,12"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <StackPanel>
                                     <TextBlock Text="ДИАГНОСТИКА АВТОЗАПУСКА WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -390,7 +390,7 @@
 
                     <Grid x:Name="CleanupPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,12"
+                        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel>
                                 <TextBlock Text="БЕЗОПАСНАЯ ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -418,7 +418,7 @@
                     <Grid x:Name="SettingsPanel" Visibility="Collapsed">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource HeroBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ПЕРСОНАЛИЗАЦИЯ DJSHREK" Foreground="{DynamicResource AccentSecondaryBrush}" FontWeight="Bold" FontSize="10"/>
@@ -427,7 +427,7 @@
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="12 ТЕМ ОФОРМЛЕНИЯ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -439,7 +439,7 @@
                                                   HorizontalAlignment="Left"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20" Margin="0,0,0,14"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20" Margin="0,0,0,14"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ЯЗЫК ИНТЕРФЕЙСА" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
@@ -462,7 +462,7 @@
                                         </ComboBox>
                                     </StackPanel>
                                 </Border>
-                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="20"
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="20"
                                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИНФОРМАЦИЯ О ПРОГРАММЕ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
