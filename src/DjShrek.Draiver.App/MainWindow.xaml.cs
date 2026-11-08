@@ -590,8 +590,8 @@ public partial class MainWindow : Window
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) != true) return;
-        if (MessageBox.Show($"Передать Windows пакет для установки?\n\n{dialog.FileName}\n\nПродолжайте только если проверили источник и совместимость.",
-                "Открытие сайта производителя", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        if (MessageBox.Show($"Установить выбранный INF-пакет через pnputil?\n\n{dialog.FileName}\n\nПеред продолжением программа проверит подпись CAT-файла. Убедитесь, что пакет предназначен для этого устройства.",
+                "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return;
         try
         {
