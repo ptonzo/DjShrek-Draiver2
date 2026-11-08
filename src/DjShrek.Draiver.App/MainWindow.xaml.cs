@@ -608,15 +608,7 @@ public partial class MainWindow : Window
             _driverUpdates.Clear();
             foreach (var candidate in candidates)
             {
-                var hardwareIds = candidate.HardwareId
-                    .Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                var normalizedCandidateIds = hardwareIds
-                    .Select(id => id.Trim().Trim('"'))
-                    .Where(id => id.Length > 0)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var device = _devices.FirstOrDefault(item =>
-                    item.HardwareIds.Concat(item.CompatibleIds)
-                        .Any(id => normalizedCandidateIds.Contains(id.Trim().Trim('"'))));
+                var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
                 _driverUpdates.Add(new DriverUpdateCandidate
                 {
                     UpdateId = candidate.UpdateId,
