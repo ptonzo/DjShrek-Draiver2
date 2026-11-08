@@ -628,7 +628,7 @@ public partial class MainWindow : Window
                     HardwareId = candidate.HardwareId,
                     DeviceName = device?.Name ?? "Устройство не сопоставлено",
                     CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
-                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Точное совпадение Hardware ID",
+                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Точное совпадение ID устройства",
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
@@ -656,7 +656,7 @@ public partial class MainWindow : Window
     }
 
     private static bool IsCandidateInstallable(DriverUpdateCandidate candidate) =>
-        string.Equals(candidate.Compatibility, "Точное совпадение Hardware ID", StringComparison.Ordinal);
+        string.Equals(candidate.Compatibility, "Точное совпадение ID устройства", StringComparison.Ordinal);
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
