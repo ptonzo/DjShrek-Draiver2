@@ -14,4 +14,7 @@ public sealed record OemDriverPackCandidate(
     string ReleaseDate,
     Uri PackageUri,
     string CatalogSource,
-    string CompatibilityEvidence);
+    string CompatibilityEvidence)
+{
+    public string DisplayText => $"{Model} | {OperatingSystem} | {PackageVersion} | {ReleaseDate}";
+}
