@@ -720,7 +720,7 @@ public partial class MainWindow : Window
         finally
         {
             SearchDriverUpdatesButton.IsEnabled = true;
-            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate;
+            InstallSelectedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected && IsCandidateInstallable(selected);
         }
     }
 
