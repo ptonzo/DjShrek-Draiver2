@@ -373,6 +373,8 @@
                                                 <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
                                                 <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
                                                 <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
+                                                <DataGridTextColumn Header="Пакет" Binding="{Binding PackageStatus}" Width="1.2*"/>
+                                                <DataGridTextColumn Header="SHA-256" Binding="{Binding PackageSha256}" Width="2*"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
                                         <TextBlock Text="Поиск выполняется в интернете по Hardware ID. В результатах показываются только HTTPS-страницы официальных производителей. Загрузка и установка выполняются после ручной проверки."
