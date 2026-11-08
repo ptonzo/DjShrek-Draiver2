@@ -53,7 +53,7 @@ public static class ThemeManager
             return Themes.FirstOrDefault(x => x.Id == saved)?.Id ??
                    Themes.FirstOrDefault(x => x.Name == saved)?.Id ?? "02";
         }
-        catch { return "09"; }
+        catch { return "02"; }
     }
 
     public static void Apply(AppTheme theme)
