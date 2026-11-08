@@ -88,6 +88,20 @@ public partial class App : Application
                 InternetDriverCatalogService.IsOfficialVendorUrl("javascript:alert(1)"))
                 throw new InvalidOperationException("Official vendor URL validation accepted an unsafe URL or rejected a valid vendor URL.");
             checks.Add("PASS: official vendor URL allowlist accepts legitimate subdomains and rejects lookalike, HTTP and script URLs.");
+            var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "USB\\\\VID_1234&PID_5678") != "hp.com")
+                throw new InvalidOperationException("Short OEM name HP was not mapped to its official domain.");
+            vendorDevice = new DeviceInfo { Manufacturer = "Micro-Star International" };
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\\\\VEN_1234&DEV_5678") != "msi.com")
+                throw new InvalidOperationException("Micro-Star manufacturer name was not mapped to MSI.");
+            vendorDevice = new DeviceInfo { Manufacturer = "Desktop Chipset HPQ-123" };
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\\\\VEN_1234&DEV_5678") is not null)
+                throw new InvalidOperationException("Incidental HP substring incorrectly selected HP support.");
+            vendorDevice = new DeviceInfo { Manufacturer = "Unknown" };
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\\\\VEN_10DE&DEV_1234") != "nvidia.com")
+                throw new InvalidOperationException("PCI vendor ID did not take priority for NVIDIA.");
+            checks.Add("PASS: OEM/component vendor routing handles HP/MSI names, rejects incidental substrings, and prioritizes PCI vendor IDs.");
+
 
             var matchedCandidate = new DriverUpdateCandidate
             {
