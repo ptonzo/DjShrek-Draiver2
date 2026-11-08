@@ -64,7 +64,21 @@ public partial class App : Application
                 throw new InvalidOperationException("Partial hardware ID was incorrectly accepted.");
             if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "") is not null)
                 throw new InvalidOperationException("Empty hardware ID was incorrectly accepted.");
-            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");
+            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");            var ambiguousDevices = new[]
+            {
+                matcherDevices[0],
+                new DeviceInfo
+                {
+                    Name = "Second GPU",
+                    HardwareIds = new[] { "PCI\\VEN_10DE&DEV_5678" },
+                    CompatibleIds = new[] { "PCI\\VEN_10DE&CC_030000" }
+                }
+            };
+            if (DriverCompatibilityMatcher.FindExactMatch(ambiguousDevices, "PCI\\VEN_10DE&CC_030000") is not null)
+                throw new InvalidOperationException("A shared compatible ID was incorrectly assigned to one of multiple devices.");
+            if (!ReferenceEquals(DriverCompatibilityMatcher.FindExactMatch(ambiguousDevices, "PCI\\VEN_10DE&DEV_5678"), ambiguousDevices[1]))
+                throw new InvalidOperationException("A unique exact hardware ID was not matched when another device shared only a compatible ID.");
+            checks.Add("PASS: ambiguous shared compatible IDs are rejected while unique hardware IDs remain matchable.");
             
             // OEM detection must identify the system builder, not a component vendor.
             var oemCatalog = new OemCatalogService();
