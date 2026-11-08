@@ -89,19 +89,19 @@ public partial class App : Application
                 throw new InvalidOperationException("Official vendor URL validation accepted an unsafe URL or rejected a valid vendor URL.");
             checks.Add("PASS: official vendor URL allowlist accepts legitimate subdomains and rejects lookalike, HTTP and script URLs.");
 
-            var candidate = new DriverUpdateCandidate
+            var matchedCandidate = new DriverUpdateCandidate
             {
                 Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
                 SourceUrl = "https://support.lenovo.com/driver"
             };
-            if (!MainWindow.IsCandidateOpenable(candidate))
+            if (!DjShrek.Draiver.App.MainWindow.IsCandidateOpenable(matchedCandidate))
                 throw new InvalidOperationException("A matched Hardware ID search candidate cannot open its official manufacturer page.");
-            var blockedCandidate = new DriverUpdateCandidate
+            var unmatchedCandidate = new DriverUpdateCandidate
             {
                 Compatibility = DriverUpdateCandidate.UnmatchedDeviceNotice,
                 SourceUrl = "https://support.lenovo.com/driver"
             };
-            if (MainWindow.IsCandidateOpenable(blockedCandidate))
+            if (DjShrek.Draiver.App.MainWindow.IsCandidateOpenable(unmatchedCandidate))
                 throw new InvalidOperationException("An unmatched device was incorrectly marked as a matched search candidate.");
             checks.Add("PASS: UI action is enabled for a matched Hardware ID and official URL, and blocked for an unmatched device.");
             
