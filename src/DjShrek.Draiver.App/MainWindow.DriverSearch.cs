@@ -70,7 +70,8 @@ public partial class MainWindow
             return;
 
         _driverIgnore.Ignore(candidate.HardwareId);
-        _driverUpdates.RemoveWhere(x => string.Equals(x.HardwareId, candidate.HardwareId, StringComparison.OrdinalIgnoreCase));
+        foreach (var item in _driverUpdates.Where(x => string.Equals(x.HardwareId, candidate.HardwareId, StringComparison.OrdinalIgnoreCase)).ToArray())
+            _driverUpdates.Remove(item);
         UpdatesCountText.Text = $"Исключено устройств: {_driverIgnore.GetIgnored().Count}.";
         DriverUpdatesSummaryText.Text = "Устройство добавлено в список исключений. Его можно вернуть через контекстное меню списка.";
         AppendEvent("Устройство исключено из поиска обновлений: " + candidate.HardwareId);
