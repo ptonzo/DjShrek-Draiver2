@@ -16,4 +16,5 @@ public sealed class DriverUpdateCandidate
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
     public bool IsDownloaded { get; init; }
+    public string SourceUrl { get; init; } = "";
 }
