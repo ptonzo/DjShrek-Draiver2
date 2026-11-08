@@ -11,7 +11,7 @@ public sealed class DriverUpdateCandidate
     public string HardwareId { get; init; } = "";
     public string DeviceName { get; init; } = "Устройство не сопоставлено";
     public string CurrentVersion { get; init; } = "Не сопоставлена";
-    public string Compatibility { get; init; } = "Предложено Windows Update";
+    public string Compatibility { get; init; } = "Совместимость не проверена";
     public string AvailableVersion { get; init; } = "Не указана в каталоге";
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
