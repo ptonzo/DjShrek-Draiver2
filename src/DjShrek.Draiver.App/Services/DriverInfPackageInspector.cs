@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
@@ -153,7 +154,12 @@ public sealed class DriverInfPackageInspector
     {
         var entries = version.Where(x => CatalogRegex.IsMatch(x.Key)).ToArray();
         if (entries.Length == 0) return null;
-        var arch = Environment.Is64BitOperatingSystem ? "NTamd64" : "NTx86";
+        var arch = RuntimeInformation.OSArchitecture switch
+        {
+            Architecture.Arm64 => "NTarm64",
+            Architecture.X64 => "NTamd64",
+            _ => "NTx86"
+        };
         var selected = entries.Where(x => x.Key.StartsWith("CatalogFile." + arch, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(x => x.Key.Length).FirstOrDefault();
         selected = selected.Key is not null ? selected : entries.FirstOrDefault(x => !x.Key.Contains('.', StringComparison.Ordinal));
@@ -180,7 +186,12 @@ public sealed class DriverInfPackageInspector
     private static bool IsArchitectureApplicable(IReadOnlyList<string> architectures)
     {
         if (architectures.Count == 0) return true; // undecorated legacy INF; not proof of OS-version compatibility
-        var expected = Environment.Is64BitOperatingSystem ? "NTamd64" : "NTx86";
+        var expected = RuntimeInformation.OSArchitecture switch
+        {
+            Architecture.Arm64 => "NTarm64",
+            Architecture.X64 => "NTamd64",
+            _ => "NTx86"
+        };
         return architectures.Contains(expected, StringComparer.OrdinalIgnoreCase);
     }
 
