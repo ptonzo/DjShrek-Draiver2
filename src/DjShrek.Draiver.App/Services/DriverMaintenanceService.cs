@@ -145,6 +145,15 @@ public sealed class DriverMaintenanceService
         }
     }
 
+    public static void ValidateCatalogFileSignature(string catalogPath)
+    {
+        var full = Path.GetFullPath(catalogPath);
+        if (!File.Exists(full)) throw new FileNotFoundException("CAT-файл не найден.", full);
+        var status = GetCatalogSignatureStatus(full);
+        if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Подпись каталога '{Path.GetFileName(full)}' не подтверждена (статус: {status}).");
+    }
+
     private static string GetCatalogSignatureStatus(string catalogPath)
     {
         var escaped = catalogPath.Replace("'", "''");
