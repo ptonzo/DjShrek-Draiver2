@@ -19,4 +19,8 @@ public sealed class DriverUpdateCandidate
     public string Description { get; init; } = "";
     public bool IsDownloaded { get; init; }
     public string SourceUrl { get; init; } = "";
+    public string PackageUrl { get; set; } = "";
+    public string PackageFileName { get; set; } = "";
+    public string PackageSha256 { get; set; } = "";
+    public string PackageStatus { get; set; } = "Пакет не загружен";
 }
