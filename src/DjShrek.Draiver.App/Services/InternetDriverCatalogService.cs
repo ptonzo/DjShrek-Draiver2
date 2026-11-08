@@ -16,12 +16,17 @@ public sealed class InternetDriverCatalogService
         AllowAutoRedirect = true
     }) { Timeout = TimeSpan.FromSeconds(15) };
 
+    static InternetDriverCatalogService()
+    {
+        Client.DefaultRequestHeaders.UserAgent.ParseAdd("DjShrek-Draiver/1.8");
+    }
+
     private static readonly string[] OfficialDomains =
     {
         "intel.com", "nvidia.com", "amd.com", "dell.com", "hp.com",
         "lenovo.com", "asus.com", "acer.com", "msi.com", "gigabyte.com",
         "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com",
-        "microsoft.com", "microsoft.com"
+        "microsoft.com"
     };
 
     public async Task<IReadOnlyList<DriverSearchResult>> SearchAsync(
@@ -83,9 +88,9 @@ public sealed class InternetDriverCatalogService
                         });
                     }
                 }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) { /* Per-request timeout. */ }
                 catch (OperationCanceledException) { throw; }
                 catch (HttpRequestException) { /* A failed search for one ID must not cancel other devices. */ }
-                catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested) { }
                 catch (System.Xml.XmlException) { }
                 await Task.Delay(250, cancellationToken);
             }
@@ -99,7 +104,7 @@ public sealed class InternetDriverCatalogService
 
     private static bool IsUsefulHardwareId(string id) =>
         !string.IsNullOrWhiteSpace(id) && id.Length >= 10 &&
-        id.Contains('\\') && !id.Contains("REV_", StringComparison.OrdinalIgnoreCase);
+        id.Contains('\\');
 
     private static bool IsOfficialHost(string host)
     {
