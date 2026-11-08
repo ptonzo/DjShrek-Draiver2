@@ -33,7 +33,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: .github/DRIVER_AGENT_PROMPT.md
-          output-file: codex-summary.md
+          output-file: /tmp/codex-summary.md
           permission-profile: ":workspace"
           safety-strategy: drop-sudo
 
@@ -42,6 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git add -N .
           git diff --check
           git diff --binary > /tmp/djshrek-codex.patch
           if [ -s /tmp/djshrek-codex.patch ]; then
@@ -51,8 +52,8 @@ jobs:
           fi
           mkdir -p /tmp/djshrek-codex-artifact
           cp /tmp/djshrek-codex.patch /tmp/djshrek-codex-artifact/changes.patch
-          if [ -f codex-summary.md ]; then
-            cp codex-summary.md /tmp/djshrek-codex-artifact/summary.md
+          if [ -f /tmp/codex-summary.md ]; then
+            cp /tmp/codex-summary.md /tmp/djshrek-codex-artifact/summary.md
           fi
 
       - name: Upload proposed patch
