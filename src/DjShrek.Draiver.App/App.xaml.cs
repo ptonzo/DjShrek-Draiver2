@@ -94,17 +94,16 @@ public partial class App : Application
                 Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
                 SourceUrl = "https://support.lenovo.com/driver"
             };
-            if (candidate.Compatibility != DriverUpdateCandidate.HardwareIdSearchNotice ||
-                !InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl))
+            if (!MainWindow.IsCandidateOpenable(candidate))
                 throw new InvalidOperationException("A matched Hardware ID search candidate cannot open its official manufacturer page.");
             var blockedCandidate = new DriverUpdateCandidate
             {
                 Compatibility = DriverUpdateCandidate.UnmatchedDeviceNotice,
                 SourceUrl = "https://support.lenovo.com/driver"
             };
-            if (blockedCandidate.Compatibility == DriverUpdateCandidate.HardwareIdSearchNotice)
+            if (MainWindow.IsCandidateOpenable(blockedCandidate))
                 throw new InvalidOperationException("An unmatched device was incorrectly marked as a matched search candidate.");
-            checks.Add("PASS: matched Hardware ID candidate status is consistent; unmatched devices remain distinguishable.");
+            checks.Add("PASS: UI action is enabled for a matched Hardware ID and official URL, and blocked for an unmatched device.");
             
             // OEM detection must identify the system builder, not a component vendor.
             var oemCatalog = new OemCatalogService();
