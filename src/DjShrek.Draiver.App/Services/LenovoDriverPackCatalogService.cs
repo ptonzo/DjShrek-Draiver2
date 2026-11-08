@@ -86,14 +86,19 @@ public sealed class LenovoDriverPackCatalogService
                 var packageUrl = pack.Value.Trim();
                 if (!TryOfficialPackageUri(packageUrl, out var uri)) continue;
 
-                var catalogOs = (string?)pack.Attribute("version") ?? "";
-                if (!string.IsNullOrWhiteSpace(catalogOs) &&
-                    !OsMatches(catalogOs, wantedOs))
+                // Lenovo catalogv2.xml uses "os" for the OS family (win10/win11)
+                // and "version" for the Windows release/build selector (for example 1909).
+                // The latter is NOT the driver package version.
+                var catalogOs = (string?)pack.Attribute("os") ?? "";
+                if (string.IsNullOrWhiteSpace(catalogOs) || !OsMatches(catalogOs, wantedOs))
                     continue;
 
+                var osBuild = (string?)pack.Attribute("version") ?? "";
                 var packageVersion = FirstNonEmpty(
                     (string?)pack.Attribute("packageVersion"),
-                    "Каталог не указывает версию пакета");
+                    string.IsNullOrWhiteSpace(osBuild)
+                        ? "Каталог не указывает версию пакета"
+                        : $"Версия ОС в каталоге: {osBuild}; версия пакета не указана");
                 var releaseDate = FirstNonEmpty(
                     (string?)pack.Attribute("date"),
                     (string?)pack.Attribute("releaseDate"),
@@ -103,7 +108,8 @@ public sealed class LenovoDriverPackCatalogService
                     "Lenovo",
                     modelName,
                     machineType.Trim(),
-                    string.IsNullOrWhiteSpace(catalogOs) ? operatingSystem : catalogOs,
+                    catalogOs.Equals("win10", StringComparison.OrdinalIgnoreCase) ? "Windows 10" :
+                    catalogOs.Equals("win11", StringComparison.OrdinalIgnoreCase) ? "Windows 11" : catalogOs,
                     "catalogv2.xml",
                     packageVersion,
                     releaseDate,
@@ -155,9 +161,14 @@ public sealed class LenovoDriverPackCatalogService
     private static bool OsMatches(string catalogValue, string requestedValue)
     {
         var catalog = NormalizeOs(catalogValue);
-        return catalog.Length == 0 ||
-               requestedValue.Contains(catalog, StringComparison.OrdinalIgnoreCase) ||
-               catalog.Contains(requestedValue, StringComparison.OrdinalIgnoreCase);
+        var requested = NormalizeOs(requestedValue);
+        if (catalog is "win10" or "windows10")
+            return requested.Contains("windows10", StringComparison.OrdinalIgnoreCase) ||
+                   requested.Contains("win10", StringComparison.OrdinalIgnoreCase);
+        if (catalog is "win11" or "windows11")
+            return requested.Contains("windows11", StringComparison.OrdinalIgnoreCase) ||
+                   requested.Contains("win11", StringComparison.OrdinalIgnoreCase);
+        return requested.Contains(catalog, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FirstNonEmpty(params string[] values) =>
