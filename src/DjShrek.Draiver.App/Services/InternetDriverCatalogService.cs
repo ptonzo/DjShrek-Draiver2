@@ -149,6 +149,12 @@ public sealed class InternetDriverCatalogService
         return true;
     }
 
+    public static bool IsOfficialVendorUrl(string? value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return false;
+        return IsOfficial(uri.Host);
+    }
+
     private static bool IsOfficial(string host)
     {
         host = host.TrimEnd('.').ToLowerInvariant();
