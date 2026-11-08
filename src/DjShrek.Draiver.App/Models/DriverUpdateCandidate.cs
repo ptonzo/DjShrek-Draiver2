@@ -1,0 +1,15 @@
+namespace DjShrek.Draiver.App.Models;
+
+public sealed class DriverUpdateCandidate
+{
+    public string UpdateId { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Manufacturer { get; init; } = "";
+    public string Model { get; init; } = "";
+    public string Provider { get; init; } = "";
+    public string DeviceClass { get; init; } = "";
+    public string HardwareId { get; init; } = "";
+    public string DriverVersionDate { get; init; } = "";
+    public string Description { get; init; } = "";
+    public bool IsDownloaded { get; init; }
+}
