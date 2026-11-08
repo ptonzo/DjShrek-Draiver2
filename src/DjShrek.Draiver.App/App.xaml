@@ -20,7 +20,7 @@
         </LinearGradientBrush>
 
         <Style TargetType="{x:Type Button}">
-            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
