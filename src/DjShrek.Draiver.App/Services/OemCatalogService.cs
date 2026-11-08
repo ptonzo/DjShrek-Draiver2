@@ -14,17 +14,21 @@ public sealed class OemCatalogService
  public IReadOnlyList<OemSupport> GetAll()=>Items;
  public OemSupport? Detect(string text) {
   text=text.ToLowerInvariant();
-  if(text.Contains("dell")||text.Contains("alienware"))return Items[0];
-  if(text.Contains("hewlett")||text.StartsWith("hp")||text.Contains(" hp "))return Items[1];
-  if(text.Contains("lenovo")||text.Contains("thinkpad"))return Items[2];
-  if(text.Contains("asus")||text.Contains("asustek")||text.Contains("rog"))return Items[3];
-  if(text.Contains("acer"))return Items[4];
-  if(text.Contains("micro-star")||text.Contains("msi"))return Items[5];
-  if(text.Contains("intel"))return Items[6];
-  if(text.Contains("advanced micro")||text.Contains("amd"))return Items[7];
-  if(text.Contains("nvidia"))return Items[8];
-  if(text.Contains("microsoft")||text.Contains("surface"))return Items[9];
+  // Detect the computer manufacturer only; CPU/GPU vendors are not PC OEMs.
+  if(Has(text,"dell")||Has(text,"alienware"))return Items[0];
+  if(Has(text,"hewlett-packard")||Has(text,"hewlett packard")||Has(text,"hp")||Has(text,"hewlett"))return Items[1];
+  if(Has(text,"lenovo")||Has(text,"thinkpad")||Has(text,"thinkcentre")||Has(text,"legion"))return Items[2];
+  if(Has(text,"asus")||Has(text,"asustek")||Has(text,"republic of gamers"))return Items[3];
+  if(Has(text,"acer"))return Items[4];
+  if(Has(text,"micro-star")||Has(text,"micro star")||Has(text,"msi"))return Items[5];
+  if(Has(text,"microsoft")||Has(text,"surface"))return Items[9];
   return null;
+ }
+ private static bool Has(string source,string token)
+ {
+  return System.Text.RegularExpressions.Regex.IsMatch(
+   source, @"(?<![a-z0-9])"+System.Text.RegularExpressions.Regex.Escape(token)+@"(?![a-z0-9])",
+   System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
  }
  public void Open(OemSupport item) {
   if(!Uri.TryCreate(item.Url,UriKind.Absolute,out var uri)||uri.Scheme!="https")throw new InvalidOperationException("Недопустимый адрес каталога.");
