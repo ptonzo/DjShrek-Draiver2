@@ -610,11 +610,13 @@ public partial class MainWindow : Window
             {
                 var hardwareIds = candidate.HardwareId
                     .Split(new[] { ',', ';', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var normalizedCandidateIds = hardwareIds
+                    .Select(id => id.Trim().Trim('"'))
+                    .Where(id => id.Length > 0)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var device = _devices.FirstOrDefault(item =>
-                    item.HardwareIds.Concat(item.CompatibleIds).Any(id =>
-                        hardwareIds.Any(candidateId =>
-                            id.Contains(candidateId, StringComparison.OrdinalIgnoreCase) ||
-                            candidateId.Contains(id, StringComparison.OrdinalIgnoreCase))));
+                    item.HardwareIds.Concat(item.CompatibleIds)
+                        .Any(id => normalizedCandidateIds.Contains(id.Trim().Trim('"'))));
                 _driverUpdates.Add(new DriverUpdateCandidate
                 {
                     UpdateId = candidate.UpdateId,
@@ -624,8 +626,9 @@ public partial class MainWindow : Window
                     Provider = candidate.Provider,
                     DeviceClass = candidate.DeviceClass,
                     HardwareId = candidate.HardwareId,
+                    DeviceName = device?.Name ?? "Устройство не сопоставлено",
                     CurrentVersion = device?.DriverVersion ?? "Не сопоставлена",
-                    Compatibility = device is null ? "Предложено Windows Update; ID не сопоставлен" : "Hardware ID совпадает",
+                    Compatibility = device is null ? "Не сопоставлено: проверьте вручную" : "Точное совпадение Hardware ID",
                     AvailableVersion = candidate.AvailableVersion,
                     DriverVersionDate = candidate.DriverVersionDate,
                     Description = candidate.Description,
