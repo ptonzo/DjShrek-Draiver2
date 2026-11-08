@@ -274,7 +274,8 @@
                                         <TextBlock Text="Проверка выполняется по аппаратным идентификаторам. Перед установкой изучите список найденных пакетов."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                                         <WrapPanel Margin="0,13,0,0">
-                                            <Button Content="Сканировать и открыть SDIO" Click="AutoUpdateDrivers_Click"/>
+                                            <Button Content="Поиск в интернете по Hardware ID" Click="AutoUpdateDrivers_Click"/>
+                                            <Button Content="Открыть SDIO" Click="LaunchSdio_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
                                         <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
@@ -283,8 +284,8 @@
 
                                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="ДВИЖОК ПОИСКА SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
-                                        <TextBlock Text="Официальный Snappy Driver Installer Origin загружается по запросу, архив проверяется по SHA-256. Индексы обновляются внутри SDIO. Выбор и установка пакетов подтверждаются пользователем в окне движка."
+                                        <TextBlock Text="ПОИСК ПРОИЗВОДИТЕЛЕЙ И SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Поиск в интернете использует Hardware ID и показывает страницы на официальных доменах производителей. Наличие новой совместимой версии проверяется на сайте производителя. SDIO доступен отдельно для сопоставления локальных индексов драйверов."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
                                         <TextBlock Text="DjShrek-Draiver не использует Windows Update Agent, WUAPI или Microsoft Update Catalog."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
