@@ -142,7 +142,7 @@ public partial class MainWindow : Window
                 ["Registry diagnostics"]="Registry diagnostics", ["Computer cleanup"]="Computer cleanup", ["Settings"]="Settings",
                 ["Computer monitoring and maintenance tools"]="Computer monitoring and maintenance tools",
                 ["Plug and Play inventory, error filter and driver backup"]="Plug and Play inventory, error filter and driver backup",
-                ["Online search for compatible packages by hardware IDs"]="Online search for compatible packages by hardware IDs",
+                ["Find available updates through Windows Update and install a selected package"]="Find available updates through Windows Update and install a selected package",
                 ["Windows startup entries diagnostics without silent changes"]="Windows startup entries diagnostics without silent changes",
                 ["Conservative cleanup of old temporary files"]="Conservative cleanup of old temporary files",
                 ["Application appearance and preferences"]="Application appearance and preferences"
