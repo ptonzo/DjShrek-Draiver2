@@ -80,6 +80,7 @@ public sealed class DriverInfPackageInspector
         {
             try
             {
+                DriverMaintenanceService.ValidateSignedInfPackage(fullPath);
                 DriverMaintenanceService.ValidateCatalogFileSignature(catalogPath);
                 signature = "Valid";
                 catalogHash = ComputeSha256(catalogPath);
