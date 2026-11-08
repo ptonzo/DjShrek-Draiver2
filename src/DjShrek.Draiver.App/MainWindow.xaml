@@ -338,6 +338,7 @@
                                             <Button Content="Скачать пакет с сайта производителя" Click="DownloadOfficialDriverPackage_Click"
                                                     Background="{DynamicResource SuccessBrush}"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
+                                            <Button Content="Пакеты Lenovo для этого ПК" Click="FindLenovoPacks_Click"/>
                                         </WrapPanel>
                                         <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
                                     </StackPanel>
