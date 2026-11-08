@@ -1,0 +1,117 @@
+name: Scheduled driver application development
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+concurrency:
+  group: djshrek-codex-driver-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    outputs:
+      has_changes: ${{ steps.patch.outputs.has_changes }}
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/in-app-driver-update-center
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Codex on one bounded development task
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/DRIVER_AGENT_PROMPT.md
+          output-file: codex-summary.md
+          permission-profile: ":workspace"
+          safety-strategy: drop-sudo
+
+      - name: Export proposed changes
+        id: patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --binary > /tmp/djshrek-codex.patch
+          if [ -s /tmp/djshrek-codex.patch ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+          mkdir -p /tmp/djshrek-codex-artifact
+          cp /tmp/djshrek-codex.patch /tmp/djshrek-codex-artifact/changes.patch
+          if [ -f codex-summary.md ]; then
+            cp codex-summary.md /tmp/djshrek-codex-artifact/summary.md
+          fi
+
+      - name: Upload proposed patch
+        if: steps.patch.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: djshrek-codex-patch
+          path: /tmp/djshrek-codex-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
+  propose:
+    needs: develop
+    if: needs.develop.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/in-app-driver-update-center
+          fetch-depth: 0
+
+      - name: Download proposed changes
+        uses: actions/download-artifact@v4
+        with:
+          name: djshrek-codex-patch
+          path: /tmp/djshrek-codex-artifact
+
+      - name: Apply proposed changes
+        id: apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/djshrek-codex-artifact/changes.patch ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git apply --check /tmp/djshrek-codex-artifact/changes.patch
+          git apply /tmp/djshrek-codex-artifact/changes.patch
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update development pull request
+        if: steps.apply.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: feature/in-app-driver-update-center
+          branch: codex/automated-driver-development
+          delete-branch: false
+          commit-message: "Automated driver development"
+          title: "Автоматическая разработка: улучшения модуля драйверов"
+          body: |
+            Автоматически подготовленные изменения DjShrek-Draiver Cyber Club.
+
+            - Задача выбирается из .github/DRIVER_AGENT_PROMPT.md.
+            - Изменения не сливаются автоматически.
+            - Сборка и тесты намеренно не запускались по указанию владельца.
+            - Перед слиянием необходим просмотр diff и последующая проверка на Windows 10/11 x64.
