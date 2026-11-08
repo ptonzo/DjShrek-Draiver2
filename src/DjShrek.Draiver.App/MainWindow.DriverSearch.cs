@@ -8,6 +8,73 @@ namespace DjShrek.Draiver.App;
 public partial class MainWindow
 {
     private bool _driverSearchRunning;
+    private readonly DriverUpdateIgnoreService _driverIgnore = new();
+
+    private void ConfigureDriverIgnoreMenu()
+    {
+        var menu = new System.Windows.Controls.ContextMenu();
+        var ignore = new System.Windows.Controls.MenuItem { Header = "Исключить обновления этого устройства" };
+        ignore.Click += (_, _) => IgnoreSelectedDriverDevice();
+        menu.Items.Add(ignore);
+
+        var ignored = new System.Windows.Controls.MenuItem { Header = "Список исключённых устройств" };
+        ignored.SubmenuOpened += (_, _) =>
+        {
+            ignored.Items.Clear();
+            var entries = _driverIgnore.GetIgnored();
+            if (entries.Count == 0)
+            {
+                ignored.Items.Add(new System.Windows.Controls.MenuItem { Header = "Список пуст", IsEnabled = false });
+                return;
+            }
+            foreach (var hardwareId in entries)
+            {
+                var restore = new System.Windows.Controls.MenuItem { Header = hardwareId };
+                restore.Click += (_, _) =>
+                {
+                    _driverIgnore.Restore(hardwareId);
+                    StatusText.Text = "Устройство возвращено в поиск обновлений.";
+                    AppendEvent("Снято исключение драйвера: " + hardwareId);
+                    _ = SearchDriverUpdatesAsync();
+                };
+                ignored.Items.Add(restore);
+            }
+            ignored.Items.Add(new System.Windows.Controls.Separator());
+            var restoreAll = new System.Windows.Controls.MenuItem { Header = "Восстановить все исключения" };
+            restoreAll.Click += (_, _) =>
+            {
+                _driverIgnore.RestoreAll();
+                StatusText.Text = "Все исключения сняты.";
+                AppendEvent("Список исключений драйверов очищен.");
+                _ = SearchDriverUpdatesAsync();
+            };
+            ignored.Items.Add(restoreAll);
+        };
+        menu.Items.Add(ignored);
+        DriverUpdatesGrid.ContextMenu = menu;
+    }
+
+    private void IgnoreSelectedDriverDevice()
+    {
+        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
+            string.IsNullOrWhiteSpace(candidate.HardwareId))
+        {
+            MessageBox.Show(this, "Выберите строку с аппаратным идентификатором устройства.",
+                "Исключения обновлений", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (MessageBox.Show(this,
+                $"Исключить устройство из последующих поисков обновлений?\\n\\n{candidate.DeviceName}\\n{candidate.HardwareId}",
+                "Исключить устройство", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        _driverIgnore.Ignore(candidate.HardwareId);
+        _driverUpdates.RemoveWhere(x => string.Equals(x.HardwareId, candidate.HardwareId, StringComparison.OrdinalIgnoreCase));
+        UpdatesCountText.Text = $"Исключено устройств: {_driverIgnore.GetIgnored().Count}.";
+        DriverUpdatesSummaryText.Text = "Устройство добавлено в список исключений. Его можно вернуть через контекстное меню списка.";
+        AppendEvent("Устройство исключено из поиска обновлений: " + candidate.HardwareId);
+    }
 
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
@@ -33,17 +100,19 @@ public partial class MainWindow
         try
         {
             var results = await _internetDriverCatalog.SearchAsync(_devices.ToArray());
-            foreach (var item in results)
+            var visibleResults = results.Where(x => !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            foreach (var item in visibleResults)
                 _driverUpdates.Add(item);
 
             DriverUpdatesGrid.ItemsSource = _driverUpdates;
-            var deviceCount = results.Select(x => x.DeviceName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
-            UpdatesCountText.Text = $"Найдено страниц: {results.Count}; устройств с результатами: {deviceCount}.";
-            DriverUpdatesSummaryText.Text = results.Count == 0
+            var deviceCount = visibleResults.Select(x => x.DeviceName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            var ignoredCount = _driverIgnore.GetIgnored().Count;
+            UpdatesCountText.Text = $"Найдено страниц: {visibleResults.Length}; устройств с результатами: {deviceCount}; исключено: {ignoredCount}.";
+            DriverUpdatesSummaryText.Text = visibleResults.Length == 0
                 ? "На разрешённых официальных доменах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
-                : "Результаты — ссылки на страницы производителей, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя.";
-            StatusText.Text = $"Поиск завершён. Страниц производителей: {results.Count}.";
-            AppendEvent($"Поиск страниц производителей завершён: найдено {results.Count}.");
+                : "Результаты — ссылки на страницы производителей, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя. Исключённые устройства скрыты из списка.";
+            StatusText.Text = $"Поиск завершён. Страниц производителей: {visibleResults.Length}.";
+            AppendEvent($"Поиск страниц производителей завершён: найдено {visibleResults.Length}; исключено устройств: {_driverIgnore.GetIgnored().Count}.");
         }
         catch (OperationCanceledException)
         {
