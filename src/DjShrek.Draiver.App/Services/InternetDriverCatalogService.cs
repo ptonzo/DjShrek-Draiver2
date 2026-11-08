@@ -1,12 +1,13 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Xml.Linq;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
 
 /// <summary>
-/// Searches the public web for vendor-published driver pages using device Hardware IDs.
-/// This service does not query Windows Update Agent and never installs a downloaded package.
+/// Searches public vendor pages using device Hardware IDs.
+/// Search results are references only; this service never installs a package.
 /// </summary>
 public sealed class InternetDriverCatalogService
 {
@@ -14,6 +15,11 @@ public sealed class InternetDriverCatalogService
     {
         Timeout = TimeSpan.FromSeconds(18)
     };
+
+    static InternetDriverCatalogService()
+    {
+        Client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DjShrek-Draiver", "1.8"));
+    }
 
     private static readonly string[] OfficialDomains =
     {
@@ -25,7 +31,6 @@ public sealed class InternetDriverCatalogService
     public async Task<IReadOnlyList<DriverUpdateCandidate>> SearchAsync(
         IEnumerable<DeviceInfo> devices, CancellationToken cancellationToken = default)
     {
-        Client.DefaultRequestHeaders.UserAgent.ParseAdd("DjShrek-Draiver/1.8 (+driver-catalog-search)");
         var output = new List<DriverUpdateCandidate>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var device in devices)
@@ -69,7 +74,7 @@ public sealed class InternetDriverCatalogService
                     }
                 }
                 catch (OperationCanceledException) { throw; }
-                catch { /* A failed vendor/web query must not stop searches for other devices. */ }
+                catch { /* A failed query must not stop searches for other devices. */ }
             }
         }
         return output.OrderBy(x => x.DeviceName).ThenBy(x => x.Provider).ToArray();
