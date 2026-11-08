@@ -53,7 +53,7 @@ public sealed class ThemeArtwork : FrameworkElement
             case "06": DrawFan(dc, w, h); break;
             case "07": DrawDesktop(dc, w, h); break;
             case "08": DrawWaves(dc, w, h); break;
-            case "09": DrawCar(dc, w, h); break;
+            case "09": DrawCyberpunk(dc, w, h); break;
             case "10": DrawRadar(dc, w, h); break;
             case "11": DrawTank(dc, w, h); break;
             case "12": DrawFieldCamp(dc, w, h); break;
@@ -176,6 +176,70 @@ public sealed class ThemeArtwork : FrameworkElement
         dc.DrawGeometry(null,new Pen(_primary,7),
             Polygon(new Point(w*.08,h*.76),new Point(w*.27,h*.6),new Point(w*.46,h*.7),
                 new Point(w*.66,h*.49),new Point(w*.92,h*.65)));
+    }
+
+
+    private void DrawCyberpunk(DrawingContext dc, double w, double h)
+    {
+        var sky = new LinearGradientBrush(Color.FromRgb(7, 5, 25), Color.FromRgb(30, 5, 48), 90);
+        dc.DrawRoundedRectangle(sky, new Pen(new SolidColorBrush(Color.FromArgb(120, 255, 45, 190)), 1.5),
+            new Rect(2, 2, w - 4, h - 4), 14, 14);
+        var random = new Random(9);
+        for (int i = 0; i < 18; i++)
+        {
+            double bw = w * (.025 + random.NextDouble() * .045);
+            double bh = h * (.18 + random.NextDouble() * .43);
+            double x = w * .02 + i * w * .052;
+            double y = h * .68 - bh;
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(210, 12, 20, 55)),
+                new Pen(new SolidColorBrush(Color.FromArgb(180, 0, 160, 255)), 1), new Rect(x, y, bw, bh));
+            for (double wy = y + 5; wy < h * .65; wy += 9)
+                for (double wx = x + 4; wx < x + bw - 2; wx += 7)
+                    dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(190, 0, 210, 255)), null,
+                        new Rect(wx, wy, 2.2, 3.2));
+        }
+        dc.DrawRectangle(new LinearGradientBrush(Color.FromArgb(0, 5, 10, 30),
+            Color.FromArgb(235, 4, 7, 24), 90), null, new Rect(0, h * .66, w, h * .34));
+        for (int i = 0; i < 7; i++)
+        {
+            double y = h * (.73 + i * .035);
+            dc.DrawLine(new Pen(new SolidColorBrush(Color.FromArgb(130, 255, 45, 220)), 1.2 + i * .15),
+                new Point(w * .04, y), new Point(w * .78, y + 2));
+        }
+        var car = Polygon(new Point(w*.05,h*.78), new Point(w*.16,h*.70),
+            new Point(w*.29,h*.61), new Point(w*.54,h*.61), new Point(w*.66,h*.72),
+            new Point(w*.78,h*.75), new Point(w*.81,h*.84), new Point(w*.08,h*.84));
+        dc.DrawGeometry(new SolidColorBrush(Color.FromArgb(245, 8, 12, 34)),
+            new Pen(new SolidColorBrush(Color.FromRgb(0, 220, 255)), 2.4), car);
+        dc.DrawGeometry(new SolidColorBrush(Color.FromArgb(210, 15, 28, 66)),
+            new Pen(new SolidColorBrush(Color.FromRgb(255, 40, 205)), 1.4),
+            Polygon(new Point(w*.29,h*.64), new Point(w*.37,h*.57),
+                new Point(w*.51,h*.57), new Point(w*.61,h*.70)));
+        foreach (double x in new[] { w*.24, w*.66 })
+        {
+            dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(5, 8, 22)),
+                new Pen(new SolidColorBrush(Color.FromRgb(0, 220, 255)), 2), new Point(x,h*.83), w*.055,h*.09);
+            dc.DrawEllipse(null,new Pen(new SolidColorBrush(Color.FromRgb(255,45,190)),1.5),
+                new Point(x,h*.83),w*.027,h*.045);
+        }
+        var hood = Polygon(new Point(w*.84,h*.08), new Point(w*.98,h*.22),
+            new Point(w*.99,h*.82), new Point(w*.76,h*.82), new Point(w*.75,h*.31));
+        dc.DrawGeometry(new SolidColorBrush(Color.FromArgb(235, 8, 8, 28)),
+            new Pen(new SolidColorBrush(Color.FromRgb(255, 40, 205)), 2.5), hood);
+        dc.DrawEllipse(new SolidColorBrush(Color.FromRgb(5, 8, 25)),
+            new Pen(new SolidColorBrush(Color.FromRgb(0, 210, 255)), 2),
+            new Point(w*.87,h*.42), w*.075,h*.16);
+        dc.DrawEllipse(null,new Pen(new SolidColorBrush(Color.FromRgb(0,230,255)),2),
+            new Point(w*.845,h*.42),w*.018,h*.014);
+        dc.DrawEllipse(null,new Pen(new SolidColorBrush(Color.FromRgb(0,230,255)),2),
+            new Point(w*.895,h*.42),w*.018,h*.014);
+        dc.DrawEllipse(null,new Pen(new SolidColorBrush(Color.FromRgb(255,40,205)),3),
+            new Point(w*.79,h*.43),w*.025,h*.09);
+        dc.DrawEllipse(null,new Pen(new SolidColorBrush(Color.FromRgb(0,220,255)),3),
+            new Point(w*.95,h*.43),w*.025,h*.09);
+        dc.DrawGeometry(null,new Pen(new SolidColorBrush(Color.FromRgb(0,220,255)),3),
+            Polygon(new Point(w*.79,h*.38),new Point(w*.81,h*.18),
+                new Point(w*.88,h*.12),new Point(w*.95,h*.38)));
     }
 
     private void DrawCar(DrawingContext dc, double w, double h)
