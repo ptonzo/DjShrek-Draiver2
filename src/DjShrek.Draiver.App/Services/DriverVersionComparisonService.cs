@@ -60,6 +60,12 @@ public static class DriverVersionComparisonService
         if (string.IsNullOrWhiteSpace(value)) return false;
 
         var match = NumericVersion.Match(value);
-        return match.Success && Version.TryParse(match.Groups[1].Value, out version);
+        if (!match.Success ||
+            !Version.TryParse(match.Groups[1].Value, out var parsed) ||
+            parsed is null)
+            return false;
+
+        version = parsed;
+        return true;
     }
 }
