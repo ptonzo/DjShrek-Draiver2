@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace DjShrek.Draiver.App.Services;
@@ -142,43 +143,143 @@ public sealed class DriverMaintenanceService
         return string.IsNullOrWhiteSpace(output) ? "Windows не вернула список пакетов драйверов." : output;
     }
 
+    [DllImport("kernel32.dll")]
+    private static extern uint GetACP();
+
     public static void ValidateSignedInfPackage(string infPath)
     {
-        var directory = Path.GetDirectoryName(infPath)!;
-        var catalogNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var line in File.ReadLines(infPath))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith(';')) continue;
-            var match = Regex.Match(trimmed, @"^\s*CatalogFile(?:\.[A-Za-z0-9_.-]+)?\s*=\s*""?([^"";]+)", RegexOptions.IgnoreCase);
-            if (match.Success) catalogNames.Add(match.Groups[1].Value.Trim());
-        }
-        if (catalogNames.Count == 0)
+        var fullInfPath = Path.GetFullPath(infPath);
+        if (!File.Exists(fullInfPath) ||
+            !Path.GetExtension(fullInfPath).Equals(".inf", StringComparison.OrdinalIgnoreCase))
+            throw new FileNotFoundException("INF-файл не найден.", fullInfPath);
+
+        var directory = Path.GetDirectoryName(fullInfPath)!;
+        var declarations = ReadCatalogDeclarations(fullInfPath);
+        if (declarations.Count == 0)
             throw new InvalidDataException("В INF не указан каталог цифровой подписи (CatalogFile).");
-        var catalogs = catalogNames.Select(name => Path.GetFullPath(Path.Combine(directory, name))).ToArray();
-        foreach (var catalog in catalogs)
+
+        var architecture = RuntimeInformation.OSArchitecture switch
         {
+            Architecture.Arm64 => "NTarm64",
+            Architecture.X64 => "NTamd64",
+            Architecture.X86 => "NTx86",
+            _ => throw new PlatformNotSupportedException("Архитектура Windows не поддерживается проверкой INF.")
+        };
+
+        var architectureSpecific = declarations
+            .Where(x => x.Key.StartsWith("CatalogFile." + architecture, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var generic = declarations.Where(x => x.Key.Equals("CatalogFile", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var selected = architectureSpecific.Length > 0 ? architectureSpecific : generic;
+
+        if (selected.Length == 0)
+            throw new InvalidDataException(
+                $"INF содержит CatalogFile, но не содержит каталога для архитектуры {architecture} и общего CatalogFile. Установка заблокирована.");
+
+        var catalogs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var declaration in selected)
+        {
+            var name = declaration.Value.Trim().Trim('"');
+            if (string.IsNullOrWhiteSpace(name))
+                throw new InvalidDataException("INF содержит пустое имя CatalogFile.");
+
+            var catalog = Path.GetFullPath(Path.Combine(directory, name));
             var relative = Path.GetRelativePath(directory, catalog);
             if (Path.IsPathRooted(relative) ||
                 relative.Equals("..", StringComparison.Ordinal) ||
                 relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
                 relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
                 throw new InvalidDataException("INF ссылается на каталог за пределами своей папки.");
+
+            catalogs.Add(catalog);
         }
 
-        // INF files can declare OS-decorated CatalogFile entries. Validate every
-        // referenced catalog that is actually present, rather than accepting the
-        // first valid file while silently ignoring another invalid catalog.
-        var existing = catalogs.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if (existing.Length == 0)
-            throw new FileNotFoundException("Подписанный CAT-файл из INF не найден рядом с пакетом.");
-
-        foreach (var catalog in existing)
+        foreach (var catalog in catalogs)
         {
+            if (!File.Exists(catalog))
+                throw new FileNotFoundException(
+                    $"CAT-файл, выбранный INF для архитектуры {architecture}, отсутствует: {Path.GetFileName(catalog)}",
+                    catalog);
+
             var status = GetCatalogSignatureStatus(catalog);
             if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"Подпись каталога '{Path.GetFileName(catalog)}' не подтверждена (статус: {status}). Установка заблокирована.");
+                throw new InvalidDataException(
+                    $"Подпись каталога '{Path.GetFileName(catalog)}' не подтверждена (статус: {status}). Установка заблокирована.");
         }
+    }
+
+    private static IReadOnlyList<KeyValuePair<string, string>> ReadCatalogDeclarations(string infPath)
+    {
+        const int maxInfBytes = 16 * 1024 * 1024;
+        using var stream = new FileStream(infPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length > maxInfBytes)
+            throw new InvalidDataException("INF превышает допустимый размер 16 МБ.");
+
+        var bytes = new byte[checked((int)stream.Length)];
+        stream.ReadExactly(bytes);
+
+        string text;
+        if (bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }))
+            text = new UTF8Encoding(false, true).GetString(bytes, 3, bytes.Length - 3);
+        else if (bytes.AsSpan().StartsWith(new byte[] { 0xFF, 0xFE }))
+            text = new UnicodeEncoding(false, true, true).GetString(bytes, 2, bytes.Length - 2);
+        else if (bytes.AsSpan().StartsWith(new byte[] { 0xFE, 0xFF }))
+            text = new UnicodeEncoding(true, true, true).GetString(bytes, 2, bytes.Length - 2);
+        else
+        {
+            try { text = new UTF8Encoding(false, true).GetString(bytes); }
+            catch (DecoderFallbackException)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                text = Encoding.GetEncoding((int)GetACP()).GetString(bytes);
+            }
+        }
+
+        var result = new List<KeyValuePair<string, string>>();
+        var inVersionSection = false;
+        var pending = new StringBuilder();
+        using var reader = new StringReader(text);
+        while (reader.ReadLine() is { } physicalLine)
+        {
+            var line = physicalLine.Trim().TrimStart('\uFEFF');
+            var continues = line.EndsWith("\\", StringComparison.Ordinal);
+            if (continues) line = line[..^1];
+            pending.Append(line);
+            if (continues) continue;
+
+            var logicalLine = pending.ToString().Trim();
+            pending.Clear();
+            if (logicalLine.Length == 0 || logicalLine.StartsWith(';')) continue;
+
+            if (logicalLine.StartsWith("[", StringComparison.Ordinal) &&
+                logicalLine.EndsWith("]", StringComparison.Ordinal))
+            {
+                inVersionSection = logicalLine[1..^1].Trim().Equals("Version", StringComparison.OrdinalIgnoreCase);
+                continue;
+            }
+
+            if (!inVersionSection) continue;
+            var separator = logicalLine.IndexOf('=');
+            if (separator <= 0) continue;
+            var key = logicalLine[..separator].Trim();
+            if (!key.StartsWith("CatalogFile", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!Regex.IsMatch(key, @"^CatalogFile(?:\.[A-Za-z0-9_.-]+)?$", RegexOptions.IgnoreCase)) continue;
+            var value = logicalLine[(separator + 1)..].Split(';', 2)[0].Trim().Trim('"');
+            result.Add(new KeyValuePair<string, string>(key, value));
+        }
+
+        if (pending.Length > 0 && inVersionSection)
+        {
+            var logicalLine = pending.ToString().Trim();
+            var separator = logicalLine.IndexOf('=');
+            if (separator > 0)
+            {
+                var key = logicalLine[..separator].Trim();
+                if (Regex.IsMatch(key, @"^CatalogFile(?:\.[A-Za-z0-9_.-]+)?$", RegexOptions.IgnoreCase))
+                    result.Add(new KeyValuePair<string, string>(key, logicalLine[(separator + 1)..].Split(';', 2)[0].Trim().Trim('"')));
+            }
+        }
+        return result;
     }
 
     public static void ValidateCatalogFileSignature(string catalogPath)
