@@ -117,6 +117,10 @@ public sealed class IntelDsaCatalogService
                     results.Add(new DriverUpdateCandidate
                     {
                         UpdateId = "intel-dsa:" + configId + ":" + category + ":" + hardwareId,
+                        CatalogRecordId = configId,
+                        CatalogReleaseVersion = feedVersion,
+                        CatalogReleaseDate = releaseDate,
+                        OperatingSystemTarget = file.OperatingSystem,
                         Title = configName + " — " + category,
                         Manufacturer = device.Manufacturer,
                         Model = device.Name,
@@ -137,8 +141,8 @@ public sealed class IntelDsaCatalogService
                         Description = details,
                         Evidence = "Intel DSA DetectionValues совпало с идентификатором устройства: " + hardwareId +
                                    ". Feed version: " + (feedVersion.Length == 0 ? "не указана" : feedVersion) +
-                                   "; X-DSA-Hash: " + (feedHash.Length == 0 ? "не предоставлен" : "SHA-1 сверён с заголовком") +
-                                   ". Это контроль целостности канала, не подпись издателя. Совместимость подтверждается анализом INF.",
+                                   "; X-DSA-Hash: " + (feedHash.Length == 0 ? "не предоставлен" : "заголовок получен, алгоритм не установлен") +
+                                   ". Значение не считается проверенной контрольной суммой или подписью издателя. Совместимость подтверждается анализом INF.",
                         SourceType = "OfficialManufacturer",
                         SourceTrust = "OfficialDomain_UnverifiedPackage",
                         SourceUrl = FeedUri.AbsoluteUri,
