@@ -66,23 +66,27 @@ public sealed class InternetDriverCatalogService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var deviceCount = 0;
+            var primaryDriverRuId = GetIds(device).FirstOrDefault();
             foreach (var hardwareId in GetIds(device).Take(MaxIdsPerDevice))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (output.Count >= MaxTotalResults) return Rank(output);
 
-                // Query Driver.ru directly by the documented /Search/{escaped Hardware ID} route.
+                // Query Driver.ru directly once per device using its most-specific Hardware ID.
                 // Its records are surfaced as independent, unverified catalog leads.
-                var driverRuResults = await _driverRuProvider.SearchAsync(device, hardwareId, cancellationToken);
-                foreach (var driverRuResult in driverRuResults)
+                if (string.Equals(hardwareId, primaryDriverRuId, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
-                    var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
-                        ? device.Name + "|" + device.Manufacturer
-                        : device.InstanceId;
-                    if (!seen.Add(deviceKey + "|" + driverRuResult.UpdateId)) continue;
-                    output.Add(driverRuResult);
-                    deviceCount++;
+                    var driverRuResults = await _driverRuProvider.SearchAsync(device, hardwareId, cancellationToken);
+                    foreach (var driverRuResult in driverRuResults)
+                    {
+                        if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
+                        var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
+                            ? device.Name + "|" + device.Manufacturer
+                            : device.InstanceId;
+                        if (!seen.Add(deviceKey + "|" + driverRuResult.UpdateId)) continue;
+                        output.Add(driverRuResult);
+                        deviceCount++;
+                    }
                 }
 
                 var query = BuildQuery(device, hardwareId);
