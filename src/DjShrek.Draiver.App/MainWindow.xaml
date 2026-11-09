@@ -465,6 +465,7 @@
                                         </WrapPanel>
                                         <TextBlock x:Name="GameProfileText" Text="Профиль не активирован." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"/>
                                     </StackPanel>
+                                </Border>
 
                                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,13,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
@@ -483,7 +484,6 @@
                                         <TextBlock x:Name="GameComponentsText" Text="Нажмите «Проверить компоненты», чтобы получить сведения о библиотеках."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,0"/>
                                     </StackPanel>
-                                </Border>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
