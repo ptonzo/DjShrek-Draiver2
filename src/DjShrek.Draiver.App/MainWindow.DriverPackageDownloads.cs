@@ -83,6 +83,92 @@ public partial class MainWindow
         }
     }
 
+    private async void InstallVerifiedDriver_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
+            candidate.PackageStatus != "Готово к установке после подтверждения" ||
+            string.IsNullOrWhiteSpace(candidate.VerifiedInfPath) ||
+            !File.Exists(candidate.VerifiedInfPath))
+        {
+            MessageBox.Show(this, "Сначала загрузите пакет и выполните проверку INF. Установка без проверенного INF запрещена.",
+                "Обновление драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
+        if (device is null)
+        {
+            MessageBox.Show(this, "Не удалось однозначно сопоставить результат с текущим устройством. Установка отменена.",
+                "Обновление драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (_maintenanceRunning) return;
+        try
+        {
+            _maintenanceRunning = true;
+            StatusText.Text = "Повторная проверка INF, точного Hardware ID, версии и CAT-подписи...";
+            var inspection = await Task.Run(() => _infPackageInspector.Inspect(candidate.VerifiedInfPath, device));
+            var comparison = DriverVersionComparisonService.Compare(inspection.DriverVersion, device.DriverVersion);
+            if (!inspection.IsInstallableForDevice || comparison.Relation != DriverVersionRelation.Newer)
+            {
+                candidate.PackageStatus = "Повторная проверка не пройдена; установка заблокирована";
+                candidate.VerifiedInfPath = "";
+                InstallVerifiedDriverButton.IsEnabled = false;
+                DriverUpdatesGrid.Items.Refresh();
+                MessageBox.Show(this,
+                    $"Совпадение: {inspection.MatchKind}{Environment.NewLine}" +
+                    $"Архитектура: {(inspection.ArchitectureApplicable ? "подходит" : "не подходит")}{Environment.NewLine}" +
+                    $"CAT: {inspection.CatalogSignature}{Environment.NewLine}{comparison.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    "Пакет не прошёл повторную проверку. Установка не запускалась.",
+                    "Установка заблокирована", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var details =
+                $"Устройство: {device.Name}{Environment.NewLine}" +
+                $"Hardware ID: {inspection.MatchedHardwareId}{Environment.NewLine}" +
+                $"INF: {Path.GetFileName(inspection.InfPath)}{Environment.NewLine}" +
+                $"Поставщик: {inspection.Provider}{Environment.NewLine}" +
+                $"Установленная версия: {device.DriverVersion}{Environment.NewLine}" +
+                $"Новая версия: {inspection.DriverVersion} ({inspection.DriverDate}){Environment.NewLine}" +
+                $"Сравнение: {comparison.Message}{Environment.NewLine}" +
+                $"Архитектура: подходит{Environment.NewLine}" +
+                $"Подпись CAT: {inspection.CatalogSignature}{Environment.NewLine}" +
+                $"SHA-256 INF: {inspection.InfSha256}{Environment.NewLine}{Environment.NewLine}" +
+                "Перед установкой Windows создаст точку восстановления. Затем pnputil передаст пакет в Driver Store. Продолжить?";
+
+            if (MessageBox.Show(this, details, "Подтверждение обновления драйвера",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                return;
+
+            StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
+            var result = await _maintenance.InstallInfAsync(inspection.InfPath);
+            candidate.PackageStatus = "Передан Windows; проверьте версию и состояние устройства";
+            candidate.VerifiedInfPath = "";
+            InstallVerifiedDriverButton.IsEnabled = false;
+            DriverUpdatesGrid.Items.Refresh();
+            AppendEvent($"Пакет {inspection.Provider} {inspection.DriverVersion} передан Windows для {device.Name}.");
+            StatusText.Text = "Команда установки завершилась. Проверьте фактическую версию драйвера и состояние устройства.";
+            MessageBox.Show(this, result, "Результат передачи драйвера Windows",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            StatusText.Text = "Установка отменена в запросе UAC.";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Проверка или установка драйвера не завершилась.";
+            MessageBox.Show(this, ex.Message, "Ошибка обновления драйвера",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            _maintenanceRunning = false;
+        }
+    }
+
     private async Task ExtractAndInspectDownloadedPackageAsync(DriverUpdateCandidate candidate, string packagePath)
     {
         var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
