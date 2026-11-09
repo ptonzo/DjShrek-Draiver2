@@ -4,7 +4,8 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Shapes;
+using System.Windows.Media;
+using ShapePath = System.Windows.Shapes.Path;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using DjShrek.Draiver.App.Models;
@@ -495,7 +496,7 @@ public partial class MainWindow : Window
     private void SetScanProgress(int percentage, string status)
     {
         percentage = Math.Clamp(percentage, 0, 100);
-        if (StartScanButton.Template.FindName("ScanProgressArc", StartScanButton) is not Path arc ||
+        if (StartScanButton.Template.FindName("ScanProgressArc", StartScanButton) is not ShapePath arc ||
             StartScanButton.Template.FindName("ScanPercentText", StartScanButton) is not TextBlock percentText)
             return;
 
