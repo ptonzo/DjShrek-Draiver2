@@ -47,6 +47,8 @@ public sealed class DriverCandidateAssessmentService
                 reasons.Add("В каталоге нет явных сведений об архитектуре пакета.");
         }
 
+        if (candidate.CandidateScope == "SearchDiscovery")
+            reasons.Add("Результат найден по поисковому запросу; точное совпадение Hardware ID внутри INF ещё не подтверждено.");
         if (candidate.CandidateScope == "ModelPack")
             reasons.Add("Модельный OEM-пакет не доказывает применимость INF к выбранному устройству.");
         if (candidate.CandidateScope == "SupportPortal")
@@ -70,12 +72,16 @@ public sealed class DriverCandidateAssessmentService
     public static string AssessOperatingSystem(string target, string current)
     {
         if (string.IsNullOrWhiteSpace(target)) return "Не указана в метаданных";
-        if (target.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-            target.Contains("Win10", StringComparison.OrdinalIgnoreCase))
+        var has10 = target.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                    target.Contains("Win10", StringComparison.OrdinalIgnoreCase);
+        var has11 = target.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
+                    target.Contains("Win11", StringComparison.OrdinalIgnoreCase);
+        if (has10 && has11)
+            return "Указаны Windows 10 и 11; требуется проверка конкретной INF-декорации";
+        if (has10)
             return current.Equals("Windows 10", StringComparison.OrdinalIgnoreCase)
                 ? "Соответствует Windows 10" : "Не соответствует: пакет для Windows 10";
-        if (target.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
-            target.Contains("Win11", StringComparison.OrdinalIgnoreCase))
+        if (has11)
             return current.Equals("Windows 11", StringComparison.OrdinalIgnoreCase)
                 ? "Соответствует Windows 11" : "Не соответствует: пакет для Windows 11";
         return "Неоднозначные метаданные ОС; требуется ручная проверка";
@@ -94,7 +100,7 @@ public sealed class DriverCandidateAssessmentService
 
     public static string GetCurrentArchitecture() =>
         Environment.Is64BitOperatingSystem
-            ? (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture ==
+            ? (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture ==
                System.Runtime.InteropServices.Architecture.Arm64 ? "ARM64" : "x64")
             : "x86";
 }
