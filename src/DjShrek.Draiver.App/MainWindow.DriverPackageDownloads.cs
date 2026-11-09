@@ -105,12 +105,30 @@ public partial class MainWindow
             var extractedFolder = await _packageExtraction.ExtractAsync(packagePath);
         var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
         var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
+        var newerCandidate = candidates.FirstOrDefault(x =>
+            x.Inspection.IsInstallableForDevice && x.IsNewerThanInstalled);
+        if (newerCandidate is not null)
+        {
+            candidate.VerifiedInfPath = newerCandidate.Inspection.InfPath;
+            candidate.VerifiedInfVersion = newerCandidate.Inspection.DriverVersion;
+            candidate.PackageStatus = "Готово к установке после подтверждения";
+            InstallVerifiedDriverButton.IsEnabled = DriverUpdatesGrid.SelectedItem == candidate;
+        }
+        else
+        {
+            candidate.VerifiedInfPath = "";
+            candidate.VerifiedInfVersion = "";
+            candidate.PackageStatus = "INF найден, но новое совместимое обновление не подтверждено";
+            InstallVerifiedDriverButton.IsEnabled = false;
+        }
+        DriverUpdatesGrid.Items.Refresh();
         var summary = string.Join(Environment.NewLine, candidates.Take(8).Select(x => "• " + x.DisplayText));
         if (string.IsNullOrWhiteSpace(summary)) summary = "Подходящие INF-файлы не найдены.";
         MessageBox.Show(this,
             $"Устройство: {device.Name}{Environment.NewLine}Распаковано в: {extractedFolder}{Environment.NewLine}" +
             $"Найдено INF-кандидатов: {candidates.Count}{Environment.NewLine}" +
-            $"Прошли предварительную проверку: {installable.Length}{Environment.NewLine}{Environment.NewLine}{summary}" +
+            $"Прошли предварительную проверку: {installable.Length}{Environment.NewLine}" +
+            $"Новых точных INF, готовых к подтверждению: {(newerCandidate is null ? 0 : 1)}{Environment.NewLine}{Environment.NewLine}{summary}" +
             $"{Environment.NewLine}{Environment.NewLine}Установка не запускалась. Для установки используйте отдельную проверку INF и явное подтверждение.",
             "Результат проверки пакета", MessageBoxButton.OK,
             installable.Length > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
