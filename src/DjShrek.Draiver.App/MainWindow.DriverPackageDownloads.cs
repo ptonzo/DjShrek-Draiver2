@@ -10,6 +10,7 @@ public partial class MainWindow
 {
     private readonly CatalogDriverPackageDownloader _packageDownloader = new();
     private readonly DriverUpdateHistoryService _driverHistory = new();
+    private readonly DriverOperationJournalService _operationJournal = new();
 
     private async void DownloadOfficialDriverPackage_Click(object sender, RoutedEventArgs e)
     {
@@ -329,6 +330,17 @@ public partial class MainWindow
             }
 
             StatusText.Text = "Резервное копирование текущего драйвера и создание точки восстановления...";
+            try
+            {
+                await _operationJournal.AppendAsync(
+                    "DriverInstallRequested", "UserConfirmed", device.InstanceId, inspection.MatchedHardwareId,
+                    candidate.PackageSha256, inspection.DriverVersion,
+                    $"Пользователь подтвердил установку INF {Path.GetFileName(inspection.InfPath)}.");
+            }
+            catch (Exception journalError) when (journalError is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                AppendEvent("Не удалось записать запрос установки в журнал операций: " + journalError.Message);
+            }
             string backupInfo;
             string backupPath = "";
             if (System.Text.RegularExpressions.Regex.IsMatch(device.InfName ?? "", @"^oem[0-9]+\.inf$",
@@ -405,6 +417,17 @@ public partial class MainWindow
             catch (Exception historyError)
             {
                 AppendEvent("Не удалось записать историю обновления: " + historyError.Message);
+            }
+
+            try
+            {
+                await _operationJournal.AppendAsync(
+                    "DriverInstallResult", historyStatus, device.InstanceId, inspection.MatchedHardwareId,
+                    candidate.PackageSha256, inspection.DriverVersion, historyMessage);
+            }
+            catch (Exception journalError) when (journalError is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                AppendEvent("Не удалось записать результат установки в журнал операций: " + journalError.Message);
             }
 
             candidate.PackageStatus = packageStatus;
