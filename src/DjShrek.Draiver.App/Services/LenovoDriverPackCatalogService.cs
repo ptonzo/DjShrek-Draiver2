@@ -203,7 +203,6 @@ $family = if ($caption -match 'Windows 11') { 'Windows 11' } elseif ($caption -m
             .ThenBy(x => x.Model, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
-    }
 
     private static void EnsureOfficialFinalUri(Uri? uri)
     {
