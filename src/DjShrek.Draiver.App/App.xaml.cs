@@ -335,6 +335,17 @@ public partial class App : Application
             var sensors = new HardwareSensorService().ReadMetrics();
             checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
 
+            var gameComponentsPanel = window.FindName("GameComponentsText") as TextBlock;
+            if (gameComponentsPanel is null)
+                throw new InvalidOperationException("Game Components panel output is missing.");
+            var gameComponents = new GameComponentService().Scan();
+            if (gameComponents.Count != 6 ||
+                gameComponents.Any(item => string.IsNullOrWhiteSpace(item.Name) ||
+                    !Uri.TryCreate(item.OfficialDownloadUrl, UriKind.Absolute, out var downloadUri) ||
+                    downloadUri.Scheme != Uri.UriSchemeHttps))
+                throw new InvalidOperationException("Game component inventory returned incomplete metadata or a non-HTTPS download URL.");
+            checks.Add("PASS: Game Components inventory checks VC++ x86/x64, .NET Desktop, legacy DirectX, PhysX and OpenAL; all download links use HTTPS.");
+
             var defaultTheme = ThemeManager.Themes.First(x => x.Id == "02");
             ThemeManager.Apply(defaultTheme);
             themeSelector.SelectedValue = defaultTheme.Id;
