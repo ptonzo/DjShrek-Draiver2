@@ -727,8 +727,10 @@ public partial class MainWindow
 
             var notIgnoredResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            var visibleResults = new DriverCatalogCandidateRankingService()
+                .RankAndDeduplicate(notIgnoredResults);
             var assessmentService = new DriverCandidateAssessmentService();
-            foreach (var candidate in notIgnoredResults)
+            foreach (var candidate in visibleResults)
             {
                 DeviceInfo? matchedDevice = null;
                 if (!string.IsNullOrWhiteSpace(candidate.HardwareId))
@@ -736,8 +738,6 @@ public partial class MainWindow
                         _devices, candidate.HardwareId, candidate.InstanceId);
                 assessmentService.Assess(candidate, matchedDevice);
             }
-            var visibleResults = new DriverCatalogCandidateRankingService()
-                .RankAndDeduplicate(notIgnoredResults);
             foreach (var item in visibleResults)
                 _driverUpdates.Add(item);
 
