@@ -398,6 +398,10 @@
                                                 <DataGridTextColumn Header="Целевая ОС" Binding="{Binding OperatingSystemTarget}" Width="*"/>
                                                 <DataGridTextColumn Header="Архитектура" Binding="{Binding ArchitectureTarget}" Width="*"/>
                                                 <DataGridTextColumn Header="Проверка издателя" Binding="{Binding PublisherVerificationStatus}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Домен источника" Binding="{Binding SourceHost}" Width="1.4*"/>
+                                                <DataGridTextColumn Header="Категория источника" Binding="{Binding SourceCategory}" Width="1.4*"/>
+                                                <DataGridTextColumn Header="Домен пакета" Binding="{Binding PackageSourceHost}" Width="1.4*"/>
+                                                <DataGridTextColumn Header="Категория пакета" Binding="{Binding PackageSourceCategory}" Width="1.4*"/>
                                                 <DataGridTextColumn Header="Получение пакета" Binding="{Binding PackageAcquisitionStatus}" Width="1.5*"/>
                                                 <DataGridTextColumn Header="Оценка версии" Binding="{Binding VersionAssessment}" Width="2*"/>
                                                 <DataGridTextColumn Header="Совместимость ОС" Binding="{Binding OsCompatibilityAssessment}" Width="1.6*"/>
