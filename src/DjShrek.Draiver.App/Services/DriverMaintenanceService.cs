@@ -337,7 +337,7 @@ public sealed class DriverMaintenanceService
         return output;
     }
 
-    private static void CreateSystemRestorePoint()
+    public static void CreateSystemRestorePoint()
     {
         const string description = "DjShrek Driver Update";
         var escaped = description.Replace("'", "''");
