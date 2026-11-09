@@ -729,11 +729,11 @@ public partial class MainWindow
 
             var notIgnoredResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            var provenanceProjection = new DriverCandidateProvenanceProjectionService();
+            foreach (var candidate in notIgnoredResults)
+                provenanceProjection.Apply(candidate);
             var visibleResults = new DriverCatalogCandidateRankingService()
                 .RankAndDeduplicate(notIgnoredResults);
-            var provenanceProjection = new DriverCandidateProvenanceProjectionService();
-            foreach (var candidate in visibleResults)
-                provenanceProjection.Apply(candidate);
             var assessmentService = new DriverCandidateAssessmentService();
             foreach (var candidate in visibleResults)
             {
