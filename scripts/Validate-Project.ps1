@@ -114,4 +114,13 @@ foreach ($handler in $requiredHandlers) {
         throw "Required application handler is missing: $handler"
     }
 }
+$driverSearchPath = Join-Path $repoRoot 'src\DjShrek.Draiver.App\MainWindow.DriverSearch.cs'
+$driverSearchCode = Get-Content -LiteralPath $driverSearchPath -Raw
+foreach ($requiredRollbackGuard in @('InstalledAndVerified', 'DriverBackupManifestService', 'VerifyIfPresent',
+        'IsInstallableForDevice', 'entry.HardwareId', 'RollbackVerified')) {
+    if ($driverSearchCode -notmatch [regex]::Escape($requiredRollbackGuard)) {
+        throw "Safe device-specific driver rollback guard is missing: $requiredRollbackGuard"
+    }
+}
+
 Write-Host "XAML parsed. Six panels, twelve unique themes, readable theme selectors, handlers, license and icon verified."
