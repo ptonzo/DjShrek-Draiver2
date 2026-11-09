@@ -28,13 +28,13 @@ public partial class MainWindow
 
         try
         {
-            StatusText.Text = "Поиск прямых ссылок на пакеты производителя...";
+            StatusText.Text = "Поиск ссылок на пакеты в каталоге и связанных облачных хранилищах...";
             var links = await _packageDownloader.FindPackageLinksAsync(candidate);
             if (links.Count == 0)
             {
                 MessageBox.Show(this,
-                    "На странице производителя не обнаружена прямая ссылка на EXE, MSI, ZIP, CAB или 7Z. " +
-                    "Откройте страницу производителя и выберите пакет вручную. Программа не будет подменять его случайной ссылкой.",
+                    "На странице источника не обнаружена ссылка на поддерживаемый пакет. " +
+                    "Откройте страницу источника и выберите пакет вручную. Программа не будет подменять его случайной ссылкой.",
                     "Пакет не найден", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -77,7 +77,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            StatusText.Text = "Не удалось загрузить пакет производителя.";
+            StatusText.Text = "Не удалось загрузить пакет из выбранного источника.";
             MessageBox.Show(this, ex.Message, "Ошибка загрузки драйвера",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
