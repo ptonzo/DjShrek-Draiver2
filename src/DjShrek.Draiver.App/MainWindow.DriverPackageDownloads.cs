@@ -19,9 +19,9 @@ public partial class MainWindow
             return;
         }
 
-        if (!InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl))
+        if (!IsCandidateOpenable(candidate))
         {
-            MessageBox.Show(this, "Источник результата не подтверждён как официальный сайт производителя. Загрузка запрещена.",
+            MessageBox.Show(this, "Источник результата не подтверждён как официальный сайт производителя или устройство не сопоставлено. Загрузка запрещена.",
                 "Проверка источника", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
