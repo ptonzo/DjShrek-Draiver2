@@ -256,4 +256,3 @@ $family = if ($caption -match 'Windows 11') { 'Windows 11' } elseif ($caption -m
     private static DateTime ParseDate(string value) =>
         DateTime.TryParse(value, out var date) ? date : DateTime.MinValue;
 }
-}
