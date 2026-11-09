@@ -12,6 +12,7 @@ namespace DjShrek.Draiver.App.Services;
 public sealed class AsusDriverCatalogService
 {
     private const string ApiRoot = "https://www.asus.com/support/webapi/ProductV2/";
+    private const string ProductApi = "https://www.asus.com/support/api/product.asmx/";
     private const int MaxResponseBytes = 8 * 1024 * 1024;
     private static readonly HttpClient Client = new(new HttpClientHandler
     {
@@ -45,8 +46,11 @@ public sealed class AsusDriverCatalogService
             ["model"] = product.Model,
             ["pdid"] = product.ProductId,
             ["pdhashedid"] = product.HashedProductId ?? product.ProductId,
+            ["mode"] = "",
             ["cpu"] = product.Cpu ?? "",
-            ["osid"] = osId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ["osid"] = osId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["active"] = "",
+            ["systemCode"] = product.SystemCode ?? ""
         };
         var uri = new Uri(ApiRoot + "GetPDDrivers?" + string.Join("&",
             query.Select(pair => Uri.EscapeDataString(pair.Key) + "=" + Uri.EscapeDataString(pair.Value))));
@@ -73,12 +77,51 @@ public sealed class AsusDriverCatalogService
         return ParseDrivers(buffer.ToArray(), product, osId, uri);
     }
 
+
+    public async Task<IReadOnlyList<AsusProductLevelEntry>> GetProductLevelAsync(
+        int type, int typeId, int productFlag, string website = "global",
+        CancellationToken cancellationToken = default)
+    {
+        if (type is not (1 or 2) || typeId <= 0 || productFlag is not (0 or 1))
+            throw new ArgumentOutOfRangeException(nameof(type));
+        ValidateToken(website, nameof(website), 16);
+        var query = new Dictionary<string, string>
+        {
+            ["website"] = website, ["type"] = type.ToString(),
+            ["typeid"] = typeId.ToString(), ["productflag"] = productFlag.ToString()
+        };
+        var uri = new Uri(ProductApi + "GetPDLevel?" + string.Join("&",
+            query.Select(pair => Uri.EscapeDataString(pair.Key) + "=" + Uri.EscapeDataString(pair.Value))));
+        using var response = await Client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (response.StatusCode is HttpStatusCode.MovedPermanently or HttpStatusCode.Redirect or
+            HttpStatusCode.RedirectMethod or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect)
+            throw new InvalidDataException("ASUS product lookup redirect was not followed.");
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength is > MaxResponseBytes)
+            throw new InvalidDataException("ASUS response exceeds the allowed size.");
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (bytes.Length > MaxResponseBytes) throw new InvalidDataException("ASUS response exceeds the allowed size.");
+        using var document = JsonDocument.Parse(bytes);
+        var result = document.RootElement;
+        while (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("Result", out var nested))
+            result = nested;
+        if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("Obj", out nested))
+            result = nested;
+        if (result.ValueKind != JsonValueKind.Array) return Array.Empty<AsusProductLevelEntry>();
+        return result.EnumerateArray().Take(1000).Select(item =>
+            new AsusProductLevelEntry(ReadString(item, "PDId", "Id", "ID"),
+                ReadString(item, "PDHashedId", "PDHashedID"),
+                ReadString(item, "PDName", "Name", "Title"),
+                ReadString(item, "PDUrl", "Url", "URL")))
+            .Where(item => !string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Name)).ToArray();
+    }
+
     internal static IReadOnlyList<AsusDriverPackage> ParseDrivers(
         byte[] jsonBytes, AsusProductIdentity product, int osId, Uri catalogUri)
     {
         using var document = JsonDocument.Parse(jsonBytes);
         var root = document.RootElement;
-        var list = FindArray(root, "Items", "Result", "Data", "DriverList", "PDDrivers");
+        var list = FindArray(root, "Items", "Obj", "Result", "Data", "DriverList", "PDDrivers");
         if (list is null) return Array.Empty<AsusDriverPackage>();
 
         var results = new List<AsusDriverPackage>();
@@ -176,7 +219,9 @@ public sealed class AsusDriverCatalogService
 }
 
 public sealed record AsusProductIdentity(
-    string Model, string ProductId, string? HashedProductId = null, string? Cpu = null);
+    string Model, string ProductId, string? HashedProductId = null, string? Cpu = null, string? SystemCode = null);
+
+public sealed record AsusProductLevelEntry(string Id, string HashedId, string Name, string Url);
 
 public sealed record AsusDriverPackage(
     string Title, string Version, string ReleaseDate, string Description, string Category,
