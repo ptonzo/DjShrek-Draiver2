@@ -95,12 +95,15 @@ public sealed class IntelDsaCatalogService
                             filesElement.ValueKind == JsonValueKind.Array
                     ? filesElement.EnumerateArray().ToArray()
                     : Array.Empty<JsonElement>();
+                var windowsBuild = Environment.OSVersion.Version.Build;
                 var file = files.Select(x => new
                     {
                         Element = x,
-                        Url = TryGetString(x, "Url", out var url) ? url : ""
+                        Url = TryGetString(x, "Url", out var url) ? url : "",
+                        OperatingSystem = ReadFirstString(x, "OperatingSystem", "OS", "OsName", "Platform")
                     })
-                    .FirstOrDefault(x => IsAllowedPackageUrl(x.Url));
+                    .Where(x => IsAllowedPackageUrl(x.Url) && IsCompatibleWindowsGeneration(x.OperatingSystem, windowsBuild))
+                    .FirstOrDefault();
                 if (file is null) continue;
 
                 var version = TryGetString(component, "Version", out var componentVersion)
@@ -233,6 +236,32 @@ public sealed class IntelDsaCatalogService
             }
         }
         return null;
+    }
+
+    private static string ReadFirstString(JsonElement element, params string[] names)
+    {
+        foreach (var name in names)
+            if (TryGetString(element, name, out var value))
+                return value;
+        return "";
+    }
+
+    private static bool IsCompatibleWindowsGeneration(string operatingSystem, int windowsBuild)
+    {
+        if (string.IsNullOrWhiteSpace(operatingSystem)) return true;
+        var isWindows10Only =
+            (operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+             operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase)) &&
+            !operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) &&
+            !operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
+        var isWindows11Only =
+            (operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
+             operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase)) &&
+            !operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) &&
+            !operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase);
+        if (windowsBuild >= 22000 && isWindows10Only) return false;
+        if (windowsBuild < 22000 && isWindows11Only) return false;
+        return true;
     }
 
     private static bool IsAllowedPackageUrl(string value) =>
