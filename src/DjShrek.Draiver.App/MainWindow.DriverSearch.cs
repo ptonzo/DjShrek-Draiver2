@@ -440,6 +440,58 @@ public partial class MainWindow
                 AppendEvent("Каталог HP пропущен: " + ex.GetType().Name);
             }
 
+            try
+            {
+                using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                var asusManufacturer = bios?.GetValue("SystemManufacturer")?.ToString() ?? "";
+                var asusModel = bios?.GetValue("SystemSKU")?.ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(asusModel))
+                    asusModel = bios?.GetValue("BaseBoardProduct")?.ToString()?.Trim();
+                var cpuModel = bios?.GetValue("ProcessorNameString")?.ToString()?.Trim();
+                if (asusManufacturer.Contains("ASUS", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(asusModel))
+                {
+                    var osId = Environment.OSVersion.Version.Build >= 22000 ? 52 : 45;
+                    var systemCode = asusModel.Contains("ROG", StringComparison.OrdinalIgnoreCase) ? "rog" : "";
+                    var asusPackages = await new AsusDriverCatalogService()
+                        .GetDriversForDetectedModelAsync(asusModel, osId, "global", cpuModel, systemCode,
+                            _driverSearchCts.Token);
+                    foreach (var pack in asusPackages)
+                    {
+                        results.Add(new DriverUpdateCandidate
+                        {
+                            UpdateId = pack.PackageUri.AbsoluteUri,
+                            Title = "Драйвер ASUS: " + pack.Title,
+                            Manufacturer = "ASUS",
+                            Model = pack.Model,
+                            Provider = "ASUS Support API",
+                            DeviceClass = pack.Category,
+                            MatchType = "OEM model catalog",
+                            DeviceName = pack.Model,
+                            CurrentVersion = "Версия установленного драйвера сопоставляется отдельно",
+                            Compatibility = "Позиция из официального каталога модели; совместимость с отдельным Hardware ID ещё не подтверждена",
+                            AvailableVersion = pack.Version,
+                            VersionComparison = "Версия из каталога ASUS; требуется анализ INF пакета",
+                            DriverVersionDate = pack.ReleaseDate,
+                            PublishedDate = pack.ReleaseDate,
+                            Description = pack.Description,
+                            Evidence = "ASUS ProductV2/GetPDDrivers; OS ID " + pack.OperatingSystemId,
+                            SourceType = "OfficialManufacturer",
+                            SourceTrust = "OfficialDomain_UnverifiedPackage",
+                            SourceUrl = "https://www.asus.com/support/download-center/",
+                            PackageUrl = pack.PackageUri.AbsoluteUri,
+                            PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
+                            PackageStatus = "Пакет не загружен"
+                        });
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог ASUS пропущен: " + ex.GetType().Name);
+            }
+
             var visibleResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
