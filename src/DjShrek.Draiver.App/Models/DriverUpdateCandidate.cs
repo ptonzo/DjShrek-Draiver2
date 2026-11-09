@@ -43,4 +43,6 @@ public sealed class DriverUpdateCandidate
     public string PackagePreflightStatus { get; set; } = "Не проверено";
     public string VerifiedInfPath { get; set; } = "";
     public string VerifiedInfVersion { get; set; } = "";
+    public string VerifiedPackageRoot { get; set; } = "";
+    public DriverPackageIntegrityManifest? VerifiedPackageManifest { get; set; }
 }
