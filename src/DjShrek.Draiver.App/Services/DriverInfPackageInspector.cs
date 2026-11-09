@@ -114,7 +114,7 @@ public sealed class DriverInfPackageInspector
     private static string ResolveCatalogPath(string infPath, string catalogFile)
     {
         if (Path.IsPathRooted(catalogFile) ||
-            catalogFile.Contains(':', StringComparison.Ordinal) ||
+            catalogFile.Contains(':') ||
             catalogFile.StartsWith('\\\\') ||
             catalogFile.StartsWith('/'))
             throw new InvalidDataException("CatalogFile содержит абсолютный или недопустимый путь.");
