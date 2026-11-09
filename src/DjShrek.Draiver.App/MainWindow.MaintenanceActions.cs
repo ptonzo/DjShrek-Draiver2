@@ -10,6 +10,29 @@ namespace DjShrek.Draiver.App;
 
 public partial class MainWindow
 {
+    private void RollbackDrivers_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(this,
+                "Откроется мастер восстановления системы Windows. Выберите точку «DjShrek Driver Update», созданную перед обновлением драйвера. Восстановление может отменить и другие системные изменения, сделанные после выбранной точки. Продолжить?",
+                "Откат обновления драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("rstrui.exe")
+            {
+                UseShellExecute = true
+            });
+            StatusText.Text = "Открыт мастер восстановления Windows. Выберите точку восстановления DjShrek Driver Update.";
+            AppendEvent("Открыт мастер восстановления Windows для отката системных изменений драйвера.");
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Не удалось открыть мастер восстановления Windows.";
+            MessageBox.Show(this, ex.Message, "Откат драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async void ListPackages_Click(object sender, RoutedEventArgs e)
     {
         try
