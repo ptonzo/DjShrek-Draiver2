@@ -333,6 +333,8 @@ public partial class MainWindow
             // packages separately from per-device Hardware ID search results.
             try
             {
+                if (IsSmbiosManufacturer("Lenovo"))
+                {
                 var lenovoMachine = await _lenovoCatalog.GetCurrentMachineIdentityAsync(_driverSearchCts.Token);
                 if (lenovoMachine.Manufacturer.Contains("Lenovo", StringComparison.OrdinalIgnoreCase) &&
                     !string.IsNullOrWhiteSpace(lenovoMachine.MachineType) &&
@@ -369,6 +371,7 @@ public partial class MainWindow
                         });
                     }
                 }
+                }
             }
             catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
             catch (Exception ex)
@@ -378,6 +381,8 @@ public partial class MainWindow
 
             try
             {
+                if (IsSmbiosManufacturer("Dell"))
+                {
                 var dellPacks = await new DellDriverPackCatalogService()
                     .FindCurrentModelPacksAsync(_driverSearchCts.Token);
                 foreach (var pack in dellPacks)
@@ -408,6 +413,7 @@ public partial class MainWindow
                         PackageStatus = "Пакет не загружен"
                     });
                 }
+                }
             }
             catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
             catch (Exception ex)
@@ -417,6 +423,8 @@ public partial class MainWindow
 
             try
             {
+                if (IsSmbiosManufacturer("HP"))
+                {
                 var hpPacks = await new HpDriverPackCatalogService()
                     .FindCurrentModelPacksAsync(_driverSearchCts.Token);
                 foreach (var pack in hpPacks)
@@ -446,6 +454,7 @@ public partial class MainWindow
                         PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
                         PackageStatus = "Пакет не загружен"
                     });
+                }
                 }
             }
             catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
@@ -742,6 +751,24 @@ public partial class MainWindow
             _driverSearchCts = null;
             _driverSearchRunning = false;
         }
+    }
+
+    private static bool IsSmbiosManufacturer(string manufacturer)
+    {
+        try
+        {
+            using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                @"HARDWARE\\DESCRIPTION\\System\\BIOS");
+            var system = bios?.GetValue("SystemManufacturer")?.ToString() ?? "";
+            var board = bios?.GetValue("BaseBoardManufacturer")?.ToString() ?? "";
+            var combined = system + " " + board;
+            return manufacturer.Equals("HP", StringComparison.OrdinalIgnoreCase)
+                ? combined.Contains("HP", StringComparison.OrdinalIgnoreCase) ||
+                  combined.Contains("Hewlett-Packard", StringComparison.OrdinalIgnoreCase)
+                : combined.Contains(manufacturer, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (UnauthorizedAccessException) { return false; }
+        catch (System.Security.SecurityException) { return false; }
     }
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
