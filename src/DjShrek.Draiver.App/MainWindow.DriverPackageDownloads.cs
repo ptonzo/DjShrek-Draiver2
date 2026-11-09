@@ -496,6 +496,12 @@ public partial class MainWindow
                 "Проверка пакета", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 
+        candidate.PackageIntegrityStatus = "Проверка выполняется";
+        candidate.PackagePreflightStatus = "Ожидает проверки";
+        candidate.VerifiedInfPath = "";
+        candidate.VerifiedInfVersion = "";
+        DriverUpdatesGrid.Items.Refresh();
+
         try
         {
             StatusText.Text = "Безопасная распаковка пакета и поиск совместимых INF...";
@@ -577,6 +583,14 @@ public partial class MainWindow
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException or UnauthorizedAccessException or InvalidOperationException)
         {
+            if (candidate.PackageIntegrityStatus == "Проверка выполняется")
+                candidate.PackageIntegrityStatus = "Не завершена";
+            if (candidate.PackagePreflightStatus == "Ожидает проверки")
+                candidate.PackagePreflightStatus = "Не выполнена";
+            candidate.VerifiedInfPath = "";
+            candidate.VerifiedInfVersion = "";
+            InstallVerifiedDriverButton.IsEnabled = false;
+            DriverUpdatesGrid.Items.Refresh();
             StatusText.Text = "Пакет сохранён, но распаковка или проверка INF не завершилась.";
             MessageBox.Show(this, "Пакет уже сохранён. Проверка не завершилась: " + ex.Message,
                 "Проверка пакета", MessageBoxButton.OK, MessageBoxImage.Warning);
