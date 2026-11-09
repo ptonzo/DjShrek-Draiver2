@@ -20,7 +20,7 @@ public sealed record AcerMachineIdentity(
 public static class AcerSupportIdentityService
 {
     private static readonly Uri SupportUri =
-        new("https://www.acer.com/support/drivers-and-manuals");
+        new("https://www.acer.com/support");
 
     public static AcerMachineIdentity GetCurrentMachineIdentity()
     {
