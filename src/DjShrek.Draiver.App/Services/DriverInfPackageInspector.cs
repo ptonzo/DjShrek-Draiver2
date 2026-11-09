@@ -62,7 +62,7 @@ public sealed class DriverInfPackageInspector
         var architectures = GetSupportedArchitectures(sections);
         var architectureApplicable = IsArchitectureApplicable(architectures);
 
-        var ids = ExtractModelHardwareIds(sections);
+        var ids = ExtractModelHardwareIds(sections, GetCurrentArchitectureDecoration());
         var hardwareIds = (device.HardwareIds ?? Array.Empty<string>()).Select(NormalizeId)
             .Where(x => x.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var compatibleIds = (device.CompatibleIds ?? Array.Empty<string>()).Select(NormalizeId)
@@ -253,7 +253,16 @@ public sealed class DriverInfPackageInspector
         return architectures.Contains(expected, StringComparer.OrdinalIgnoreCase);
     }
 
-    private static IReadOnlyList<string> ExtractModelHardwareIds(Dictionary<string, Dictionary<string, string>> sections)
+    private static string GetCurrentArchitectureDecoration() => RuntimeInformation.OSArchitecture switch
+    {
+        Architecture.Arm64 => "NTarm64",
+        Architecture.X64 => "NTamd64",
+        _ => "NTx86"
+    };
+
+    private static IReadOnlyList<string> ExtractModelHardwareIds(
+        Dictionary<string, Dictionary<string, string>> sections,
+        string currentArchitecture)
     {
         var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var modelSectionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -262,9 +271,19 @@ public sealed class DriverInfPackageInspector
         {
             var targets = entry.Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             if (targets.Length == 0) continue;
+
+            // The undecorated section is a legitimate fallback. Architecture-decorated
+            // sections for other CPU architectures must never contribute candidate IDs.
             modelSectionNames.Add(targets[0]);
             foreach (var decoration in targets.Skip(1))
+            {
+                var architecture = Regex.Match(decoration, @"^(NTamd64|NTx86|NTarm64)(?:\.|$)", RegexOptions.IgnoreCase);
+                if (architecture.Success &&
+                    !architecture.Groups[1].Value.Equals(currentArchitecture, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 modelSectionNames.Add(targets[0] + "." + decoration);
+            }
         }
 
         foreach (var sectionName in modelSectionNames)
