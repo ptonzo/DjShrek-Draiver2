@@ -22,7 +22,7 @@ public sealed class DriverPackageIntegrityManifestService
         var entries = new List<DriverPackageFileEntry>();
         long totalBytes = 0;
 
-        foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+        foreach (var file in EnumerateFilesWithoutReparsePoints(root)
                      .OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -120,6 +120,27 @@ public sealed class DriverPackageIntegrityManifestService
 
         return new DriverPackageIntegrityVerification(true,
             "Состав и SHA-256 всех файлов совпадают с манифестом.", seen.Count, totalBytes);
+    }
+
+    private static IEnumerable<string> EnumerateFilesWithoutReparsePoints(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Пакет содержит reparse point; проверка состава отменена.");
+
+                if ((attributes & FileAttributes.Directory) != 0)
+                    pending.Push(entry);
+                else
+                    yield return entry;
+            }
+        }
     }
 
     private static string GetSafeRoot(string directory)
