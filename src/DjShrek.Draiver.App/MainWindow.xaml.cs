@@ -462,11 +462,20 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return false;
         _scanRunning = true;
+        SetScanProgress(0, "Подготовка проверки устройств...");
         try
         {
             StatusText.Text = "Сканирование Plug and Play...";
-            var devices = await _inventory.ScanAsync();
+            var progress = new Progress<int>(value =>
+            {
+                SetScanProgress(value, value < 30
+                    ? "Получение списка драйверов Windows..."
+                    : value < 90 ? "Проверка устройств и Hardware ID..."
+                    : "Обработка результатов сканирования...");
+            });
+            var devices = await _inventory.ScanAsync(progress);
             ApplyDevices(devices);
+            SetScanProgress(100, $"Проверка завершена · устройств: {devices.Count}");
             StatusText.Text = $"Сканирование завершено. Устройств: {devices.Count}.";
             AppendEvent($"Сканирование устройств завершено: {devices.Count}.");
             ShowPanel("devices");
@@ -474,11 +483,38 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
+            SetScanProgress(0, "Сканирование прервано из-за ошибки.");
             StatusText.Text = "Сканирование не завершено.";
             MessageBox.Show(ex.Message, "Сканирование устройств", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
         finally { _scanRunning = false; }
+    }
+
+    private void SetScanProgress(int percentage, string status)
+    {
+        percentage = Math.Clamp(percentage, 0, 100);
+        ScanPercentText.Text = $"{percentage}%";
+        StartupScanPercentCaption.Text = $"{percentage}% · {(percentage == 100 ? "ГОТОВО" : "СКАНИРОВАНИЕ")}";
+        StartupScanStatusText.Text = status;
+
+        const double center = 180;
+        const double radius = 174;
+        var geometry = new StreamGeometry();
+        if (percentage > 0)
+        {
+            using (var context = geometry.Open())
+            {
+                var start = new Point(center, center - radius);
+                var angle = (-90d + 3.6d * percentage) * Math.PI / 180d;
+                var end = new Point(center + radius * Math.Cos(angle), center + radius * Math.Sin(angle));
+                context.BeginFigure(start, false, false);
+                context.ArcTo(end, new Size(radius, radius), 0,
+                    percentage > 50, SweepDirection.Clockwise, true, false);
+            }
+            geometry.Freeze();
+        }
+        ScanProgressArc.Data = geometry;
     }
 
     private void ApplyDevices(IReadOnlyList<DeviceInfo> devices)
