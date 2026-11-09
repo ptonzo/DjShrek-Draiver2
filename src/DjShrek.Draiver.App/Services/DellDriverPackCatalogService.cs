@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Xml;
@@ -65,10 +64,7 @@ public sealed class DellDriverPackCatalogService
                 }
             }
 
-            var signature = X509Certificate.CreateFromSignedFile(cabPath);
-            using var certificate = new X509Certificate2(signature);
-            if (!certificate.Subject.Contains("Dell", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Подпись CAB не принадлежит сертификату Dell. Каталог отклонён.");
+            await VerifyCatalogSignatureAsync(cabPath, cancellationToken);
 
             var xmlPath = Path.Combine(root, "DriverPackCatalog.xml");
             var expand = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "expand.exe");
@@ -127,6 +123,43 @@ public sealed class DellDriverPackCatalogService
         {
             try { if (Directory.Exists(root)) Directory.Delete(root, true); } catch { }
         }
+    }
+
+
+    private static async Task VerifyCatalogSignatureAsync(string cabPath, CancellationToken token)
+    {
+        // Get-AuthenticodeSignature delegates signature and certificate-chain validation to Windows.
+        // The file path is passed through an environment variable, never interpolated into PowerShell.
+        const string script = "$s=Get-AuthenticodeSignature -LiteralPath $env:DJSHREK_DELL_CAB; " +
+            "[pscustomobject]@{Status=[string]$s.Status;StatusMessage=[string]$s.StatusMessage;Signer=[string]$s.SignerCertificate.Subject}|ConvertTo-Json -Compress";
+        var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        var powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe");
+        var start = new ProcessStartInfo(powershell,
+            "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + encoded)
+        {
+            UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
+            CreateNoWindow = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
+        };
+        start.Environment["DJSHREK_DELL_CAB"] = cabPath;
+        using var process = Process.Start(start)
+            ?? throw new InvalidOperationException("Не удалось проверить цифровую подпись CAB Dell.");
+        var outputTask = process.StandardOutput.ReadToEndAsync(token);
+        var errorTask = process.StandardError.ReadToEndAsync(token);
+        await process.WaitForExitAsync(token);
+        var output = await outputTask;
+        var error = await errorTask;
+        if (process.ExitCode != 0)
+            throw new InvalidDataException("Windows не смогла проверить подпись CAB Dell: " + error);
+        using var json = JsonDocument.Parse(output);
+        var root = json.RootElement;
+        var status = root.TryGetProperty("Status", out var statusValue) ? statusValue.GetString() : null;
+        var signer = root.TryGetProperty("Signer", out var signerValue) ? signerValue.GetString() : null;
+        var message = root.TryGetProperty("StatusMessage", out var messageValue) ? messageValue.GetString() : null;
+        if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(signer) || !signer.Contains("Dell", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Подпись/цепочка CAB Dell не прошла проверку Windows или издатель не Dell. " +
+                $"Статус: {status ?? "неизвестен"}; издатель: {signer ?? "неизвестен"}; {message}");
     }
 
     private static Uri? BuildPackageUri(XDocument document, XElement pack)
