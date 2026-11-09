@@ -31,10 +31,12 @@ public sealed class DriverCatalogCandidateRankingService
 
     private static void EnrichEvidence(DriverUpdateCandidate candidate)
     {
-        var isModelPack = candidate.DeviceClass.Contains("OEM", StringComparison.OrdinalIgnoreCase) ||
+        var isModelPack = candidate.CandidateScope == "ModelPack" ||
+                          candidate.DeviceClass.Contains("OEM", StringComparison.OrdinalIgnoreCase) ||
                           candidate.MatchType.Contains("OEM", StringComparison.OrdinalIgnoreCase);
-        var isPortal = string.IsNullOrWhiteSpace(candidate.PackageUrl) &&
-                       candidate.SourceTrust.Equals("OfficialSupportPortal", StringComparison.OrdinalIgnoreCase);
+        var isPortal = candidate.CandidateScope == "SupportPortal" ||
+                       (string.IsNullOrWhiteSpace(candidate.PackageUrl) &&
+                        candidate.SourceTrust.Equals("OfficialSupportPortal", StringComparison.OrdinalIgnoreCase));
 
         candidate.CandidateScope = isPortal ? "SupportPortal" :
             isModelPack ? "ModelPack" :
@@ -46,7 +48,7 @@ public sealed class DriverCatalogCandidateRankingService
         candidate.EvidenceLevel = candidate.CandidateScope switch
         {
             "DeviceExact" => "Точный Hardware ID; пакет требует проверки INF/CAT",
-            "DeviceCompatible" => "Совпадение Compatible ID или поисковая зацепка; INF не подтверждён",
+            "DeviceCompatible" => "INF/каталог указывает Compatible ID; точное совпадение устройства не доказано",
             "ModelPack" => "Пакет модели OEM; соответствие отдельному устройству не подтверждено",
             "SupportPortal" => "Официальный портал; конкретный пакет не получен",
             "SearchDiscovery" => "Найден результат каталога/поиска; связь с устройством не доказана",
@@ -87,19 +89,20 @@ public sealed class DriverCatalogCandidateRankingService
         var score = candidate.CandidateScope switch
         {
             "DeviceExact" => 500,
-            "DeviceCompatible" => 300,
+            "DeviceCompatible" => 250,
             "ModelPack" => 200,
             "SupportPortal" => 50,
             "SearchDiscovery" => 100,
             _ => 0
         };
-        if (candidate.SourceType == "OfficialManufacturer") score += 100;
-        if (!string.IsNullOrWhiteSpace(candidate.PackageUrl)) score += 40;
+        if (candidate.SourceCategory == nameof(DriverSourceCategory.ManufacturerDomain)) score += 80;
+        else if (candidate.SourceCategory == nameof(DriverSourceCategory.IndependentCatalog)) score += 15;
+        if (!string.IsNullOrWhiteSpace(candidate.PackageUrl)) score += 25;
         if (!string.IsNullOrWhiteSpace(candidate.AvailableVersion) &&
             !candidate.AvailableVersion.Contains("не указ", StringComparison.OrdinalIgnoreCase) &&
             !candidate.AvailableVersion.Contains("не получ", StringComparison.OrdinalIgnoreCase))
-            score += 20;
-        if (candidate.IsDownloaded) score += 10;
+            score += 15;
+        if (candidate.IsDownloaded) score += 5;
         return score;
     }
 
