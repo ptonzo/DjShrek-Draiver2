@@ -77,11 +77,22 @@ public sealed class GigabyteDriverCatalogService
             var size = Read(item, "fileSize", "size");
             var category = Read(item, "infoName", "category", "type");
             var osText = Read(item, "osName", "os", "operatingSystem");
-            if (windowsBuild >= 22000 && !string.IsNullOrWhiteSpace(osText) &&
-                !osText.Contains("Win11", StringComparison.OrdinalIgnoreCase) &&
-                !osText.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) &&
-                !osText.Contains("All", StringComparison.OrdinalIgnoreCase))
-                return;
+            if (!string.IsNullOrWhiteSpace(osText))
+            {
+                var isWindows11Only =
+                    (osText.Contains("Win11", StringComparison.OrdinalIgnoreCase) ||
+                     osText.Contains("Windows 11", StringComparison.OrdinalIgnoreCase)) &&
+                    !osText.Contains("Win10", StringComparison.OrdinalIgnoreCase) &&
+                    !osText.Contains("Windows 10", StringComparison.OrdinalIgnoreCase);
+                var isWindows10Only =
+                    (osText.Contains("Win10", StringComparison.OrdinalIgnoreCase) ||
+                     osText.Contains("Windows 10", StringComparison.OrdinalIgnoreCase)) &&
+                    !osText.Contains("Win11", StringComparison.OrdinalIgnoreCase) &&
+                    !osText.Contains("Windows 11", StringComparison.OrdinalIgnoreCase);
+
+                if (windowsBuild >= 22000 && isWindows10Only) return;
+                if (windowsBuild < 22000 && isWindows11Only) return;
+            }
 
             packages.Add(new GigabyteDriverPackage(fileName, version, date, description,
                 category, osText, size, uri, model, catalogUri));
