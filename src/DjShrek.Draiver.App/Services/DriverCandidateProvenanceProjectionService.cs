@@ -13,8 +13,11 @@ public sealed class DriverCandidateProvenanceProjectionService
     public void Apply(DriverUpdateCandidate candidate)
     {
         ArgumentNullException.ThrowIfNull(candidate);
+        var manufacturer = !string.IsNullOrWhiteSpace(candidate.Manufacturer)
+            ? candidate.Manufacturer
+            : candidate.Provider;
         var sourceAssessment = _provenance.Assess(
-            candidate.Manufacturer, candidate.SourceUrl, candidate.SourceType);
+            manufacturer, candidate.SourceUrl, candidate.SourceType);
         candidate.SourceHost = sourceAssessment.Host;
         candidate.SourceCategory = sourceAssessment.Category.ToString();
         candidate.SourceExplanation = sourceAssessment.Explanation;
@@ -38,7 +41,7 @@ public sealed class DriverCandidateProvenanceProjectionService
         if (Uri.TryCreate(candidate.PackageUrl, UriKind.Absolute, out var packageUri))
         {
             var packageAssessment = _provenance.Assess(
-                candidate.Manufacturer, packageUri.AbsoluteUri, candidate.SourceType);
+                manufacturer, packageUri.AbsoluteUri, candidate.SourceType);
             candidate.PackageSourceHost = packageAssessment.Host;
             candidate.PackageSourceCategory = packageAssessment.Category.ToString();
 
