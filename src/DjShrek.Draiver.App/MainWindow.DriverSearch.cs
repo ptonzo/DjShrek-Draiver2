@@ -711,7 +711,16 @@ public partial class MainWindow
             }
 
             var notIgnoredResults = results.Where(x =>
-                string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId));
+                string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            var assessmentService = new DriverCandidateAssessmentService();
+            foreach (var candidate in notIgnoredResults)
+            {
+                DeviceInfo? matchedDevice = null;
+                if (!string.IsNullOrWhiteSpace(candidate.HardwareId))
+                    matchedDevice = DriverCompatibilityMatcher.FindExactMatch(
+                        _devices, candidate.HardwareId, candidate.InstanceId);
+                assessmentService.Assess(candidate, matchedDevice);
+            }
             var visibleResults = new DriverCatalogCandidateRankingService()
                 .RankAndDeduplicate(notIgnoredResults);
             foreach (var item in visibleResults)
