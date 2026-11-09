@@ -193,8 +193,19 @@ public sealed class DriverVendorCatalogRegistry
                 entry.Id.Equals(builtIn.Id, StringComparison.OrdinalIgnoreCase)) ?? builtIn;
 
         var normalized = Normalize((manufacturer ?? string.Empty) + " " + (driverProvider ?? string.Empty));
-        return availableEntries.FirstOrDefault(entry =>
-            normalized.Contains(Normalize(entry.DisplayName), StringComparison.Ordinal));
+        if (normalized.Length == 0) return null;
+
+        // Match complete normalized names, not arbitrary substrings (for example,
+        // "HP" must not match an unrelated provider string containing those letters).
+        return availableEntries
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.DisplayName))
+            .OrderByDescending(entry => Normalize(entry.DisplayName).Length)
+            .FirstOrDefault(entry =>
+            {
+                var displayName = Normalize(entry.DisplayName);
+                return displayName.Length > 0 &&
+                       (" " + normalized + " ").Contains(" " + displayName + " ", StringComparison.Ordinal);
+            });
     }
 
     public DriverVendorCatalogEntry? Find(string id) =>
