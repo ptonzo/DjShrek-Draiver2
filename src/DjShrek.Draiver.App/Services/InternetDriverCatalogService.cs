@@ -86,8 +86,15 @@ public sealed class InternetDriverCatalogService
                         var isExactHardwareId = (device.HardwareIds ?? Array.Empty<string>())
                             .Contains(hardwareId, StringComparer.OrdinalIgnoreCase);
 
+                        var identity = DeviceHardwareIdParser.Parse(hardwareId);
                         output.Add(new DriverUpdateCandidate
                         {
+                            BusType = identity?.Bus ?? "",
+                            VendorId = identity?.VendorId ?? "",
+                            DeviceId = identity?.DeviceId ?? "",
+                            SubsystemId = identity?.SubsystemId ?? "",
+                            RevisionId = identity?.RevisionId ?? "",
+                            HardwareIdentitySummary = identity?.Summary ?? hardwareId,
                             UpdateId = uri.AbsoluteUri,
                             Title = title,
                             Manufacturer = device.Manufacturer,
