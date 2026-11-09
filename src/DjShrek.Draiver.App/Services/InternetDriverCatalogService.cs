@@ -167,7 +167,12 @@ public sealed class InternetDriverCatalogService
             ["103C"] = "hp.com", ["04F2"] = "chicony.com", ["1038"] = "steelseries.com",
             ["1532"] = "razer.com", ["1B1C"] = "corsair.com", ["05AC"] = "apple.com",
             ["18D1"] = "google.com", ["1050"] = "yubico.com", ["28DE"] = "steampowered.com",
-            ["057E"] = "nintendo.com", ["054C"] = "playstation.com", ["093A"] = "pixart.com"
+            ["057E"] = "nintendo.com", ["054C"] = "playstation.com", ["093A"] = "pixart.com",
+            ["03F0"] = "hp.com", ["04E8"] = "samsung.com", ["04A9"] = "canon.com",
+            ["04B8"] = "epson.com", ["04F9"] = "brother.com", ["12D1"] = "huawei.com",
+            ["19D2"] = "zte.com.cn", ["2717"] = "mi.com", ["0403"] = "ftdichip.com",
+            ["10C4"] = "silabs.com", ["067B"] = "prolific.com.tw", ["1A86"] = "wch-ic.com",
+            ["2341"] = "arduino.cc"
         };
         if (identity is not null && vendorDomains.TryGetValue(identity.VendorId, out var idDomain))
             return idDomain;
