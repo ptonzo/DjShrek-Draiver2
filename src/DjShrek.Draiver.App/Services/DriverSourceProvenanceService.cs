@@ -110,18 +110,34 @@ public sealed class DriverSourceProvenanceService
 
     private static string NormalizeManufacturer(string? manufacturer)
     {
-        var value = (manufacturer ?? "").Trim().ToLower(CultureInfo.InvariantCulture);
-        return value switch
-        {
-            "hewlett-packard" or "hewlett packard" => "HP",
-            "micro-star international" or "micro-star" => "MSI",
-            "advanced micro devices" => "AMD",
-            "nvidia corporation" => "NVIDIA",
-            "intel corporation" => "Intel",
-            _ => VendorDomains.Keys.FirstOrDefault(
-                key => value.Equals(key, StringComparison.OrdinalIgnoreCase)) ?? ""
-        };
+        var value = NormalizeName(manufacturer);
+        if (value.Length == 0) return "";
+
+        if (value.Contains("hewlett packard", StringComparison.Ordinal) ||
+            value.Contains("hewlett-packard", StringComparison.Ordinal)) return "HP";
+        if (value.Contains("micro star", StringComparison.Ordinal) ||
+            value.Contains("microstar", StringComparison.Ordinal)) return "MSI";
+        if (value.Contains("advanced micro devices", StringComparison.Ordinal)) return "AMD";
+        if (value.Contains("nvidia", StringComparison.Ordinal)) return "NVIDIA";
+        if (value.Contains("intel", StringComparison.Ordinal)) return "Intel";
+        if (value.Contains("qualcomm", StringComparison.Ordinal) ||
+            value.Contains("atheros", StringComparison.Ordinal)) return "Qualcomm";
+        if (value.Contains("silicon labs", StringComparison.Ordinal)) return "Silicon Labs";
+
+        return VendorDomains.Keys
+            .OrderByDescending(key => NormalizeName(key).Length)
+            .FirstOrDefault(key =>
+            {
+                var normalizedKey = NormalizeName(key);
+                return normalizedKey.Length > 0 &&
+                    (" " + value + " ").Contains(" " + normalizedKey + " ", StringComparison.Ordinal);
+            }) ?? "";
     }
+
+    private static string NormalizeName(string? value) =>
+        string.Join(" ", new string((value ?? "").ToLowerInvariant()
+            .Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray())
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static bool IsDomainOrSubdomain(string host, string trustedDomain) =>
         host.Equals(trustedDomain, StringComparison.OrdinalIgnoreCase) ||
