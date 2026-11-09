@@ -215,11 +215,20 @@ public sealed class IntelDsaCatalogService
             .Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
         foreach (var detection in detectionValues.OrderByDescending(x => x.Length))
         {
-            if (detection.Length < 8 || detection.Length > 128 ||
-                detection.Any(char.IsControl)) continue;
+            if (detection.Length < 16 || detection.Length > 128 ||
+                detection.Any(char.IsControl) ||
+                !Regex.IsMatch(detection,
+                    @"(?:VEN_8086&DEV_[0-9A-F]{4}|VID_8087&PID_[0-9A-F]{4})",
+                    RegexOptions.IgnoreCase))
+                continue;
+
+            // DetectionValues must identify a concrete Intel PCI/USB function.
+            // A generic vendor-only substring could otherwise attach one package
+            // to every Intel device in the inventory.
             foreach (var identifier in identifiers)
             {
-                if (identifier.Contains(detection, StringComparison.OrdinalIgnoreCase))
+                if (identifier.Equals(detection, StringComparison.OrdinalIgnoreCase) ||
+                    identifier.StartsWith(detection, StringComparison.OrdinalIgnoreCase))
                     return identifier;
             }
         }
