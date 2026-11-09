@@ -356,9 +356,14 @@
                                                 <TextBlock x:Name="DriverUpdatesSummaryText" Text="Поиск ещё не выполнялся. Нажмите «Найти обновления драйверов»."
                                                            Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0"/>
                                             </StackPanel>
-                                            <Button x:Name="InstallSelectedDriverButton" DockPanel.Dock="Right"
-                                                    Content="Открыть страницу драйвера" IsEnabled="False"
-                                                    Click="InstallSelectedDriver_Click" VerticalAlignment="Center"/>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button x:Name="InstallSelectedDriverButton"
+                                                        Content="Открыть страницу" IsEnabled="False"
+                                                        Click="InstallSelectedDriver_Click" Margin="0,0,8,0"/>
+                                                <Button x:Name="DownloadOfficialDriverPackageButton"
+                                                        Content="Загрузить пакет" IsEnabled="False"
+                                                        Click="DownloadOfficialDriverPackage_Click"/>
+                                            </StackPanel>
                                         </DockPanel>
                                         <DataGrid x:Name="DriverUpdatesGrid" AutoGenerateColumns="False" IsReadOnly="True"
                                                   SelectionMode="Single" CanUserSortColumns="True" Height="310"
@@ -380,6 +385,7 @@
                                                 <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorId}" Width="*"/>
                                                 <DataGridTextColumn Header="Device ID" Binding="{Binding DeviceId}" Width="*"/>
                                                 <DataGridTextColumn Header="Subsystem ID" Binding="{Binding SubsystemId}" Width="*"/>
+                                                <DataGridTextColumn Header="Идентификатор устройства" Binding="{Binding HardwareIdentitySummary}" Width="1.6*"/>
                                                 <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
                                                 <DataGridTextColumn Header="Пакет" Binding="{Binding PackageStatus}" Width="1.2*"/>
                                                 <DataGridTextColumn Header="SHA-256" Binding="{Binding PackageSha256}" Width="2*"/>
