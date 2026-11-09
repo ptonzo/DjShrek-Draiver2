@@ -754,9 +754,10 @@ public partial class MainWindow
             var compatibleCount = visibleResults.Count(x => x.CandidateScope == "DeviceCompatible");
             var modelPackCount = visibleResults.Count(x => x.CandidateScope == "ModelPack");
             var portalCount = visibleResults.Count(x => x.CandidateScope == "SupportPortal");
+            var discoveryCount = visibleResults.Count(x => x.CandidateScope == "SearchDiscovery");
             DriverUpdatesSummaryText.Text = visibleResults.Count == 0
                 ? "В подключённых каталогах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
-                : $"После объединения повторов: точные Hardware ID — {exactCount}; Compatible ID/поисковые результаты — {compatibleCount}; модельные OEM-пакеты — {modelPackCount}; порталы поддержки — {portalCount}. Ни одна запись не считается готовым обновлением до проверки INF/CAT, издателя, ОС и архитектуры.";
+                : $"После объединения повторов: точные Hardware ID — {exactCount}; Compatible ID — {compatibleCount}; поисковые находки без доказанного совпадения — {discoveryCount}; модельные OEM-пакеты — {modelPackCount}; порталы поддержки — {portalCount}. Ни одна запись не считается готовым обновлением до проверки INF/CAT, издателя, ОС и архитектуры.";
             StatusText.Text = $"Поиск завершён. Уникальных кандидатов: {visibleResults.Count}.";
             AppendEvent($"Поиск каталогов завершён: уникальных кандидатов {visibleResults.Count}; точных совпадений {exactCount}; модельных пакетов {modelPackCount}; исключено устройств {_driverIgnore.GetIgnored().Count}.");
         }
