@@ -119,6 +119,7 @@ public sealed class DriverRuCatalogProvider
                 Provider = "driver.ru",
                 DeviceClass = device.Class,
                 HardwareId = hardwareId,
+                InstanceId = device.InstanceId,
                 BusType = identity?.Bus ?? "",
                 VendorId = identity?.VendorId ?? "",
                 DeviceId = identity?.DeviceId ?? "",
