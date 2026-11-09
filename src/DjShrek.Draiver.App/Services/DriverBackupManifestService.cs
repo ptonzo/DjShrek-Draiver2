@@ -58,6 +58,9 @@ public sealed class DriverBackupManifestService
         if (!File.Exists(manifestPath))
             return "Манифест отсутствует: использована старая резервная копия; проверка целостности по SHA-256 недоступна.";
 
+        var manifestAttributes = File.GetAttributes(manifestPath);
+        if ((manifestAttributes & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Манифест резервной копии является reparse point.");
         var manifestInfo = new FileInfo(manifestPath);
         if (manifestInfo.Length > MaxManifestBytes)
             throw new InvalidDataException("Манифест резервной копии превышает допустимый размер.");
@@ -86,9 +89,13 @@ public sealed class DriverBackupManifestService
             if (entry.Length < 0 || entry.Sha256.Length != 64 ||
                 !entry.Sha256.All(Uri.IsHexDigit))
                 throw new InvalidDataException("Манифест содержит некорректные размеры или SHA-256.");
-            var relative = entry.Path.Replace('/', Path.DirectorySeparatorChar);
-            if (Path.IsPathRooted(relative) || relative.Split(Path.DirectorySeparatorChar).Any(x => x == ".."))
-                throw new InvalidDataException("Манифест содержит путь за пределы папки резервной копии.");
+            var normalizedPath = entry.Path.Replace('\\', '/');
+            var segments = normalizedPath.Split('/');
+            var relative = normalizedPath.Replace('/', Path.DirectorySeparatorChar);
+            if (Path.IsPathRooted(relative) || normalizedPath.Contains(':') ||
+                normalizedPath.Contains('\\0') ||
+                segments.Any(segment => segment.Length == 0 || segment == "." || segment == ".."))
+                throw new InvalidDataException("Манифест содержит небезопасный путь за пределы папки резервной копии.");
 
             var path = Path.GetFullPath(Path.Combine(fullRoot, relative));
             var relCheck = Path.GetRelativePath(fullRoot, path);
