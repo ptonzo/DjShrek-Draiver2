@@ -35,7 +35,7 @@ public sealed class DriverBackupManifestService
             entries.Add(new FileEntry(
                 Path.GetRelativePath(fullRoot, file).Replace(Path.DirectorySeparatorChar, '/'),
                 info.Length,
-                Convert.ToHexString(SHA256.HashData(File.OpenRead(file)))));
+                ComputeSha256(file)));
         }
 
         var packageCount = files.Count(x => Path.GetExtension(x).Equals(".inf", StringComparison.OrdinalIgnoreCase));
@@ -85,7 +85,7 @@ public sealed class DriverBackupManifestService
                 continue;
             }
 
-            var hash = Convert.ToHexString(SHA256.HashData(File.OpenRead(path)));
+            var hash = ComputeSha256(path);
             if (!CryptographicOperations.FixedTimeEquals(
                     Convert.FromHexString(hash), Convert.FromHexString(entry.Sha256)))
             {
@@ -98,6 +98,12 @@ public sealed class DriverBackupManifestService
                 Environment.NewLine + string.Join(Environment.NewLine, failures));
 
         return $"Целостность подтверждена: {manifest.Files.Count} файлов, {manifest.PackageCount} INF-пакетов; SHA-256 совпадает.";
+    }
+
+    private static string ComputeSha256(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return Convert.ToHexString(SHA256.HashData(stream));
     }
 
     private static IEnumerable<string> EnumerateSafeFiles(string root)
