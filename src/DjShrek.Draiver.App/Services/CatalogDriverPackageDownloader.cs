@@ -18,7 +18,7 @@ public sealed class CatalogDriverPackageDownloader
     private const long MaxPackageBytes = 2L * 1024 * 1024 * 1024;
     private const int MaxPageBytes = 12 * 1024 * 1024;
     private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab", ".7z", ".rar" };
-    private static readonly Regex LinkRegex = new(
+        """<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""",
         @"<a\\b[^>]*href\\s*=\\s*[\""']([^\""']+)[\""'][^>]*>(.*?)</a\\s*>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
     private static readonly Regex TagRegex = new(@"<[^>]+>", RegexOptions.Compiled);
