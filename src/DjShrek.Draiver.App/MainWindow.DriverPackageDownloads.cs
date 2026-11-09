@@ -284,6 +284,13 @@ public partial class MainWindow
             return false;
         }
 
+        if (string.IsNullOrWhiteSpace(candidate.VerifiedPackageRoot) || candidate.VerifiedPackageManifest is null)
+        {
+            candidate.PackageStatus = "Нет сохранённого подтверждения подготовленного пакета";
+            DriverUpdatesGrid.Items.Refresh();
+            return false;
+        }
+
         var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId, candidate.InstanceId);
         if (device is null)
         {
@@ -314,6 +321,23 @@ public partial class MainWindow
                     "Пакет не прошёл повторную проверку. Установка не запускалась.",
                     "Установка заблокирована", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
+            }
+
+            var packageRoot = Path.GetFullPath(candidate.VerifiedPackageRoot);
+            var infFullPath = Path.GetFullPath(inspection.InfPath);
+            var infRelativePath = Path.GetRelativePath(packageRoot, infFullPath);
+            if (infRelativePath == ".." || infRelativePath.StartsWith(".." + Path.DirectorySeparatorChar) || Path.IsPathRooted(infRelativePath))
+                throw new InvalidDataException("Выбранный INF находится вне проверенного каталога пакета. Установка заблокирована.");
+            var packageVerification = await _packageIntegrity.VerifyAsync(packageRoot, candidate.VerifiedPackageManifest);
+            if (!packageVerification.IsValid)
+            {
+                candidate.PackageStatus = "Содержимое пакета изменилось после подготовки";
+                candidate.VerifiedInfPath = "";
+                candidate.VerifiedInfVersion = "";
+                candidate.VerifiedPackageRoot = "";
+                candidate.VerifiedPackageManifest = null;
+                DriverUpdatesGrid.Items.Refresh();
+                throw new InvalidDataException("Повторная проверка состава пакета не пройдена: " + packageVerification.Message);
             }
 
             var details =
@@ -378,8 +402,7 @@ public partial class MainWindow
                 $"Путь резервной копии: {backupPath}; {backupVerification}");
 
             StatusText.Text = "Повторная предварительная проверка пакета и формирование плана установки...";
-            var packageRoot = Path.GetDirectoryName(Path.GetFullPath(inspection.InfPath))
-                ?? throw new InvalidDataException("Не удалось определить каталог INF.");
+            // Reuse the original extraction root verified immediately before installation.
             var preflight = await _packagePreflight.InspectAsync(packageRoot, candidate.HardwareId);
             var selectedInf = preflight.InfResults.FirstOrDefault(x =>
                 x.IsReadable && x.HasExactHardwareIdMatch &&
