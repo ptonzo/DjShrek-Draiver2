@@ -402,7 +402,7 @@
                                                 <DataGridTextColumn Header="Идентификатор устройства" Binding="{Binding HardwareIdentitySummary}" Width="1.6*"/>
                                                 <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
                                                 <DataGridTextColumn Header="Пакет" Binding="{Binding PackageStatus}" Width="1.5*"/>
-                                                <DataGridTextColumn Header="Целостность файлов" Binding="{Binding PackageIntegrityStatus}" Width="2*"/>
+                                                <DataGridTextColumn Header="Контроль изменений после распаковки" Binding="{Binding PackageIntegrityStatus}" Width="2*"/>
                                                 <DataGridTextColumn Header="Проверка INF / Hardware ID" Binding="{Binding PackagePreflightStatus}" Width="2*"/>
                                                 <DataGridTextColumn Header="SHA-256" Binding="{Binding PackageSha256}" Width="2*"/>
                                             </DataGrid.Columns>
