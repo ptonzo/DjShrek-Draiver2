@@ -174,8 +174,15 @@ public sealed class CatalogDriverPackageDownloader
 
     private static bool IsNonPublicAddress(IPAddress address)
     {
+        // DNS may return IPv4-mapped IPv6 addresses; classify the embedded IPv4
+        // address too, otherwise private/loopback targets could bypass this guard.
+        if (address.IsIPv4MappedToIPv6)
+            return IsNonPublicAddress(address.MapToIPv4());
+
         if (IPAddress.IsLoopback(address) || address.IsIPv6LinkLocal ||
-            address.IsIPv6Multicast || address.IsIPv6SiteLocal) return true;
+            address.IsIPv6Multicast || address.IsIPv6SiteLocal ||
+            address.IsIPv6UniqueLocal || address.Equals(IPAddress.IPv6Any))
+            return true;
         if (address.AddressFamily == AddressFamily.InterNetwork)
         {
             var b = address.GetAddressBytes();
