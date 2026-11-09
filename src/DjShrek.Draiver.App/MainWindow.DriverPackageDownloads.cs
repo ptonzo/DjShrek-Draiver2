@@ -425,6 +425,9 @@ public partial class MainWindow
             if (!plan.CanProceed)
                 throw new InvalidDataException("План установки заблокирован: " + string.Join("; ", plan.Blockers));
 
+            StatusText.Text = "Создание точки восстановления Windows перед изменением Driver Store...";
+            await Task.Run(() => DriverMaintenanceService.CreateSystemRestorePoint());
+
             StatusText.Text = "Передача проверенного INF в Windows и повторная проверка устройства...";
             IEnumerable<DeviceInfo>? refreshedDevices = null;
             var workflow = await new DriverInstallationWorkflowService().InstallAndVerifyAsync(
