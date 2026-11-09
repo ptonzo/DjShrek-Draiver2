@@ -432,6 +432,21 @@
                                     </StackPanel>
                                 </Border>
 
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ИНСТРУМЕНТЫ ИСПРАВЛЕНИЯ WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Быстрый переход к штатным средствам диагностики звука, сети, экрана и устройств. Программа не меняет параметры без вашего подтверждения."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Звук" Tag="ms-settings:sound" Click="OpenFixTool_Click"/>
+                                            <Button Content="Сеть" Tag="ms-settings:network-status" Click="OpenFixTool_Click"/>
+                                            <Button Content="Экран" Tag="ms-settings:display" Click="OpenFixTool_Click"/>
+                                            <Button Content="Диспетчер устройств" Tag="devmgmt.msc" Click="OpenFixTool_Click"/>
+                                            <Button Content="Устранение неполадок" Tag="ms-settings:troubleshoot" Click="OpenFixTool_Click"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+
                                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="ИГРОВОЙ ПРОФИЛЬ WINDOWS" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
