@@ -17,7 +17,7 @@ public sealed class CatalogDriverPackageDownloader
 {
     private const long MaxPackageBytes = 2L * 1024 * 1024 * 1024;
     private const int MaxPageBytes = 12 * 1024 * 1024;
-    private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab", ".7z", ".rar" };
+    private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab" };
     private static readonly Regex LinkRegex = new(
         """<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>(.*?)</a\s*>""",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
@@ -118,9 +118,10 @@ public sealed class CatalogDriverPackageDownloader
                 if (total == 0) throw new InvalidDataException("Сервер вернул пустой файл.");
             }
 
-            File.Move(temporary, target, true);
-            await using var verify = File.OpenRead(target);
+            await ValidatePackageSignatureAsync(temporary, extension, cancellationToken);
+            await using var verify = File.OpenRead(temporary);
             var hash = Convert.ToHexString(await SHA256.HashDataAsync(verify, cancellationToken));
+            File.Move(temporary, target, true);
             return (target, hash, new FileInfo(target).Length, finalUri.AbsoluteUri);
         }
         catch
@@ -209,10 +210,33 @@ public sealed class CatalogDriverPackageDownloader
         "application/vnd.ms-cab-compressed" => ".cab",
         "application/x-msdownload" or "application/vnd.microsoft.portable-executable" => ".exe",
         "application/x-msi" => ".msi",
-        "application/x-7z-compressed" => ".7z",
-        "application/x-rar-compressed" => ".rar",
         _ => ""
     };
+
+    private static async Task ValidatePackageSignatureAsync(
+        string path, string extension, CancellationToken cancellationToken)
+    {
+        var header = new byte[8];
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+            4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var read = await stream.ReadAsync(header.AsMemory(), cancellationToken);
+        var valid = extension.ToLowerInvariant() switch
+        {
+            ".zip" => read >= 4 && header[0] == 0x50 && header[1] == 0x4B &&
+                      ((header[2] == 0x03 && header[3] == 0x04) ||
+                       (header[2] == 0x05 && header[3] == 0x06) ||
+                       (header[2] == 0x07 && header[3] == 0x08)),
+            ".cab" => read >= 4 && header[0] == 0x4D && header[1] == 0x53 &&
+                      header[2] == 0x43 && header[3] == 0x46,
+            ".exe" => read >= 2 && header[0] == 0x4D && header[1] == 0x5A,
+            ".msi" => read >= 8 && header[0] == 0xD0 && header[1] == 0xCF &&
+                      header[2] == 0x11 && header[3] == 0xE0 && header[4] == 0xA1 &&
+                      header[5] == 0xB1 && header[6] == 0x1A && header[7] == 0xE1,
+            _ => false
+        };
+        if (!valid)
+            throw new InvalidDataException($"Содержимое файла не соответствует заявленному формату {extension}. Пакет не сохранён.");
+    }
 
     private static async Task<string> ReadBoundedTextAsync(HttpContent content, int maxBytes, CancellationToken token)
     {
