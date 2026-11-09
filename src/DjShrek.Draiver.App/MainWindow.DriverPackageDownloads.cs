@@ -377,45 +377,50 @@ public partial class MainWindow
                 candidate.PackageSha256, device.DriverVersion,
                 $"Путь резервной копии: {backupPath}; {backupVerification}");
 
-            StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
-            var result = await _maintenance.InstallInfAsync(inspection.InfPath);
+            StatusText.Text = "Повторная предварительная проверка пакета и формирование плана установки...";
+            var packageRoot = Path.GetDirectoryName(Path.GetFullPath(inspection.InfPath))
+                ?? throw new InvalidDataException("Не удалось определить каталог INF.");
+            var preflight = await _packagePreflight.InspectAsync(packageRoot, candidate.HardwareId);
+            var selectedInf = preflight.InfResults.FirstOrDefault(x =>
+                x.IsReadable && x.HasExactHardwareIdMatch &&
+                string.Equals(Path.GetFullPath(x.InfPath), Path.GetFullPath(inspection.InfPath),
+                    StringComparison.OrdinalIgnoreCase));
+            if (selectedInf is null || !selectedInf.CatalogExists)
+                throw new InvalidDataException("Выбранный INF не прошёл повторную проверку или его CAT отсутствует. Установка заблокирована.");
 
-            var historyStatus = "SubmittedToWindows";
-            var historyMessage = "pnputil завершился без ошибки; фактическая версия драйвера ещё не подтверждена.";
-            var packageStatus = "Передан Windows; версия пока не подтверждена";
-            try
+            var signature = new DriverPackageSignaturePolicyService().AssessCatalog(
+                selectedInf.CatalogPath, inspection.Provider, requireTrustedChain: true);
+            var plan = new DriverInstallationPlanService().Create(
+                device.InstanceId, candidate.HardwareId, inspection.InfPath, inspection.DriverVersion,
+                preflight, signature, verifiedBackupExists: true, userConfirmedInstallation: true);
+            if (!plan.CanProceed)
+                throw new InvalidDataException("План установки заблокирован: " + string.Join("; ", plan.Blockers));
+
+            StatusText.Text = "Передача проверенного INF в Windows и повторная проверка устройства...";
+            var workflow = await new DriverInstallationWorkflowService().InstallAndVerifyAsync(
+                plan, packageRoot, userConfirmed: true, device.DriverVersion,
+                async cancellationToken =>
+                    (IEnumerable<DeviceInfo>)await _inventory.ScanAsync(),
+                executionTimeout: TimeSpan.FromMinutes(3));
+            var result = workflow.Execution.Summary +
+                (string.IsNullOrWhiteSpace(workflow.Execution.StandardOutput) ? "" :
+                    Environment.NewLine + workflow.Execution.StandardOutput) +
+                (string.IsNullOrWhiteSpace(workflow.Execution.StandardError) ? "" :
+                    Environment.NewLine + workflow.Execution.StandardError);
+
+            var historyStatus = workflow.IsSuccessful ? "InstalledAndVerified" :
+                workflow.Execution.Started && workflow.Execution.ExitCode == 0
+                    ? "SubmittedToWindows" : workflow.Status;
+            var historyMessage = workflow.Summary;
+            var packageStatus = workflow.IsSuccessful
+                ? "Установлен; версия подтверждена повторным сканированием"
+                : workflow.Execution.Started && workflow.Execution.ExitCode == 0
+                    ? "Передан Windows; фактическая версия пока не подтверждена"
+                    : "Установка не выполнена или заблокирована";
+            if (workflow.Execution.Started && workflow.Execution.ExitCode == 0)
             {
-                StatusText.Text = "Повторное сканирование устройства для проверки установленной версии...";
                 var refreshedDevices = await _inventory.ScanAsync();
                 ApplyDevices(refreshedDevices);
-                var refreshedDevice = DriverCompatibilityMatcher.FindExactMatch(refreshedDevices, candidate.HardwareId, candidate.InstanceId);
-                if (refreshedDevice is not null)
-                {
-                    var installedComparison = DriverVersionComparisonService.Compare(
-                        refreshedDevice.DriverVersion, inspection.DriverVersion);
-                    if (installedComparison.Relation == DriverVersionRelation.Same)
-                    {
-                        historyStatus = "InstalledAndVerified";
-                        historyMessage = $"Повторное сканирование подтвердило установленную версию {refreshedDevice.DriverVersion}.";
-                        packageStatus = "Установлен; версия подтверждена повторным сканированием";
-                    }
-                    else
-                    {
-                        historyMessage = $"Пакет передан Windows, но повторное сканирование показало версию {refreshedDevice.DriverVersion}. {installedComparison.Message}";
-                        packageStatus = "Передан Windows; фактическая версия пока не совпадает";
-                    }
-                }
-                else
-                {
-                    historyMessage = "Пакет передан Windows, но устройство не удалось повторно сопоставить по точному Hardware ID.";
-                    packageStatus = "Передан Windows; устройство не сопоставлено после операции";
-                }
-            }
-            catch (Exception verificationError)
-            {
-                historyMessage = "Пакет передан Windows, но повторное сканирование не удалось: " + verificationError.Message;
-                packageStatus = "Передан Windows; проверка версии не выполнена";
-                AppendEvent("Не удалось подтвердить установленную версию драйвера: " + verificationError.Message);
             }
 
             try
