@@ -46,8 +46,8 @@ Source: "..\artifacts\win-x64\DjShrek-Draiver.exe"; DestDir: "{app}"; Flags: ign
 Source: "..\LICENSE-TERMS-RU.txt"; DestDir: "{app}"; DestName: "LICENSE-TERMS-RU.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{autoprograms}\DjShrek-Draiver Cyber Club"; Filename: "{app}\DjShrek-Draiver.exe"; WorkingDir: "{app}"
-Name: "{autodesktop}\DjShrek-Draiver Cyber Club"; Filename: "{app}\DjShrek-Draiver.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autoprograms}\DjShrek-Draiver Cyber Club"; Filename: "{app}\DjShrek-Draiver.exe"; IconFilename: "{app}\DjShrek-Draiver.exe"; WorkingDir: "{app}"
+Name: "{autodesktop}\DjShrek-Draiver Cyber Club"; Filename: "{app}\DjShrek-Draiver.exe"; IconFilename: "{app}\DjShrek-Draiver.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\DjShrek-Draiver.exe"; Description: "Запустить DjShrek-Draiver Cyber Club"; Flags: postinstall nowait skipifsilent runasoriginaluser
