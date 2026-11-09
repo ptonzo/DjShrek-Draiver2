@@ -593,6 +593,9 @@ public partial class MainWindow
                 $"INF-кандидатов с точным Hardware ID: {preflight.InfResults.Count(x => x.IsReadable && x.HasExactHardwareIdMatch)}");
 
             var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
+        var evidenceProjection = new DriverInfEvidenceProjectionService();
+        foreach (var scanned in candidates.Take(30))
+            evidenceProjection.Apply(candidate, device, scanned.Inspection);
         var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
         var newerCandidate = candidates.FirstOrDefault(x =>
             x.Inspection.IsInstallableForDevice && x.IsNewerThanInstalled);
