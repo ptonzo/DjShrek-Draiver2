@@ -136,6 +136,7 @@ public sealed class InternetDriverCatalogService
                             SourceTrust = IsOfficial(uri.Host) ? "OfficialDomain_UnverifiedPackage" : "IndependentCatalog_UnverifiedPackage",
                             DeviceClass = device.Class,
                             HardwareId = hardwareId,
+                            InstanceId = device.InstanceId,
                             MatchType = isExactHardwareId ? "Hardware ID" : "Compatible ID",
                             DeviceName = device.Name,
                             CurrentVersion = device.DriverVersion,
