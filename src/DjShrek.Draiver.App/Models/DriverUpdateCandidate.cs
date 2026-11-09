@@ -20,7 +20,7 @@ public sealed class DriverUpdateCandidate
     public string SubsystemId { get; init; } = "";
     public string RevisionId { get; init; } = "";
     public string HardwareIdentitySummary { get; init; } = "";
-    public string MatchType { get; init; } = "Hardware ID";
+    public string MatchType { get; set; } = "Unverified catalog/search result";
     public string DeviceName { get; init; } = "Устройство не сопоставлено";
     public string CurrentVersion { get; init; } = "Не сопоставлена";
     public string Compatibility { get; init; } = "Совместимость не проверена";
