@@ -153,11 +153,13 @@ public partial class MainWindow
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        InstallSelectedDriverButton.IsEnabled =
+        var hasOfficialPage =
             DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate &&
             Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var uri) &&
             uri.Scheme == Uri.UriSchemeHttps &&
             InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
+        InstallSelectedDriverButton.IsEnabled = hasOfficialPage;
+        DownloadOfficialDriverPackageButton.IsEnabled = hasOfficialPage;
     }
 
     private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
