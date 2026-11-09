@@ -11,12 +11,16 @@ public sealed class DriverUpdateCandidate
     public string Provider { get; init; } = "";
     public string DeviceClass { get; init; } = "";
     public string HardwareId { get; init; } = "";
+    public string MatchType { get; init; } = "Hardware ID";
     public string DeviceName { get; init; } = "Устройство не сопоставлено";
     public string CurrentVersion { get; init; } = "Не сопоставлена";
     public string Compatibility { get; init; } = "Совместимость не проверена";
     public string AvailableVersion { get; init; } = "Не указана в каталоге";
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
+    public string SearchQuery { get; init; } = "";
+    public string PublishedDate { get; init; } = "";
+    public string Evidence { get; init; } = "";
     public bool IsDownloaded { get; set; }
     public string SourceUrl { get; init; } = "";
     public string PackageUrl { get; set; } = "";
