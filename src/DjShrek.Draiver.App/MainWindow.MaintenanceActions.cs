@@ -10,6 +10,53 @@ namespace DjShrek.Draiver.App;
 
 public partial class MainWindow
 {
+    private void ScanGameComponents_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            GameComponentsText.Text = "Проверка компонентов...";
+            var components = new GameComponentService().Scan();
+            GameComponentsText.Text = string.Join(Environment.NewLine + Environment.NewLine,
+                components.Select(item =>
+                    $"{item.Name} — {item.State}{Environment.NewLine}" +
+                    $"Версия: {item.Version}{Environment.NewLine}{item.Details}"));
+            StatusText.Text = $"Проверка игровых компонентов завершена: {components.Count} категорий.";
+            AppendEvent("Выполнена проверка игровых компонентов Windows (только чтение).");
+        }
+        catch (Exception ex)
+        {
+            GameComponentsText.Text = "Не удалось проверить компоненты: " + ex.Message;
+            StatusText.Text = "Проверка игровых компонентов завершилась ошибкой.";
+        }
+    }
+
+    private void OpenGameComponentDownload_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string rawUrl ||
+            !Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            !new[] { "aka.ms", "dotnet.microsoft.com", "www.microsoft.com", "www.nvidia.com", "www.openal.org" }
+                .Contains(uri.Host, StringComparer.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(this, "Ссылка не прошла проверку разрешённого официального источника.",
+                "Игровые компоненты", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+            StatusText.Text = "Открыта официальная страница компонента. Загрузка и установка выполняются отдельно.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Игровые компоненты", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OpenFixTool_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.Tag is not string target || string.IsNullOrWhiteSpace(target))
