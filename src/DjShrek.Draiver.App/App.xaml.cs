@@ -122,6 +122,22 @@ public partial class App : Application
                 sourceMetadata.SourceTrust != "IndependentCatalog_UnverifiedPackage")
                 throw new InvalidOperationException("Independent source provenance was incorrectly treated as a verified package.");
             checks.Add("PASS: Driver.ru/DriverGuide/FlyDrivers source classification and cloud-download origin policy are covered.");
+            var driverRuSearchUri = DriverRuCatalogProvider.BuildSearchUri(@"PCI\\VEN_1022&DEV_1502");
+            if (driverRuSearchUri.AbsoluteUri != "https://driver.ru/Search/PCI%5CVEN_1022%26DEV_1502")
+                throw new InvalidOperationException("Driver.ru Hardware ID route was not encoded correctly.");
+            var driverRuSample = "<div>Производитель: AMD<br>Оборудование: ACP Resource Management Device Extension<br>" +
+                "Название: Driver<br>Версия: 26.7.1<br>Дата выхода: 24 Jul 2026<br>" +
+                "Система: Windows 10 64-bit Windows 11<br>Описание: AMD audio package</div>";
+            var driverRuParsed = DriverRuCatalogProvider.ParseSearchPage(
+                new DeviceInfo { Name = "Test Audio Device", Manufacturer = "AMD", DriverVersion = "24.7.1" },
+                @"PCI\\VEN_1022&DEV_1502", driverRuSearchUri, driverRuSample);
+            if (driverRuParsed.Count != 1 ||
+                driverRuParsed[0].AvailableVersion != "26.7.1" ||
+                driverRuParsed[0].Provider != "driver.ru" ||
+                driverRuParsed[0].SourceTrust != "IndependentCatalog_UnverifiedPackage" ||
+                driverRuParsed[0].PublishedDate != "2026-07-24")
+                throw new InvalidOperationException("Driver.ru search result parsing failed or promoted an unverified package.");
+            checks.Add("PASS: direct Driver.ru route and Hardware ID result parser extract version/date without trusting the package.");
             var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
             if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "USB\\\\VID_1234&PID_5678") != "hp.com")
                 throw new InvalidOperationException("Short OEM name HP was not mapped to its official domain.");
