@@ -370,7 +370,7 @@ public partial class MainWindow
                 {
                     var installedComparison = DriverVersionComparisonService.Compare(
                         refreshedDevice.DriverVersion, inspection.DriverVersion);
-                    if (installedComparison.Relation is DriverVersionRelation.Same or DriverVersionRelation.Newer)
+                    if (installedComparison.Relation == DriverVersionRelation.Same)
                     {
                         historyStatus = "InstalledAndVerified";
                         historyMessage = $"Повторное сканирование подтвердило установленную версию {refreshedDevice.DriverVersion}.";
