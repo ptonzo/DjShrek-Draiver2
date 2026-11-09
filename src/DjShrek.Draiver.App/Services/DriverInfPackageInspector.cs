@@ -50,7 +50,8 @@ public sealed class DriverInfPackageInspector
         var fullPath = Path.GetFullPath(infPath);
         if (!File.Exists(fullPath) || !Path.GetExtension(fullPath).Equals(".inf", StringComparison.OrdinalIgnoreCase))
             throw new FileNotFoundException("Указан несуществующий INF-файл драйвера.", fullPath);
-
+        RejectReparsePoint(fullPath, "INF");
+        
         var sections = ParseSections(fullPath);
         var warnings = new List<string>();
         var version = GetSection(sections, "Version");
@@ -85,9 +86,7 @@ public sealed class DriverInfPackageInspector
         {
             try
             {
-                var catalogAttributes = File.GetAttributes(catalogPath);
-                if ((catalogAttributes & FileAttributes.ReparsePoint) != 0)
-                    throw new InvalidDataException("CAT-файл является reparse point; проверка пакета остановлена.");
+                RejectReparsePoint(catalogPath, "CAT");
                 DriverMaintenanceService.ValidateSignedInfPackage(fullPath);
                 DriverMaintenanceService.ValidateCatalogFileSignature(catalogPath);
                 signature = "Valid";
@@ -131,7 +130,26 @@ public sealed class DriverInfPackageInspector
             Path.IsPathRooted(relative))
             throw new InvalidDataException("CatalogFile выходит за пределы папки INF-пакета.");
 
+        // Reject reparse points in every path component. Checking only the final CAT
+        // file is insufficient when a parent directory is a junction or symbolic link.
+        var current = root;
+        foreach (var component in relative.Split(
+                     new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                     StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, component);
+            if (!File.Exists(current) && !Directory.Exists(current))
+                break;
+            RejectReparsePoint(current, "путь CAT");
+        }
         return resolved;
+    }
+
+    private static void RejectReparsePoint(string path, string description)
+    {
+        var attributes = File.GetAttributes(path);
+        if ((attributes & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException(description + " содержит reparse point; проверка пакета остановлена.");
     }
 
     private static Dictionary<string, Dictionary<string, string>> ParseSections(string path)
