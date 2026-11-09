@@ -363,6 +363,9 @@
                                                 <Button x:Name="DownloadOfficialDriverPackageButton"
                                                         Content="Загрузить пакет" IsEnabled="False"
                                                         Click="DownloadOfficialDriverPackage_Click"/>
+                                                <Button x:Name="InstallVerifiedDriverButton"
+                                                        Content="Установить проверенное обновление" IsEnabled="False"
+                                                        Click="InstallVerifiedDriver_Click" Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </DockPanel>
                                         <DataGrid x:Name="DriverUpdatesGrid" AutoGenerateColumns="False" IsReadOnly="True"
