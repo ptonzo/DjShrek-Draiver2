@@ -71,9 +71,11 @@ public sealed class DriverMaintenanceService
             throw new IOException("Папка точечной резервной копии должна быть пустой.");
 
         var result = RunElevated("pnputil.exe", $"/export-driver \"{publishedName}\" \"{target}\"");
-        var infCount = Directory.EnumerateFiles(target, "*.inf", SearchOption.AllDirectories).Take(2).Count();
-        if (infCount == 0)
+        var infFiles = Directory.EnumerateFiles(target, "*.inf", SearchOption.AllDirectories).Take(2).ToArray();
+        if (infFiles.Length == 0)
             throw new IOException("pnputil не экспортировал INF-пакет текущего драйвера.");
+        if (infFiles.Length != 1)
+            throw new IOException("Точечная резервная копия содержит не один INF-пакет. Откат неоднозначен; установка заблокирована.");
         var manifestResult = new DriverBackupManifestService().Create(target);
         return result + Environment.NewLine + manifestResult + Environment.NewLine + "Папка резервной копии: " + target;
     }
