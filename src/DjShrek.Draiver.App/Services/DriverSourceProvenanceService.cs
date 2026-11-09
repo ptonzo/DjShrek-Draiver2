@@ -9,24 +9,27 @@ namespace DjShrek.Draiver.App.Services;
 /// </summary>
 public sealed class DriverSourceProvenanceService
 {
-    private static readonly IReadOnlyDictionary<string, string[]> VendorDomains =
-        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    private static readonly IReadOnlyDictionary<string, string[]> VendorDomains = BuildVendorDomains();
+
+    private static IReadOnlyDictionary<string, string[]> BuildVendorDomains()
+    {
+        var domains = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in new DriverVendorCatalogRegistry().GetAll())
         {
-            ["Acer"] = ["acer.com"],
-            ["AMD"] = ["amd.com"],
-            ["ASUS"] = ["asus.com"],
-            ["Broadcom"] = ["broadcom.com"],
-            ["Dell"] = ["dell.com"],
-            ["Gigabyte"] = ["gigabyte.com"],
-            ["HP"] = ["hp.com", "hpe.com"],
-            ["Intel"] = ["intel.com"],
-            ["Lenovo"] = ["lenovo.com"],
-            ["Microsoft"] = ["microsoft.com", "windowsupdate.com"],
-            ["MSI"] = ["msi.com"],
-            ["NVIDIA"] = ["nvidia.com"],
-            ["Qualcomm"] = ["qualcomm.com"],
-            ["Realtek"] = ["realtek.com"]
-        };
+            if (!string.IsNullOrWhiteSpace(entry.DisplayName) &&
+                !string.IsNullOrWhiteSpace(entry.SearchDomain))
+                domains[entry.DisplayName] = [entry.SearchDomain.Trim().Trim('.').ToLowerInvariant()];
+        }
+
+        domains["Hewlett-Packard"] = domains["HP"];
+        domains["Hewlett Packard"] = domains["HP"];
+        domains["Micro-Star International"] = domains["MSI"];
+        domains["Micro-Star"] = domains["MSI"];
+        domains["Advanced Micro Devices"] = domains["AMD"];
+        domains["NVIDIA Corporation"] = domains["NVIDIA"];
+        domains["Intel Corporation"] = domains["Intel"];
+        return domains;
+    }
 
     public DriverSourceAssessment Assess(string? manufacturer, string? sourceUrl, string? declaredSourceType = null)
     {
