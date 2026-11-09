@@ -113,6 +113,29 @@ public sealed class DriverVendorCatalogRegistry
         return null;
     }
 
+    public DriverVendorCatalogEntry? Resolve(
+        string? hardwareId, string? manufacturer, string? driverProvider,
+        IReadOnlyList<DriverVendorCatalogEntry> availableEntries)
+    {
+        ArgumentNullException.ThrowIfNull(availableEntries);
+        var identity = DeviceHardwareIdParser.Parse(hardwareId);
+        if (!string.IsNullOrWhiteSpace(identity?.VendorId))
+        {
+            var byId = availableEntries.FirstOrDefault(entry =>
+                entry.VendorIds.Contains(identity.VendorId));
+            if (byId is not null) return byId;
+        }
+
+        var builtIn = Resolve(hardwareId, manufacturer, driverProvider);
+        if (builtIn is not null)
+            return availableEntries.FirstOrDefault(entry =>
+                entry.Id.Equals(builtIn.Id, StringComparison.OrdinalIgnoreCase)) ?? builtIn;
+
+        var normalized = Normalize((manufacturer ?? string.Empty) + " " + (driverProvider ?? string.Empty));
+        return availableEntries.FirstOrDefault(entry =>
+            normalized.Contains(Normalize(entry.DisplayName), StringComparison.Ordinal));
+    }
+
     public DriverVendorCatalogEntry? Find(string id) =>
         Entries.FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
 
