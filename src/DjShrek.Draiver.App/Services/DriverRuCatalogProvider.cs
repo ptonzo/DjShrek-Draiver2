@@ -108,6 +108,7 @@ public sealed class DriverRuCatalogProvider
 
             var deviceTitle = string.IsNullOrWhiteSpace(equipment) ? title : equipment;
             var date = NormalizeDate(releaseDate);
+            var versionComparison = DriverVersionComparisonService.Compare(version, device.DriverVersion);
             var identity = DeviceHardwareIdParser.Parse(hardwareId);
             results.Add(new DriverUpdateCandidate
             {
@@ -129,6 +130,7 @@ public sealed class DriverRuCatalogProvider
                 CurrentVersion = device.DriverVersion,
                 Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
                 AvailableVersion = string.IsNullOrWhiteSpace(version) ? "Не указана на странице" : version,
+                VersionComparison = versionComparison.Message,
                 DriverVersionDate = releaseDate,
                 PublishedDate = date,
                 Description = string.Join(" | ", new[] { description, os }.Where(x => !string.IsNullOrWhiteSpace(x))),
