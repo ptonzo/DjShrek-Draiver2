@@ -24,8 +24,31 @@ Get-CimInstance Win32_PnPEntity | ForEach-Object {
     $deviceKey = [string]$device.PNPDeviceID
     $driver = $driverMap[$deviceKey]
     $problem = 'Нет'
+    $problemDescription = 'Устройство работает без зарегистрированной ошибки.'
     if ($null -ne $device.ConfigManagerErrorCode -and [int]$device.ConfigManagerErrorCode -ne 0) {
         $problem = [string]$device.ConfigManagerErrorCode
+        $problemDescription = switch ([int]$device.ConfigManagerErrorCode) {
+            1  { 'Устройство настроено неправильно.'; break }
+            10 { 'Устройство не запускается. Возможна проблема драйвера или оборудования.'; break }
+            12 { 'Недостаточно свободных ресурсов для устройства.'; break }
+            14 { 'Для применения изменений требуется перезагрузка компьютера.'; break }
+            18 { 'Требуется переустановить драйвер устройства.'; break }
+            19 { 'Конфигурация драйверов повреждена или содержит конфликт.'; break }
+            22 { 'Устройство отключено.'; break }
+            24 { 'Устройство отсутствует, работает неправильно или установлено не полностью.'; break }
+            28 { 'Драйверы устройства не установлены.'; break }
+            31 { 'Windows не может загрузить необходимые драйверы.'; break }
+            32 { 'Служба драйвера отключена.'; break }
+            37 { 'Драйвер не прошёл инициализацию.'; break }
+            39 { 'Драйвер отсутствует или повреждён.'; break }
+            40 { 'Windows не может получить доступ к устройству из-за неверного ключа службы.'; break }
+            41 { 'Драйвер загружен, но устройство не обнаружено.'; break }
+            43 { 'Windows остановила устройство после сообщения о проблеме.'; break }
+            45 { 'Устройство сейчас не подключено к компьютеру.'; break }
+            48 { 'Запуск драйвера заблокирован из-за известной проблемы совместимости.'; break }
+            52 { 'Windows не может проверить цифровую подпись драйвера.'; break }
+            default { 'Windows сообщает код проблемы устройства ' + $problem + '. Требуется дополнительная диагностика.' }
+        }
     }
 
     $driverDate = ''
@@ -39,6 +62,7 @@ Get-CimInstance Win32_PnPEntity | ForEach-Object {
         Class = [string]$device.PNPClass
         Status = [string]$device.Status
         Problem = $problem
+        ProblemDescription = $problemDescription
         DriverProvider = if ($null -ne $driver) { [string]$driver.DriverProviderName } else { '' }
         DriverVersion = if ($null -ne $driver) { [string]$driver.DriverVersion } else { '' }
         DriverDate = $driverDate
@@ -134,6 +158,7 @@ $uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours)
         Class = GetString(element, "Class"),
         Status = GetString(element, "Status"),
         Problem = GetString(element, "Problem"),
+        ProblemDescription = GetString(element, "ProblemDescription"),
         DriverProvider = GetString(element, "DriverProvider"),
         DriverVersion = GetString(element, "DriverVersion"),
         DriverDate = GetString(element, "DriverDate"),
