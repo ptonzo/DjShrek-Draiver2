@@ -85,6 +85,54 @@ public partial class MainWindow
         AppendEvent("Устройство исключено из поиска обновлений: " + candidate.HardwareId);
     }
 
+    private void DriverHistory_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var entries = _driverHistory.GetRecent(50);
+            var content = entries.Count == 0
+                ? "История обновлений пока пуста."
+                : string.Join(Environment.NewLine + Environment.NewLine, entries.Select(item =>
+                    $"{item.TimestampUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} | {item.Status}{Environment.NewLine}" +
+                    $"Устройство: {item.DeviceName}{Environment.NewLine}" +
+                    $"Hardware ID: {item.HardwareId}{Environment.NewLine}" +
+                    $"Версия: {item.PreviousVersion} → {item.CandidateVersion}{Environment.NewLine}" +
+                    $"Источник: {item.Source}{Environment.NewLine}" +
+                    $"INF: {item.InfPath}{Environment.NewLine}" +
+                    $"Резервная копия: {(string.IsNullOrWhiteSpace(item.BackupPath) ? "точечный экспорт недоступен; использована точка восстановления" : item.BackupPath)}{Environment.NewLine}" +
+                    $"Результат: {item.Message}"));
+
+            var dialog = new Window
+            {
+                Title = "История обновлений драйверов",
+                Owner = this,
+                Width = 900,
+                Height = 620,
+                MinWidth = 650,
+                MinHeight = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = Background,
+                Foreground = Foreground
+            };
+            dialog.Content = new System.Windows.Controls.TextBox
+            {
+                Text = content,
+                IsReadOnly = true,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                Margin = new Thickness(14),
+                FontFamily = new System.Windows.Media.FontFamily("Consolas")
+            };
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "История драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
         await SearchDriverUpdatesAsync();
