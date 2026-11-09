@@ -363,6 +363,9 @@
                                                 <Button x:Name="DownloadOfficialDriverPackageButton"
                                                         Content="Загрузить пакет" IsEnabled="False"
                                                         Click="DownloadOfficialDriverPackage_Click"/>
+                                                <Button x:Name="DownloadSelectedDriverPackagesButton"
+                                                        Content="Подготовить выбранные" IsEnabled="True"
+                                                        Click="PrepareSelectedDriverPackages_Click" Margin="8,0,0,0"/>
                                                 <Button x:Name="InstallVerifiedDriverButton"
                                                         Content="Установить проверенное обновление" IsEnabled="False"
                                                         Click="InstallVerifiedDriver_Click" Margin="8,0,0,0"/>
@@ -370,7 +373,7 @@
                                             </StackPanel>
                                         </DockPanel>
                                         <DataGrid x:Name="DriverUpdatesGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                                                  SelectionMode="Single" CanUserSortColumns="True" Height="310"
+                                                  SelectionMode="Extended" CanUserSortColumns="True" Height="310"
                                                   Margin="0,14,0,0" SelectionChanged="DriverUpdatesGrid_SelectionChanged">
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="1.5*"/>
