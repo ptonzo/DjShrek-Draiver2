@@ -10,7 +10,7 @@ public partial class MainWindow
     internal static bool IsCandidateOpenable(DriverUpdateCandidate? candidate) =>
         candidate is not null &&
         !string.Equals(candidate.Compatibility, DriverUpdateCandidate.UnmatchedDeviceNotice, StringComparison.Ordinal) &&
-        InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
+        CatalogDriverPackageDownloader.IsAllowedCatalogPage(candidate.SourceUrl);
 
     private bool _driverSearchRunning;
     private CancellationTokenSource? _driverSearchCts;
@@ -113,8 +113,8 @@ public partial class MainWindow
         _driverSearchCts = new CancellationTokenSource();
         SearchDriverUpdatesButton.IsEnabled = false;
         CancelDriverSearchButton.IsEnabled = true;
-        UpdatesCountText.Text = "Идёт поиск страниц производителей по Hardware ID...";
-        DriverUpdatesSummaryText.Text = "Проверяются только HTTPS-адреса разрешённых сайтов производителей. Найденная страница ещё не означает, что драйвер новее или совместим.";
+        UpdatesCountText.Text = "Идёт поиск по Hardware ID в каталогах производителей и независимых базах...";
+        DriverUpdatesSummaryText.Text = "Проверяются HTTPS-страницы производителей и независимых каталогов (включая Driver.ru, DriverGuide и FlyDrivers). Результат ещё не означает, что пакет новее или совместим.";
         _driverUpdates.Clear();
 
         try
@@ -129,9 +129,9 @@ public partial class MainWindow
             var ignoredCount = _driverIgnore.GetIgnored().Count;
             UpdatesCountText.Text = $"Найдено страниц: {visibleResults.Length}; устройств с результатами: {deviceCount}; исключено: {ignoredCount}.";
             DriverUpdatesSummaryText.Text = visibleResults.Length == 0
-                ? "На разрешённых официальных доменах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
-                : "Результаты — ссылки на страницы производителей, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя. Исключённые устройства скрыты из списка.";
-            StatusText.Text = $"Поиск завершён. Страниц производителей: {visibleResults.Length}.";
+                ? "В подключённых каталогах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
+                : "Результаты — страницы производителей и независимых каталогов, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя. Исключённые устройства скрыты из списка.";
+            StatusText.Text = $"Поиск завершён. Результатов каталогов: {visibleResults.Length}.";
             AppendEvent($"Поиск страниц производителей завершён: найдено {visibleResults.Length}; исключено устройств: {_driverIgnore.GetIgnored().Count}.");
         }
         catch (OperationCanceledException)
@@ -169,13 +169,13 @@ public partial class MainWindow
         if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
             !IsCandidateOpenable(candidate))
         {
-            MessageBox.Show(this, "Выберите подтверждённую HTTPS-страницу производителя.", "Страница драйвера",
+            MessageBox.Show(this, "Выберите HTTPS-страницу производителя или подключённого каталога.", "Страница драйвера",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (MessageBox.Show(this,
-                "Откроется сайт производителя. Проверьте модель устройства, версию Windows и описание пакета. Программа не устанавливает драйвер автоматически.\n\n" + candidate.SourceUrl,
+                "Откроется страница источника. Проверьте модель устройства, версию Windows и описание пакета. Страница независимого каталога не означает, что пакет проверен. Программа не устанавливает драйвер автоматически.\n\n" + candidate.SourceUrl,
                 "Переход на сайт производителя", MessageBoxButton.OKCancel, MessageBoxImage.Information) != MessageBoxResult.OK)
             return;
 
