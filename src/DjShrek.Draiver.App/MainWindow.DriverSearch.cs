@@ -215,7 +215,7 @@ public partial class MainWindow
                     var installResult = await _maintenance.InstallInfAsync(package.InfPath);
                     var refreshed = await _inventory.ScanAsync();
                     ApplyDevices(refreshed);
-                    var restoredDevice = DriverCompatibilityMatcher.FindExactMatch(refreshed, entry.HardwareId);
+                    var restoredDevice = DriverCompatibilityMatcher.FindExactMatch(refreshed, entry.HardwareId, entry.InstanceId);
                     var verified = restoredDevice is not null &&
                         restoredDevice.DriverVersion.Equals(entry.PreviousVersion, StringComparison.OrdinalIgnoreCase) &&
                         (string.IsNullOrWhiteSpace(restoredDevice.Problem) ||
@@ -233,7 +233,7 @@ public partial class MainWindow
                         device.DriverVersion, entry.PreviousVersion,
                         "Локальная проверенная резервная копия", entry.PackageSha256,
                         package.InfPath, entry.BackupPath, historyStatus,
-                        historyMessage + " " + verification));
+                        historyMessage + " " + verification, device.InstanceId));
 
                     AppendEvent($"Откат драйвера {device.Name}: {historyStatus}; {device.DriverVersion} → {entry.PreviousVersion}.");
                     MessageBox.Show(dialog,
