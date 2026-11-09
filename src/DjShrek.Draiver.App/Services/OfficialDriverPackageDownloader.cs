@@ -16,7 +16,7 @@ public sealed class OfficialDriverPackageDownloader
 {
     private const long MaxPackageBytes = 2L * 1024 * 1024 * 1024;
     private const int MaxSupportPageBytes = 12 * 1024 * 1024;
-    private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab", ".7z" };
+    private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab" };
     private static readonly HttpClient Client = new(new HttpClientHandler
     {
         AutomaticDecompression = DecompressionMethods.All,
@@ -103,6 +103,7 @@ public sealed class OfficialDriverPackageDownloader
                 }
                 if (total == 0) throw new InvalidDataException("Производитель вернул пустой файл.");
             }
+            await ValidateDownloadedFileAsync(temporary, Path.GetExtension(target), cancellationToken);
             File.Move(temporary, target, overwrite: true);
             await using var verify = File.OpenRead(target);
             var hash = Convert.ToHexString(await SHA256.HashDataAsync(verify, cancellationToken));
@@ -113,6 +114,29 @@ public sealed class OfficialDriverPackageDownloader
             if (File.Exists(temporary)) File.Delete(temporary);
             throw;
         }
+    }
+
+    private static async Task ValidateDownloadedFileAsync(
+        string filePath, string extension, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+            4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var header = new byte[8];
+        var read = await stream.ReadAsync(header, cancellationToken);
+        var valid = extension.ToLowerInvariant() switch
+        {
+            ".zip" => read >= 4 && header[0] == 0x50 && header[1] == 0x4B &&
+                      (header[2] == 0x03 || header[2] == 0x05 || header[2] == 0x07),
+            ".cab" => read >= 4 && header[0] == 0x4D && header[1] == 0x53 &&
+                      header[2] == 0x43 && header[3] == 0x46,
+            ".exe" => read >= 2 && header[0] == 0x4D && header[1] == 0x5A,
+            ".msi" => read >= 8 && header.AsSpan().SequenceEqual(new byte[]
+                { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 }),
+            _ => false
+        };
+        if (!valid)
+            throw new InvalidDataException(
+                $"Содержимое загруженного файла не соответствует расширению {extension}. Возможна HTML-страница ошибки или подмена типа файла.");
     }
 
     private static async Task<HttpResponseMessage> GetTrustedResponseAsync(
