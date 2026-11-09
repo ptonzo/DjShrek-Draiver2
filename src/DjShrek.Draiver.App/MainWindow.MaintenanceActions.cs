@@ -510,10 +510,33 @@ public partial class MainWindow
                 {
                     StatusText.Text = "Создание точки восстановления и установка драйвера...";
                     var result = await _maintenance.InstallInfAsync(report.InfPath);
-                    AppendEvent($"Установка INF запущена: {device.Name}; {report.DriverVersion}.");
-                    MessageBox.Show(dialog, result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Refresh Plug and Play inventory after pnputil; command success alone
+                    // does not prove that Windows selected this package for the target device.
+                    var refreshedDevices = await _inventory.ScanAsync();
+                    var refreshedDevice = refreshedDevices.FirstOrDefault(x =>
+                        !string.IsNullOrWhiteSpace(device.InstanceId) &&
+                        x.InstanceId.Equals(device.InstanceId, StringComparison.OrdinalIgnoreCase));
+                    _devices.Clear();
+                    foreach (var item in refreshedDevices) _devices.Add(item);
+
+                    var verification = refreshedDevice is null
+                        ? "Устройство не найдено при повторном опросе Plug and Play. Результат установки не подтверждён."
+                        : $"После установки Windows сообщает: {refreshedDevice.DriverProvider} {refreshedDevice.DriverVersion}, " +
+                          $"дата {refreshedDevice.DriverDate}, состояние {refreshedDevice.Status}, код проблемы {refreshedDevice.Problem}.";
+                    var versionMatches = refreshedDevice is not null &&
+                        refreshedDevice.DriverVersion.Equals(report.DriverVersion, StringComparison.OrdinalIgnoreCase);
+                    var title = versionMatches && refreshedDevice!.Problem is "" or "Нет" or "0"
+                        ? "Драйвер установлен и обнаружен после повторного сканирования"
+                        : "Команда установки завершена; результат требует проверки";
+
+                    AppendEvent($"Завершена установка INF: {device.Name}; запрошенная версия {report.DriverVersion}; обнаружена {refreshedDevice?.DriverVersion ?? "нет данных"}.");
+                    MessageBox.Show(dialog, result + Environment.NewLine + Environment.NewLine + verification,
+                        title, MessageBoxButton.OK, versionMatches ? MessageBoxImage.Information : MessageBoxImage.Warning);
                     dialog.DialogResult = true;
-                    StatusText.Text = "Команда установки завершена; проверьте состояние устройства.";
+                    StatusText.Text = versionMatches
+                        ? "После установки обнаружена запрошенная версия драйвера."
+                        : "Команда выполнена, но применение выбранной версии не подтверждено.";
                 }
                 catch (Exception ex)
                 {
