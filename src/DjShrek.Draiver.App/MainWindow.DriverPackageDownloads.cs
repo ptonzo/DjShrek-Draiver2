@@ -526,6 +526,8 @@ public partial class MainWindow
         candidate.PackagePreflightStatus = "Ожидает проверки";
         candidate.VerifiedInfPath = "";
         candidate.VerifiedInfVersion = "";
+        candidate.VerifiedPackageRoot = "";
+        candidate.VerifiedPackageManifest = null;
         DriverUpdatesGrid.Items.Refresh();
 
         try
@@ -559,6 +561,11 @@ public partial class MainWindow
             {
                 candidate.PackagePreflightStatus = "Точное совпадение Hardware ID не найдено";
                 candidate.PackageStatus = "INF не прошёл предварительную проверку";
+                candidate.VerifiedPackageRoot = "";
+                candidate.VerifiedPackageManifest = null;
+                candidate.VerifiedInfPath = "";
+                candidate.VerifiedInfVersion = "";
+                InstallVerifiedDriverButton.IsEnabled = false;
                 DriverUpdatesGrid.Items.Refresh();
                 var rejected = string.Join(Environment.NewLine,
                     preflight.InfResults.Select(x => Path.GetFileName(x.InfPath) + ": " + x.Message).Take(12));
