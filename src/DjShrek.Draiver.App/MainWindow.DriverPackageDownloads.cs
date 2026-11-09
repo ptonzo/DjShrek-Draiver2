@@ -84,6 +84,119 @@ public partial class MainWindow
         }
     }
 
+    private async void PrepareSelectedDriverPackages_Click(object sender, RoutedEventArgs e)
+    {
+        var selectedCandidates = DriverUpdatesGrid.SelectedItems
+            .OfType<DriverUpdateCandidate>()
+            .Where(IsCandidateOpenable)
+            .Distinct()
+            .ToArray();
+
+        if (selectedCandidates.Length == 0)
+        {
+            MessageBox.Show(this,
+                "Выберите одну или несколько строк в списке. Для множественного выбора используйте Ctrl или Shift.",
+                "Подготовка нескольких драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var folderDialog = new OpenFolderDialog
+        {
+            Title = "Выберите папку для загруженных пакетов драйверов",
+            Multiselect = false
+        };
+        if (folderDialog.ShowDialog(this) != true) return;
+
+        var destinationRoot = Path.GetFullPath(folderDialog.FolderName);
+        var completed = new List<string>();
+        var failed = new List<string>();
+        DownloadSelectedDriverPackagesButton.IsEnabled = false;
+        try
+        {
+            for (var index = 0; index < selectedCandidates.Length; index++)
+            {
+                var candidate = selectedCandidates[index];
+                try
+                {
+                    StatusText.Text = $"Подготовка пакета {index + 1} из {selectedCandidates.Length}: {candidate.DeviceName}";
+                    var links = await _packageDownloader.FindPackageLinksAsync(candidate);
+                    if (links.Count == 0)
+                    {
+                        candidate.PackageStatus = "Ссылка на пакет не найдена";
+                        failed.Add(candidate.DeviceName + ": ссылка не найдена");
+                        continue;
+                    }
+
+                    var selectedLink = SelectPackageLink(links);
+                    if (selectedLink is null)
+                    {
+                        candidate.PackageStatus = "Загрузка пропущена пользователем";
+                        failed.Add(candidate.DeviceName + ": пропущено");
+                        continue;
+                    }
+
+                    var extension = Path.GetExtension(selectedLink.LocalPath);
+                    if (string.IsNullOrWhiteSpace(extension) || extension.Length > 10)
+                        extension = ".driver";
+                    var rawName = Path.GetFileName(Uri.UnescapeDataString(selectedLink.LocalPath));
+                    var safeName = string.Concat((string.IsNullOrWhiteSpace(rawName)
+                            ? $"driver-{index + 1}{extension}" : rawName)
+                        .Select(ch => Path.GetInvalidFileNameChars().Contains(ch) ? '_' : ch));
+                    if (string.IsNullOrWhiteSpace(Path.GetExtension(safeName)))
+                        safeName += extension;
+
+                    var targetPath = Path.Combine(destinationRoot, safeName);
+                    if (File.Exists(targetPath))
+                    {
+                        var stem = Path.GetFileNameWithoutExtension(safeName);
+                        targetPath = Path.Combine(destinationRoot,
+                            stem + "-" + Guid.NewGuid().ToString("N")[..8] + Path.GetExtension(safeName));
+                    }
+
+                    var downloaded = await _packageDownloader.DownloadAsync(selectedLink, targetPath);
+                    candidate.PackageUrl = downloaded.FinalUrl;
+                    candidate.PackageFileName = downloaded.FilePath;
+                    candidate.PackageSha256 = downloaded.Sha256;
+                    candidate.PackageStatus = "Загружен; подпись требует проверки";
+                    candidate.IsDownloaded = true;
+                    completed.Add(candidate.DeviceName + ": " + Path.GetFileName(downloaded.FilePath));
+
+                    var packageExtension = Path.GetExtension(downloaded.FilePath);
+                    if (packageExtension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
+                        packageExtension.Equals(".cab", StringComparison.OrdinalIgnoreCase))
+                        await ExtractAndInspectDownloadedPackageAsync(candidate, downloaded.FilePath);
+                }
+                catch (OperationCanceledException)
+                {
+                    candidate.PackageStatus = "Загрузка отменена";
+                    failed.Add(candidate.DeviceName + ": отменено");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    candidate.PackageStatus = "Ошибка загрузки: " + ex.Message;
+                    failed.Add(candidate.DeviceName + ": " + ex.Message);
+                }
+
+                DriverUpdatesGrid.Items.Refresh();
+            }
+
+            var report = $"Загружено пакетов: {completed.Count}. Ошибок или пропусков: {failed.Count}." +
+                (completed.Count > 0 ? Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, completed) : "") +
+                (failed.Count > 0 ? Environment.NewLine + Environment.NewLine + "Не выполнено:" + Environment.NewLine + string.Join(Environment.NewLine, failed) : "") +
+                Environment.NewLine + Environment.NewLine +
+                "Автоматическая установка не выполнялась. Каждый INF должен пройти проверку и отдельное подтверждение.";
+            MessageBox.Show(this, report, "Подготовка выбранных драйверов", MessageBoxButton.OK,
+                failed.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+            StatusText.Text = $"Подготовка завершена: загружено {completed.Count}, пропущено/ошибок {failed.Count}.";
+        }
+        finally
+        {
+            DownloadSelectedDriverPackagesButton.IsEnabled = true;
+            DriverUpdatesGrid.Items.Refresh();
+        }
+    }
+
     private async void InstallVerifiedDriver_Click(object sender, RoutedEventArgs e)
     {
         if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
