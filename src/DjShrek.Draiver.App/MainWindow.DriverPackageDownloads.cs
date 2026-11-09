@@ -372,6 +372,10 @@ public partial class MainWindow
                 throw new InvalidDataException("Резервная копия текущего драйвера не подтверждена манифестом. Установка заблокирована.");
             var backupVerification = new DriverBackupManifestService().VerifyIfPresent(backupPath);
             backupInfo += Environment.NewLine + backupVerification;
+            await _operationJournal.AppendAsync(
+                "DriverBackupVerified", "Verified", device.InstanceId, inspection.MatchedHardwareId,
+                candidate.PackageSha256, device.DriverVersion,
+                $"Путь резервной копии: {backupPath}; {backupVerification}");
 
             StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
             var result = await _maintenance.InstallInfAsync(inspection.InfPath);
