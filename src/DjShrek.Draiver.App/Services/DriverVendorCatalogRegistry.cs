@@ -63,6 +63,26 @@ public sealed class DriverVendorCatalogRegistry
 
     public IReadOnlyList<DriverVendorCatalogEntry> GetAll() => Entries;
 
+    public static IReadOnlyList<DriverVendorCatalogEntry> MergeSignedEntries(
+        IEnumerable<DriverVendorCatalogEntry> signedEntries)
+    {
+        ArgumentNullException.ThrowIfNull(signedEntries);
+        var merged = Entries.ToDictionary(x => x.Id, StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in signedEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Id) || string.IsNullOrWhiteSpace(entry.DisplayName) ||
+                string.IsNullOrWhiteSpace(entry.SearchDomain) ||
+                !Uri.TryCreate(entry.SupportUrl, UriKind.Absolute, out var supportUri) ||
+                supportUri.Scheme != Uri.UriSchemeHttps ||
+                !string.Equals(supportUri.Host, entry.SearchDomain, StringComparison.OrdinalIgnoreCase) &&
+                !supportUri.Host.EndsWith("." + entry.SearchDomain, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Запись подписанного каталога источников содержит некорректные поля.");
+            merged[entry.Id] = entry;
+        }
+        return merged.Values.OrderBy(x => x.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToArray();
+    }
+
+
     public DriverVendorCatalogEntry? Resolve(string? hardwareId, string? manufacturer = null, string? driverProvider = null)
     {
         var identity = DeviceHardwareIdParser.Parse(hardwareId);
