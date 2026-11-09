@@ -216,8 +216,12 @@ public partial class MainWindow
                     var refreshed = await _inventory.ScanAsync();
                     ApplyDevices(refreshed);
                     var restoredDevice = DriverCompatibilityMatcher.FindExactMatch(refreshed, entry.HardwareId, entry.InstanceId);
+                    var restoredVersion = restoredDevice is null
+                        ? null
+                        : DriverVersionComparisonService.Compare(
+                            restoredDevice.DriverVersion, entry.PreviousVersion);
                     var verified = restoredDevice is not null &&
-                        restoredDevice.DriverVersion.Equals(entry.PreviousVersion, StringComparison.OrdinalIgnoreCase) &&
+                        restoredVersion?.Relation == DriverVersionRelation.Same &&
                         (string.IsNullOrWhiteSpace(restoredDevice.Problem) ||
                          restoredDevice.Problem is "Нет" or "0");
 
