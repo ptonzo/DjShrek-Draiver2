@@ -47,7 +47,7 @@ public sealed class DriverFolderScannerService
                 var display = $"{Path.GetFileName(file)} | {inspection.Provider} | {inspection.DriverVersion} | {inspection.DriverDate} | {state}";
                 results.Add(new DriverFolderCandidate(inspection, isNewer, state, display));
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
             {
                 if (errors.Count < 10) errors.Add(Path.GetFileName(file) + ": " + ex.Message);
             }
