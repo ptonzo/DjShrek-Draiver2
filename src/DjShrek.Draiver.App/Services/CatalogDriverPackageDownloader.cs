@@ -44,6 +44,19 @@ public sealed class CatalogDriverPackageDownloader
         if (!IsAllowedCatalogPage(candidate.SourceUrl))
             throw new InvalidDataException("Страница источника не прошла проверку HTTPS и домена каталога.");
 
+        // Machine-readable OEM catalogs may provide a direct package URI.
+        // Accept it only when HTTPS, vendor-domain provenance, and file extension agree.
+        if (!string.IsNullOrWhiteSpace(candidate.PackageUrl))
+        {
+            if (!Uri.TryCreate(candidate.PackageUrl, UriKind.Absolute, out var directPackage) ||
+                directPackage.Scheme != Uri.UriSchemeHttps ||
+                !InternetDriverCatalogService.IsOfficialVendorUrl(directPackage.AbsoluteUri) ||
+                !PackageExtensions.Contains(Path.GetExtension(directPackage.AbsolutePath),
+                    StringComparer.OrdinalIgnoreCase))
+                throw new InvalidDataException("Прямая ссылка OEM-каталога не прошла проверку HTTPS, домена и расширения.");
+            return new[] { directPackage };
+        }
+
         using var response = await SendFollowingPublicRedirectsAsync(
             new Uri(candidate.SourceUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
