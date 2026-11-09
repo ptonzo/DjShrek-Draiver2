@@ -39,6 +39,10 @@ public sealed class DriverInfPackageInspector
     private static readonly Regex KeyValueRegex = new(@"^\s*([^=;]+?)\s*=\s*(.*?)\s*$", RegexOptions.Compiled);
     private static readonly Regex HardwareIdRegex = new(@"^(?:PCI|USB|HDAUDIO|ACPI|ROOT|SWD|BTH|DISPLAY|SCSI|SD|HID|USBSTOR|IDE|INTEL|AMD|NVME|VEN|\{)[^\s,;]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex CatalogRegex = new(@"^CatalogFile(?:\.([A-Za-z0-9_.-]+))?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private const int MaxInfBytes = 16 * 1024 * 1024;
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetACP();
 
     public InfPackageInspection Inspect(string infPath, DeviceInfo device)
     {
@@ -111,7 +115,7 @@ public sealed class DriverInfPackageInspector
     {
         var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string>? current = null;
-        foreach (var raw in File.ReadLines(path, Encoding.UTF8))
+        foreach (var raw in ReadLogicalInfLines(path))
         {
             var line = raw.Trim().TrimStart('\uFEFF');
             if (line.Length == 0 || line.StartsWith(';')) continue;
@@ -128,6 +132,60 @@ public sealed class DriverInfPackageInspector
             if (pair.Success) current[pair.Groups[1].Value.Trim()] = pair.Groups[2].Value.Trim().Trim('"');
         }
         return result;
+    }
+
+    private static IEnumerable<string> ReadLogicalInfLines(string path)
+    {
+        var info = new FileInfo(path);
+        if (info.Length > MaxInfBytes)
+            throw new InvalidDataException($"INF превышает допустимый размер {MaxInfBytes / (1024 * 1024)} МБ.");
+
+        byte[] bytes;
+        using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            if (stream.Length > MaxInfBytes)
+                throw new InvalidDataException($"INF превышает допустимый размер {MaxInfBytes / (1024 * 1024)} МБ.");
+            bytes = new byte[checked((int)stream.Length)];
+            stream.ReadExactly(bytes);
+        }
+
+        string text;
+        if (bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }))
+            text = new UTF8Encoding(false, true).GetString(bytes, 3, bytes.Length - 3);
+        else if (bytes.AsSpan().StartsWith(new byte[] { 0xFF, 0xFE }))
+            text = new UnicodeEncoding(false, true, true).GetString(bytes, 2, bytes.Length - 2);
+        else if (bytes.AsSpan().StartsWith(new byte[] { 0xFE, 0xFF }))
+            text = new UnicodeEncoding(true, true, true).GetString(bytes, 2, bytes.Length - 2);
+        else
+        {
+            try
+            {
+                // Prefer UTF-8 when valid; otherwise use the active Windows ANSI code page.
+                text = new UTF8Encoding(false, true).GetString(bytes);
+            }
+            catch (DecoderFallbackException)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                text = Encoding.GetEncoding((int)GetACP()).GetString(bytes);
+            }
+        }
+
+        var pending = new StringBuilder();
+        using var reader = new StringReader(text);
+        while (reader.ReadLine() is { } physicalLine)
+        {
+            var line = physicalLine.TrimEnd();
+            var continues = line.EndsWith("\\", StringComparison.Ordinal);
+            if (continues) line = line[..^1];
+            pending.Append(line);
+            if (continues) continue;
+
+            yield return pending.ToString();
+            pending.Clear();
+        }
+
+        if (pending.Length > 0)
+            yield return pending.ToString();
     }
 
     private static Dictionary<string, string> GetSection(Dictionary<string, Dictionary<string, string>> sections, string name) =>
