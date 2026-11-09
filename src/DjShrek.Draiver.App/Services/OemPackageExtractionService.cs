@@ -55,7 +55,8 @@ public sealed class OemPackageExtractionService
         if (archive.Entries.Count > MaxFiles)
             throw new InvalidDataException($"В архиве больше {MaxFiles} элементов.");
 
-        long total = 0;
+        long totalExpandedBytes = 0;
+        var extractedFiles = 0;
         var root = Path.GetFullPath(destination) + Path.DirectorySeparatorChar;
         foreach (var entry in archive.Entries)
         {
@@ -66,13 +67,17 @@ public sealed class OemPackageExtractionService
                 normalized.Split('/').Any(part => part == ".."))
                 throw new InvalidDataException("Архив содержит небезопасный путь.");
             if (string.IsNullOrEmpty(entry.Name)) continue;
+
             // Unix ZIP archives can encode symbolic links in the external attributes.
             var unixType = (entry.ExternalAttributes >> 16) & 0xF000;
             if (unixType == 0xA000)
                 throw new InvalidDataException("Архив содержит символическую ссылку. Использование такого пакета заблокировано.");
-            if (entry.Length < 0 || entry.Length > MaxExpandedBytes - total)
+
+            extractedFiles++;
+            if (extractedFiles > MaxFiles)
+                throw new InvalidDataException($"В архиве больше {MaxFiles} файлов.");
+            if (entry.Length < 0 || entry.Length > MaxExpandedBytes - totalExpandedBytes)
                 throw new InvalidDataException("Распакованный архив превышает ограничение 8 ГБ.");
-            total += entry.Length;
 
             var target = Path.GetFullPath(Path.Combine(destination, normalized.Replace('/', Path.DirectorySeparatorChar)));
             if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
@@ -81,8 +86,31 @@ public sealed class OemPackageExtractionService
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             using var input = entry.Open();
             using var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            input.CopyTo(output);
+            var actualLength = CopyBounded(input, output, ref totalExpandedBytes, cancellationToken);
+            if (actualLength != entry.Length)
+                throw new InvalidDataException("Фактический размер распакованного файла не совпадает с размером, указанным в ZIP.");
         }
+    }
+
+    private static long CopyBounded(
+        Stream input,
+        Stream output,
+        ref long totalExpandedBytes,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[128 * 1024];
+        long fileBytes = 0;
+        int read;
+        while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (read > MaxExpandedBytes - totalExpandedBytes)
+                throw new InvalidDataException("Распакованный архив превышает ограничение 8 ГБ.");
+            fileBytes += read;
+            totalExpandedBytes += read;
+            output.Write(buffer, 0, read);
+        }
+        return fileBytes;
     }
 
     private static void ExtractCab(string source, string destination, CancellationToken cancellationToken)
