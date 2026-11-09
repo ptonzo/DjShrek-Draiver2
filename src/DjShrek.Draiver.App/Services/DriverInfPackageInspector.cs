@@ -257,7 +257,9 @@ public sealed class DriverInfPackageInspector
     {
         Architecture.Arm64 => "NTarm64",
         Architecture.X64 => "NTamd64",
-        _ => "NTx86"
+        Architecture.X86 => "NTx86",
+        _ => throw new PlatformNotSupportedException(
+            $"Архитектура {RuntimeInformation.OSArchitecture} не поддерживается проверкой INF. Автоматический подбор драйвера остановлен.")
     };
 
     private static IReadOnlyList<string> ExtractModelHardwareIds(
