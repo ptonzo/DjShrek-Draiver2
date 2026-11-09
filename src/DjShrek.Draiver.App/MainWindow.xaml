@@ -367,6 +367,8 @@
                                                 <DataGridTextColumn Header="Текущая версия" Binding="{Binding CurrentVersion}" Width="*"/>
                                                 <DataGridTextColumn Header="Новая версия" Binding="{Binding AvailableVersion}" Width="*"/>
                                                 <DataGridTextColumn Header="Совместимость" Binding="{Binding Compatibility}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Тип совпадения" Binding="{Binding MatchType}" Width="*"/>
+                                                <DataGridTextColumn Header="Дата публикации" Binding="{Binding PublishedDate}" Width="*"/>
                                                 <DataGridTextColumn Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/>
                                                 <DataGridTextColumn Header="Модель" Binding="{Binding Model}" Width="1.2*"/>
                                                 <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
