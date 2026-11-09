@@ -90,41 +90,166 @@ public partial class MainWindow
         try
         {
             var entries = _driverHistory.GetRecent(50);
-            var content = entries.Count == 0
-                ? "История обновлений пока пуста."
-                : string.Join(Environment.NewLine + Environment.NewLine, entries.Select(item =>
-                    $"{item.TimestampUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} | {item.Status}{Environment.NewLine}" +
-                    $"Устройство: {item.DeviceName}{Environment.NewLine}" +
-                    $"Hardware ID: {item.HardwareId}{Environment.NewLine}" +
-                    $"Версия: {item.PreviousVersion} → {item.CandidateVersion}{Environment.NewLine}" +
-                    $"Источник: {item.Source}{Environment.NewLine}" +
-                    $"INF: {item.InfPath}{Environment.NewLine}" +
-                    $"Резервная копия: {(string.IsNullOrWhiteSpace(item.BackupPath) ? "точечный экспорт недоступен; использована точка восстановления" : item.BackupPath)}{Environment.NewLine}" +
-                    $"Результат: {item.Message}"));
-
             var dialog = new Window
             {
                 Title = "История обновлений драйверов",
                 Owner = this,
-                Width = 900,
-                Height = 620,
-                MinWidth = 650,
-                MinHeight = 400,
+                Width = 940,
+                Height = 640,
+                MinWidth = 680,
+                MinHeight = 420,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Background = Background,
                 Foreground = Foreground
             };
-            dialog.Content = new System.Windows.Controls.TextBox
+
+            var root = new DockPanel { Margin = new Thickness(14) };
+            var actions = new StackPanel
             {
-                Text = content,
-                IsReadOnly = true,
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                Margin = new Thickness(14),
-                FontFamily = new System.Windows.Media.FontFamily("Consolas")
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 12, 0, 0)
             };
+            var rollback = new Button
+            {
+                Content = "Откатить выбранное обновление",
+                MinWidth = 240,
+                Margin = new Thickness(5),
+                IsEnabled = false
+            };
+            var close = new Button { Content = "Закрыть", MinWidth = 100, Margin = new Thickness(5), IsCancel = true };
+            actions.Children.Add(rollback);
+            actions.Children.Add(close);
+            DockPanel.SetDock(actions, Dock.Bottom);
+            root.Children.Add(actions);
+
+            var header = new TextBlock
+            {
+                Text = "Выберите обновление со статусом «InstalledAndVerified». Откат доступен только при наличии целой резервной копии, точного Hardware ID и подписанного INF/CAT.",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            DockPanel.SetDock(header, Dock.Top);
+            root.Children.Add(header);
+
+            var list = new ListBox();
+            foreach (var entry in entries)
+            {
+                var backupAvailable = entry.Status == "InstalledAndVerified" &&
+                                      !string.IsNullOrWhiteSpace(entry.BackupPath) &&
+                                      Directory.Exists(entry.BackupPath);
+                list.Items.Add(new ListBoxItem
+                {
+                    Tag = entry,
+                    Padding = new Thickness(8),
+                    Content = $"{entry.TimestampUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} | {entry.Status} | {entry.DeviceName} | " +
+                              $"{entry.PreviousVersion} → {entry.CandidateVersion} | " +
+                              (backupAvailable ? "резервная копия доступна" : "откат недоступен")
+                });
+            }
+            list.SelectionChanged += (_, _) =>
+            {
+                rollback.IsEnabled = list.SelectedItem is ListBoxItem item &&
+                    item.Tag is DriverUpdateHistoryEntry entry &&
+                    entry.Status == "InstalledAndVerified" &&
+                    !string.IsNullOrWhiteSpace(entry.BackupPath) &&
+                    Directory.Exists(entry.BackupPath) &&
+                    !string.IsNullOrWhiteSpace(entry.PreviousVersion);
+            };
+            root.Children.Add(list);
+            dialog.Content = root;
+
+            rollback.Click += async (_, _) =>
+            {
+                if (list.SelectedItem is not ListBoxItem selected ||
+                    selected.Tag is not DriverUpdateHistoryEntry entry)
+                    return;
+
+                rollback.IsEnabled = false;
+                close.IsEnabled = false;
+                try
+                {
+                    if (!Directory.Exists(entry.BackupPath))
+                        throw new DirectoryNotFoundException("Папка резервной копии этого обновления не найдена.");
+
+                    var manifestPath = Path.Combine(entry.BackupPath, DriverBackupManifestService.ManifestFileName);
+                    if (!File.Exists(manifestPath))
+                        throw new InvalidDataException("В этой резервной копии нет SHA-256 манифеста. Автоматический откат заблокирован.");
+
+                    var integrity = new DriverBackupManifestService().VerifyIfPresent(entry.BackupPath);
+                    StatusText.Text = "Проверка резервной копии и повторное сканирование устройства...";
+                    var currentDevices = await _inventory.ScanAsync();
+                    ApplyDevices(currentDevices);
+                    var device = DriverCompatibilityMatcher.FindExactMatch(currentDevices, entry.HardwareId);
+                    if (device is null)
+                        throw new InvalidOperationException("Устройство с исходным Hardware ID больше не обнаружено. Откат не выполнялся.");
+
+                    var candidates = await Task.Run(() => _driverFolderScanner.Scan(entry.BackupPath, device));
+                    var matching = candidates.Where(candidate =>
+                        candidate.Inspection.IsInstallableForDevice &&
+                        DriverVersionComparisonService.Compare(
+                            candidate.Inspection.DriverVersion, entry.PreviousVersion).Relation == DriverVersionRelation.Same)
+                        .ToArray();
+
+                    if (matching.Length != 1)
+                        throw new InvalidDataException(
+                            $"В резервной копии найдено точных подписанных пакетов предыдущей версии: {matching.Length}. Требуется ровно один пакет; откат заблокирован.");
+
+                    var package = matching[0].Inspection;
+                    if (MessageBox.Show(dialog,
+                            $"Будет восстановлена предыдущая версия драйвера для конкретного устройства.\n\n" +
+                            $"Устройство: {device.Name}\nHardware ID: {entry.HardwareId}\n" +
+                            $"Текущая версия: {device.DriverVersion}\nВерсия для возврата: {entry.PreviousVersion}\n" +
+                            $"INF: {Path.GetFileName(package.InfPath)}\n\n" +
+                            $"{integrity}\n\nПеред установкой Windows создаст точку восстановления. Продолжить?",
+                            "Подтверждение отката драйвера",
+                            MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        return;
+
+                    StatusText.Text = "Создание точки восстановления и возврат предыдущего драйвера...";
+                    var installResult = await _maintenance.InstallInfAsync(package.InfPath);
+                    var refreshed = await _inventory.ScanAsync();
+                    ApplyDevices(refreshed);
+                    var restoredDevice = DriverCompatibilityMatcher.FindExactMatch(refreshed, entry.HardwareId);
+                    var verified = restoredDevice is not null &&
+                        restoredDevice.DriverVersion.Equals(entry.PreviousVersion, StringComparison.OrdinalIgnoreCase) &&
+                        (string.IsNullOrWhiteSpace(restoredDevice.Problem) ||
+                         restoredDevice.Problem is "Нет" or "0");
+
+                    var verification = restoredDevice is null
+                        ? "Устройство не найдено после установки."
+                        : $"После установки Windows сообщает версию {restoredDevice.DriverVersion}, состояние {restoredDevice.Status}, код проблемы {restoredDevice.Problem}.";
+                    var historyStatus = verified ? "RollbackVerified" : "RollbackSubmittedToWindows";
+                    var historyMessage = verified
+                        ? "Предыдущая версия подтверждена повторным сканированием устройства."
+                        : "Команда возврата передана Windows, но предыдущая версия не подтверждена повторным сканированием.";
+                    _driverHistory.Append(new DriverUpdateHistoryEntry(
+                        DateTime.UtcNow, device.Name, entry.HardwareId,
+                        device.DriverVersion, entry.PreviousVersion,
+                        "Локальная проверенная резервная копия", entry.PackageSha256,
+                        package.InfPath, entry.BackupPath, historyStatus,
+                        historyMessage + " " + verification));
+
+                    AppendEvent($"Откат драйвера {device.Name}: {historyStatus}; {device.DriverVersion} → {entry.PreviousVersion}.");
+                    MessageBox.Show(dialog,
+                        installResult + Environment.NewLine + Environment.NewLine + verification,
+                        verified ? "Откат подтверждён" : "Откат требует проверки",
+                        MessageBoxButton.OK, verified ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                    if (verified) dialog.DialogResult = true;
+                    StatusText.Text = verified
+                        ? "Предыдущая версия драйвера восстановлена и подтверждена."
+                        : "Команда отката выполнена, но результат не подтверждён.";
+                }
+                catch (Exception ex)
+                {
+                    StatusText.Text = "Откат драйвера не выполнен.";
+                    MessageBox.Show(dialog, ex.Message, "Безопасный откат драйвера",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    close.IsEnabled = true;
+                    rollback.IsEnabled = true;
+                }
+            };
+
             dialog.ShowDialog();
         }
         catch (Exception ex)
