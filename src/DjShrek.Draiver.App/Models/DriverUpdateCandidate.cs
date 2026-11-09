@@ -34,7 +34,7 @@ public sealed class DriverUpdateCandidate
     /// <summary>Origin category: OfficialManufacturer, IndependentCatalog, or SearchDiscovery.</summary>
     public string SourceType { get; init; } = "SearchDiscovery";
     /// <summary>Provenance assessment only; not a package signature verdict.</summary>
-    public string SourceTrust { get; init; } = "Unverified";
+    public string SourceTrust { get; set; } = "Unverified";
     public bool IsDownloaded { get; set; }
     public string SourceUrl { get; init; } = "";
     public string PackageUrl { get; set; } = "";
