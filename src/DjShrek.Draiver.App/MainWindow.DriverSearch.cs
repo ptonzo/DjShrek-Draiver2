@@ -133,6 +133,12 @@ public partial class MainWindow
         }
     }
 
+    private void SelectAllDriverUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        DriverUpdatesGrid.SelectAll();
+        UpdatesCountText.Text = $"Выбрано результатов: {DriverUpdatesGrid.SelectedItems.Count}.";
+    }
+
     private async void AutoUpdateDrivers_Click(object sender, RoutedEventArgs e)
     {
         await SearchDriverUpdatesAsync();
