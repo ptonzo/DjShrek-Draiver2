@@ -25,10 +25,11 @@
 - [x] Поиск по Hardware ID ограничивается доменом определённого производителя и отдельно помеченными независимыми каталогами.
 - [x] Первые машинно-читаемые OEM-адаптеры Lenovo SCCM catalogv2.xml и Dell DriverPackCatalog CAB/XML: выбор пакетов по MTM/System ID, ОС, архитектуре и прямым ссылкам.
 - [ ] Адаптеры машинно-читаемых каталогов NVIDIA/AMD/Intel/Acer/MSI/GIGABYTE.
-- [x] Клиент ASUS ProductV2/GetPDDrivers: получение списка драйверов по идентификаторам PDId/PDHashedId и OS ID; автоматическое определение PDId модели ещё не подключено.
+- [x] ASUS ProductV2/GetPDDrivers и Product.asmx/GetPDLevel: запрос списка драйверов, уровней каталога, версий, дат, категорий и файловых SHA-256; подключён поиск по SMBIOS-модели ASUS.
 - [x] Получение модельных пакетов Dell по SMBIOS System ID, Lenovo по Machine Type (MTM) и HP по SMBIOS SystemSKU.
 - [x] Автоматическое получение метаданных OEM-модели HP из HP Client Driver Pack Catalog.
-- [ ] Автоматическое получение метаданных OEM-модели ASUS/Acer/MSI/GIGABYTE; ASUS API-клиент уже реализован для выбранного ASUS product ID.
+- [x] Автоматическое получение списка драйверов ASUS по SMBIOS SystemSKU/BaseBoardProduct и версии Windows через официальный ProductV2 API.
+- [ ] Автоматическое получение метаданных OEM-модели Acer/MSI/GIGABYTE.
 - [x] Подписанный ECDSA-манифест каталога с закреплённым открытым ключом в клиенте.
 - [x] Обновление базы источников при поиске с проверкой ECDSA-подписи, схемы и срока актуальности; при недоступности сети используется встроенный реестр.
 
