@@ -312,6 +312,7 @@
                                 <DataGridTextColumn Header="Класс" Binding="{Binding Class}" Width="*"/>
                                 <DataGridTextColumn Header="Состояние" Binding="{Binding Status}" Width="*"/>
                                 <DataGridTextColumn Header="Код ошибки" Binding="{Binding Problem}" Width="*"/>
+                                <DataGridTextColumn Header="Описание проблемы" Binding="{Binding ProblemDescription}" Width="2*"/>
                                 <DataGridTextColumn Header="Поставщик" Binding="{Binding DriverProvider}" Width="*"/>
                                 <DataGridTextColumn Header="Версия драйвера" Binding="{Binding DriverVersion}" Width="*"/>
                                 <DataGridTextColumn Header="Дата" Binding="{Binding DriverDate}" Width="*"/>
