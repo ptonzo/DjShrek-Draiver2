@@ -11,16 +11,26 @@ public sealed class DeviceInventoryService
     private const string DeviceScanScript = @"
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+[Console]::Error.WriteLine('DJSHREK_PROGRESS:5')
 $driverMap = @{}
 Get-CimInstance Win32_PnPSignedDriver -ErrorAction SilentlyContinue | ForEach-Object {
     if (-not [string]::IsNullOrWhiteSpace([string]$_.DeviceID)) {
         $driverMap[[string]$_.DeviceID] = $_
     }
 }
+[Console]::Error.WriteLine('DJSHREK_PROGRESS:25')
 
+$pnpDevices = @(Get-CimInstance Win32_PnPEntity)
+[Console]::Error.WriteLine('DJSHREK_PROGRESS:30')
 $devices = New-Object System.Collections.Generic.List[object]
-Get-CimInstance Win32_PnPEntity | ForEach-Object {
-    $device = $_
+$totalDevices = [math]::Max(1, $pnpDevices.Count)
+$deviceIndex = 0
+foreach ($device in $pnpDevices) {
+    $deviceIndex++
+    if (($deviceIndex % 3) -eq 0 -or $deviceIndex -eq $pnpDevices.Count) {
+        $scanPercent = 30 + [int](60 * $deviceIndex / $totalDevices)
+        [Console]::Error.WriteLine('DJSHREK_PROGRESS:' + $scanPercent)
+    }
     $deviceKey = [string]$device.PNPDeviceID
     $driver = $driverMap[$deviceKey]
     $problem = 'Нет'
@@ -73,6 +83,7 @@ Get-CimInstance Win32_PnPEntity | ForEach-Object {
         CompatibleIds = @((Get-PnpDeviceProperty -InstanceId $deviceKey -KeyName 'DEVPKEY_Device_CompatibleIds' -ErrorAction SilentlyContinue).Data)
     })
 }
+[Console]::Error.WriteLine('DJSHREK_PROGRESS:95')
 ConvertTo-Json -InputObject @($devices.ToArray()) -Depth 4 -Compress
 ";
 
@@ -118,9 +129,11 @@ $uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours)
 } | ConvertTo-Json -Compress
 ";
 
-    public async Task<IReadOnlyList<DeviceInfo>> ScanAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DeviceInfo>> ScanAsync(
+        IProgress<int>? progress = null,
+        CancellationToken cancellationToken = default)
     {
-        var output = await RunPowerShellAsync(DeviceScanScript, cancellationToken);
+        var output = await RunPowerShellAsync(DeviceScanScript, cancellationToken, progress);
         if (string.IsNullOrWhiteSpace(output))
             return Array.Empty<DeviceInfo>();
 
@@ -187,7 +200,33 @@ $uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours)
             : value.ToString();
     }
 
-    private static async Task<string> RunPowerShellAsync(string script, CancellationToken cancellationToken)
+    private static async Task<string> ReadProgressAndErrorsAsync(
+        Process process,
+        IProgress<int>? progress,
+        CancellationToken cancellationToken)
+    {
+        var errors = new StringBuilder();
+        while (await process.StandardError.ReadLineAsync(cancellationToken) is { } line)
+        {
+            const string prefix = "DJSHREK_PROGRESS:";
+            if (line.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                if (int.TryParse(line.AsSpan(prefix.Length), NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out var value))
+                    progress?.Report(Math.Clamp(value, 0, 99));
+                continue;
+            }
+
+            if (errors.Length < 16_384)
+                errors.AppendLine(line);
+        }
+        return errors.ToString();
+    }
+
+    private static async Task<string> RunPowerShellAsync(
+        string script,
+        CancellationToken cancellationToken,
+        IProgress<int>? progress = null)
     {
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         var startInfo = new ProcessStartInfo
@@ -206,7 +245,7 @@ $uptimeText = if ($uptime.Days -gt 0) { ""$($uptime.Days) дн. $($uptime.Hours)
         process.Start();
 
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        var stderrTask = ReadProgressAndErrorsAsync(process, progress, cancellationToken);
 
         try
         {
