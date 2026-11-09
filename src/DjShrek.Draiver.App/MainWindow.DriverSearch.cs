@@ -8,6 +8,7 @@ namespace DjShrek.Draiver.App;
 public partial class MainWindow
 {
     private bool _driverSearchRunning;
+    private CancellationTokenSource? _driverSearchCts;
     private readonly DriverUpdateIgnoreService _driverIgnore = new();
 
     private void ConfigureDriverIgnoreMenu()
@@ -84,6 +85,14 @@ public partial class MainWindow
         await SearchDriverUpdatesAsync();
     }
 
+    private void CancelDriverSearch_Click(object sender, RoutedEventArgs e)
+    {
+        if (_driverSearchCts is null || _driverSearchCts.IsCancellationRequested) return;
+        _driverSearchCts.Cancel();
+        CancelDriverSearchButton.IsEnabled = false;
+        StatusText.Text = "Остановка поиска драйверов...";
+    }
+
     private async Task SearchDriverUpdatesAsync()
     {
         if (_driverSearchRunning) return;
@@ -95,14 +104,17 @@ public partial class MainWindow
         }
 
         _driverSearchRunning = true;
+        _driverSearchCts?.Dispose();
+        _driverSearchCts = new CancellationTokenSource();
         SearchDriverUpdatesButton.IsEnabled = false;
+        CancelDriverSearchButton.IsEnabled = true;
         UpdatesCountText.Text = "Идёт поиск страниц производителей по Hardware ID...";
         DriverUpdatesSummaryText.Text = "Проверяются только HTTPS-адреса разрешённых сайтов производителей. Найденная страница ещё не означает, что драйвер новее или совместим.";
         _driverUpdates.Clear();
 
         try
         {
-            var results = await _internetDriverCatalog.SearchAsync(_devices.ToArray());
+            var results = await _internetDriverCatalog.SearchAsync(_devices.ToArray(), _driverSearchCts.Token);
             var visibleResults = results.Where(x => !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
                 _driverUpdates.Add(item);
@@ -132,6 +144,9 @@ public partial class MainWindow
         finally
         {
             SearchDriverUpdatesButton.IsEnabled = true;
+            CancelDriverSearchButton.IsEnabled = false;
+            _driverSearchCts?.Dispose();
+            _driverSearchCts = null;
             _driverSearchRunning = false;
         }
     }
