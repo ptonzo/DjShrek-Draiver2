@@ -395,4 +395,144 @@ public partial class MainWindow
         }
     }
 
+    private async void ScanDriverFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var device = DevicesGrid.SelectedItem as DeviceInfo;
+        if (device is null)
+        {
+            MessageBox.Show(this, "Сначала просканируйте устройства и выберите конкретное устройство.",
+                "Поиск драйвера в папке", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var folderPicker = new OpenFolderDialog
+        {
+            Title = "Выберите папку распакованного пакета производителя",
+            Multiselect = false
+        };
+        if (folderPicker.ShowDialog(this) != true) return;
+
+        try
+        {
+            StatusText.Text = "Поиск INF-драйверов и сопоставление Hardware ID...";
+            var candidates = await Task.Run(() => _driverFolderScanner.Scan(folderPicker.FolderName, device));
+            if (candidates.Count == 0)
+            {
+                StatusText.Text = "Подходящие INF-файлы не найдены.";
+                MessageBox.Show(this,
+                    "В выбранной папке не найдено INF с Hardware ID или Compatible ID выбранного устройства.",
+                    "Драйверы не найдены", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new Window
+            {
+                Title = "Найденные драйверы для выбранного устройства",
+                Owner = this,
+                Width = 1050,
+                Height = 560,
+                MinWidth = 760,
+                MinHeight = 400,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = Background,
+                Foreground = Foreground
+            };
+            var panel = new DockPanel { Margin = new Thickness(16) };
+            var header = new TextBlock
+            {
+                Text = $"Устройство: {device.Name}\nТекущий драйвер: {device.DriverProvider} {device.DriverVersion} ({device.DriverDate})\n" +
+                       $"Найдено совпадений: {candidates.Count}. Автоматическая установка доступна только для точного Hardware ID, действительной подписи CAT и подходящей архитектуры.",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            DockPanel.SetDock(header, Dock.Top);
+            panel.Children.Add(header);
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+            var details = new Button { Content = "Подробности", MinWidth = 110, Margin = new Thickness(5) };
+            var install = new Button { Content = "Установить выбранный драйвер", MinWidth = 220, Margin = new Thickness(5), IsDefault = true };
+            var close = new Button { Content = "Закрыть", MinWidth = 100, Margin = new Thickness(5), IsCancel = true };
+            buttons.Children.Add(details);
+            buttons.Children.Add(install);
+            buttons.Children.Add(close);
+            DockPanel.SetDock(buttons, Dock.Bottom);
+            panel.Children.Add(buttons);
+
+            var list = new ListBox { ItemsSource = candidates, DisplayMemberPath = "DisplayText", SelectedIndex = 0 };
+            panel.Children.Add(list);
+            dialog.Content = panel;
+
+            void UpdateInstallState()
+            {
+                install.IsEnabled = list.SelectedItem is DriverFolderCandidate selected &&
+                                    selected.Inspection.IsInstallableForDevice;
+            }
+            list.SelectionChanged += (_, _) => UpdateInstallState();
+            UpdateInstallState();
+
+            details.Click += (_, _) =>
+            {
+                if (list.SelectedItem is not DriverFolderCandidate selected) return;
+                var report = selected.Inspection;
+                var warningText = report.Warnings.Count == 0 ? "Нет дополнительных предупреждений." :
+                    string.Join(Environment.NewLine, report.Warnings);
+                MessageBox.Show(dialog,
+                    $"INF: {report.InfPath}\nПоставщик: {report.Provider}\nКласс: {report.ClassName}\n" +
+                    $"Версия: {report.DriverVersion}\nДата: {report.DriverDate}\nКаталог: {report.CatalogFile}\n" +
+                    $"Подпись CAT: {report.CatalogSignature}\nСовпадение: {report.MatchKind}\n" +
+                    $"Совпавший ID: {report.MatchedHardwareId}\nАрхитектура: {(report.ArchitectureApplicable ? "подходит" : "не подходит")}\n" +
+                    $"SHA-256 INF: {report.InfSha256}\nSHA-256 CAT: {report.CatalogSha256}\n\n{warningText}",
+                    "Сведения о пакете", MessageBoxButton.OK, MessageBoxImage.Information);
+            };
+
+            install.Click += async (_, _) =>
+            {
+                if (list.SelectedItem is not DriverFolderCandidate selected ||
+                    !selected.Inspection.IsInstallableForDevice) return;
+
+                var report = selected.Inspection;
+                if (MessageBox.Show(dialog,
+                    $"Установить драйвер для устройства?\n\n{device.Name}\n" +
+                    $"Поставщик: {report.Provider}\nВерсия: {report.DriverVersion}\nДата: {report.DriverDate}\n" +
+                    $"INF: {Path.GetFileName(report.InfPath)}\n\n" +
+                    "Перед установкой будет создана точка восстановления Windows. Продолжить?",
+                    "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    return;
+
+                install.IsEnabled = false;
+                close.IsEnabled = false;
+                try
+                {
+                    StatusText.Text = "Создание точки восстановления и установка драйвера...";
+                    var result = await _maintenance.InstallInfAsync(report.InfPath);
+                    AppendEvent($"Установка INF запущена: {device.Name}; {report.DriverVersion}.");
+                    MessageBox.Show(dialog, result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+                    dialog.DialogResult = true;
+                    StatusText.Text = "Команда установки завершена; проверьте состояние устройства.";
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(dialog, ex.Message, "Установка драйвера не выполнена",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    close.IsEnabled = true;
+                    UpdateInstallState();
+                }
+            };
+
+            StatusText.Text = $"Найдено INF-кандидатов: {candidates.Count}.";
+            AppendEvent($"Поиск INF в папке завершён: {device.Name}; совпадений {candidates.Count}.");
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Не удалось просканировать папку драйверов.";
+            MessageBox.Show(this, ex.Message, "Поиск драйвера в папке", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
 }
