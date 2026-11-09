@@ -39,13 +39,19 @@ public sealed class DriverFolderScannerService
                 var inspection = _inspector.Inspect(file, device);
                 if (inspection.MatchKind == "No match") continue;
 
-                var comparison = CompareVersions(inspection.DriverVersion, device.DriverVersion);
-                var isNewer = comparison == 1;
+                var comparison = DriverVersionComparisonService.Compare(inspection.DriverVersion, device.DriverVersion);
+                var isNewer = comparison.IsNewer;
                 var state = inspection.IsInstallableForDevice
-                    ? (isNewer ? "Совпадение ID · подпись действительна · версия новее" : "Совпадение ID · подпись действительна")
+                    ? comparison.Relation switch
+                    {
+                        DriverVersionRelation.Newer => "Точное совпадение ID · CAT действителен · версия новее",
+                        DriverVersionRelation.Same => "Точное совпадение ID · CAT действителен · версия совпадает",
+                        DriverVersionRelation.Older => "Точное совпадение ID · CAT действителен · версия старее",
+                        _ => "Точное совпадение ID · CAT действителен · версия не распознана"
+                    }
                     : $"Требует ручной проверки · {inspection.MatchKind} · CAT: {inspection.CatalogSignature}";
-                var display = $"{Path.GetFileName(file)} | {inspection.Provider} | {inspection.DriverVersion} | {inspection.DriverDate} | {state}";
-                results.Add(new DriverFolderCandidate(inspection, isNewer, state, display));
+                var display = $"{Path.GetFileName(file)} | {inspection.Provider} | {inspection.DriverVersion} | {inspection.DriverDate} | {state} | {comparison.Message}";
+                results.Add(new DriverFolderCandidate(inspection, isNewer, state + " — " + comparison.Message, display));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
             {
@@ -86,13 +92,6 @@ public sealed class DriverFolderScannerService
                     yield return entry;
             }
         }
-    }
-
-    private static int CompareVersions(string candidate, string installed)
-    {
-        if (!Version.TryParse(candidate, out var newVersion) ||
-            !Version.TryParse(installed, out var oldVersion)) return 0;
-        return newVersion.CompareTo(oldVersion);
     }
 
     private static DateTime ParseDate(string value)
