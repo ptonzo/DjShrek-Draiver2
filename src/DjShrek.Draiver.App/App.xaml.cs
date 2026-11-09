@@ -168,6 +168,16 @@ public partial class App : Application
             if (DjShrek.Draiver.App.MainWindow.IsCandidateOpenable(unmatchedCandidate))
                 throw new InvalidOperationException("An unmatched device was incorrectly marked as a matched search candidate.");
             checks.Add("PASS: UI action is enabled for a matched Hardware ID and official URL, and blocked for an unmatched device.");
+            var independentCandidate = new DriverUpdateCandidate
+            {
+                Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
+                SourceUrl = "https://driver.ru/device/123",
+                SourceType = "IndependentCatalog",
+                SourceTrust = "IndependentCatalog_UnverifiedPackage"
+            };
+            if (!DjShrek.Draiver.App.MainWindow.IsCandidateOpenable(independentCandidate))
+                throw new InvalidOperationException("A configured independent catalog page was incorrectly blocked in the update center.");
+            checks.Add("PASS: a matched Driver.ru result is openable while package trust remains explicitly unverified.");
             
             // OEM detection must identify the system builder, not a component vendor.
             var oemCatalog = new OemCatalogService();
