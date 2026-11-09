@@ -363,12 +363,38 @@ public partial class MainWindow
                 {
                     var result = await _packageDownloader.DownloadAsync(selected.PackageUri, save.FileName);
                     AppendEvent($"Загружен OEM-пакет Lenovo {identity.MachineType}: {Path.GetFileName(result.FilePath)}");
+                    var extractionMessage = "";
+                    var extension = Path.GetExtension(result.FilePath);
+                    if (extension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
+                        extension.Equals(".cab", StringComparison.OrdinalIgnoreCase))
+                    {
+                        StatusText.Text = "Безопасная распаковка OEM-пакета...";
+                        var extractedFolder = await _packageExtraction.ExtractAsync(result.FilePath);
+                        extractionMessage = $"\n\nПакет автоматически распакован в:\n{extractedFolder}";
+                        if (DevicesGrid.SelectedItem is DeviceInfo selectedDevice)
+                        {
+                            StatusText.Text = "Поиск INF для выбранного устройства в распакованном пакете...";
+                            var matches = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, selectedDevice));
+                            extractionMessage += matches.Count == 0
+                                ? "\n\nДля выбранного устройства совпадающие INF не найдены."
+                                : $"\n\nДля устройства «{selectedDevice.Name}» найдено совпадений INF: {matches.Count}.\n" +
+                                  string.Join("\n", matches.Take(8).Select(x => x.DisplayText));
+                        }
+                        AppendEvent($"OEM-пакет распакован: {extractedFolder}");
+                    }
+                    else
+                    {
+                        extractionMessage = extension.Equals(".exe", StringComparison.OrdinalIgnoreCase)
+                            ? "\n\nЭто EXE-установщик. Программа не запускает его автоматически и не применяет неизвестные ключи распаковки. Используйте только документированный режим извлечения производителя."
+                            : "\n\nАвтоматическая распаковка этого формата пока не поддерживается.";
+                    }
+
                     MessageBox.Show(dialog,
-                        $"Оригинальный пакет загружен с официального домена Lenovo.\n\nФайл: {result.FilePath}\nРазмер: {result.Length:N0} байт\nSHA-256: {result.Sha256}\n\n" +
-                        "Хэш фиксирует целостность скачанного файла, но сам по себе не подтверждает цифровую подпись или совместимость отдельных INF.",
-                        "Загрузка завершена", MessageBoxButton.OK, MessageBoxImage.Information);
+                        $"Оригинальный пакет загружен с официального домена Lenovo.\n\nФайл: {result.FilePath}\nРазмер: {result.Length:N0} байт\nSHA-256: {result.Sha256}" +
+                        extractionMessage + "\n\nХэш фиксирует целостность скачанного файла, но сам по себе не подтверждает цифровую подпись или совместимость отдельных INF.",
+                        "Загрузка пакета", MessageBoxButton.OK, MessageBoxImage.Information);
                     dialog.DialogResult = true;
-                    StatusText.Text = "Пакет Lenovo загружен; требуется проверка INF/CAT.";
+                    StatusText.Text = "Пакет Lenovo загружен. INF/CAT необходимо проверить перед установкой.";
                 }
                 catch (Exception ex)
                 {
