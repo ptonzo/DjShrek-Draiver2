@@ -110,10 +110,10 @@ public sealed class DriverCatalogCandidateRankingService
 
     private static string InferArchitecture(string text)
     {
+        if (text.Contains("ARM64", StringComparison.OrdinalIgnoreCase)) return "ARM64";
         if (text.Contains("x64", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("64-bit", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("64 bit", StringComparison.OrdinalIgnoreCase)) return "x64";
-        if (text.Contains("ARM64", StringComparison.OrdinalIgnoreCase)) return "ARM64";
         if (text.Contains("x86", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("32-bit", StringComparison.OrdinalIgnoreCase)) return "x86";
         return "";
@@ -124,8 +124,7 @@ public sealed class DriverCatalogCandidateRankingService
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)) return Normalize(value);
         return new UriBuilder(uri)
         {
-            Fragment = "",
-            Query = ""
+            Fragment = ""
         }.Uri.AbsoluteUri.TrimEnd('/');
     }
 
