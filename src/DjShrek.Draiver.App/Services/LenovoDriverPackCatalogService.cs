@@ -172,14 +172,16 @@ $family = if ($caption -match 'Windows 11') { 'Windows 11' } elseif ($caption -m
                     continue;
 
                 var osBuild = (string?)pack.Attribute("version") ?? "";
+                // The catalog's "version" attribute identifies the Windows release/build,
+                // not the driver pack version. Never expose it as a driver version.
                 var packageVersion = FirstNonEmpty(
                     (string?)pack.Attribute("packageVersion"),
-                    string.IsNullOrWhiteSpace(osBuild)
-                        ? "Каталог не указывает версию пакета"
-                        : $"Версия ОС в каталоге: {osBuild}; версия пакета не указана");
+                    (string?)pack.Attribute("driverPackVersion"),
+                    "Версия пакета не указана в каталоге");
                 var releaseDate = FirstNonEmpty(
                     (string?)pack.Attribute("date"),
                     (string?)pack.Attribute("releaseDate"),
+                    (string?)pack.Attribute("released"),
                     "");
 
                 results.Add(new OemDriverPackCandidate(
@@ -193,7 +195,7 @@ $family = if ($caption -match 'Windows 11') { 'Windows 11' } elseif ($caption -m
                     releaseDate,
                     uri,
                     CatalogUrl,
-                    "Точное совпадение Machine Type в Lenovo catalogv2.xml; совместимость отдельных INF ещё не проверена"));
+                    $"Точное совпадение Machine Type в Lenovo catalogv2.xml; selector ОС каталога: {osBuild}; версия пакета: {(packageVersion == "Версия пакета не указана в каталоге" ? "не опубликована" : packageVersion)}; совместимость отдельных INF ещё не проверена"));
             }
         }
 
