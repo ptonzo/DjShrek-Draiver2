@@ -99,8 +99,10 @@ public partial class MainWindow
                 "Проверка пакета", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 
-        StatusText.Text = "Безопасная распаковка пакета и поиск совместимых INF...";
-        var extractedFolder = await _packageExtraction.ExtractAsync(packagePath);
+        try
+        {
+            StatusText.Text = "Безопасная распаковка пакета и поиск совместимых INF...";
+            var extractedFolder = await _packageExtraction.ExtractAsync(packagePath);
         var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
         var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
         var summary = string.Join(Environment.NewLine, candidates.Take(8).Select(x => "• " + x.DisplayText));
@@ -114,7 +116,14 @@ public partial class MainWindow
             installable.Length > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
         StatusText.Text = $"Проверка завершена: INF-кандидатов {candidates.Count}, прошли предварительные проверки {installable.Length}.";
         AppendEvent($"Проверка пакета {Path.GetFileName(packagePath)}: INF {candidates.Count}, допустимых кандидатов {installable.Length}.");
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", extractedFolder) { UseShellExecute = true });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", extractedFolder) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            StatusText.Text = "Пакет сохранён, но распаковка или проверка INF не завершилась.";
+            MessageBox.Show(this, "Пакет уже сохранён. Проверка не завершилась: " + ex.Message,
+                "Проверка пакета", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private Uri? SelectPackageLink(IReadOnlyList<Uri> links)
