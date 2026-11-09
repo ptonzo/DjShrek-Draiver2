@@ -95,10 +95,7 @@ public sealed class HpDriverPackCatalogService
             if (!IsSupportedWindows(osName, identity.OperatingSystem)) continue;
             var softPaqId = Value(pack, "SoftPaqID");
             if (!softPaqs.TryGetValue(softPaqId, out var softPaq)) continue;
-            if (!Uri.TryCreate(softPaq.Url, UriKind.Absolute, out var packageUri) ||
-                packageUri.Scheme != Uri.UriSchemeHttps ||
-                !(packageUri.Host.Equals("ftp.hp.com", StringComparison.OrdinalIgnoreCase) ||
-                  packageUri.Host.Equals("hpia.hpcloud.hp.com", StringComparison.OrdinalIgnoreCase)))
+            if (!TryBuildSoftPaqUri(softPaq.Url, out var packageUri))
                 continue;
 
             var model = Value(pack, "SystemName");
@@ -130,11 +127,30 @@ public sealed class HpDriverPackCatalogService
     private static bool IsSupportedWindows(string catalogOs, string currentOs)
     {
         if (string.IsNullOrWhiteSpace(catalogOs)) return false;
+        if (!catalogOs.Contains("64", StringComparison.OrdinalIgnoreCase) &&
+            !catalogOs.Contains("x64", StringComparison.OrdinalIgnoreCase))
+            return false;
         if (catalogOs.Contains("Windows 11", StringComparison.OrdinalIgnoreCase))
             return currentOs.Equals("Windows 11", StringComparison.OrdinalIgnoreCase);
         if (catalogOs.Contains("Windows 10", StringComparison.OrdinalIgnoreCase))
             return currentOs.Equals("Windows 10", StringComparison.OrdinalIgnoreCase);
         return false;
+    }
+
+    private static bool TryBuildSoftPaqUri(string value, out Uri packageUri)
+    {
+        packageUri = null!;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var source))
+            return false;
+        if (source.Scheme.Equals("ftp", StringComparison.OrdinalIgnoreCase) &&
+            source.Host.Equals("ftp.hp.com", StringComparison.OrdinalIgnoreCase))
+            source = new UriBuilder(source) { Scheme = Uri.UriSchemeHttps, Port = -1 }.Uri;
+        if (source.Scheme != Uri.UriSchemeHttps ||
+            !(source.Host.Equals("ftp.hp.com", StringComparison.OrdinalIgnoreCase) ||
+              source.Host.Equals("hpia.hpcloud.hp.com", StringComparison.OrdinalIgnoreCase)))
+            return false;
+        packageUri = source;
+        return true;
     }
 
     private static string Value(XElement element, string localName) =>
