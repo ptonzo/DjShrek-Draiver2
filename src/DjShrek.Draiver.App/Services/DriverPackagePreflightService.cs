@@ -24,7 +24,8 @@ public sealed class DriverPackagePreflightService
             return DriverPackagePreflightResult.Failed("Каталог пакета не найден.");
 
         var root = Path.GetFullPath(packageDirectory);
-        var infFiles = Directory.EnumerateFiles(root, "*.inf", SearchOption.AllDirectories).ToArray();
+        var infFiles = EnumerateFilesWithoutReparsePoints(root)
+            .Where(x => Path.GetExtension(x).Equals(".inf", StringComparison.OrdinalIgnoreCase)).ToArray();
         if (infFiles.Length == 0)
             return DriverPackagePreflightResult.Failed("В распакованном пакете не найден INF-файл.");
         if (infFiles.Length > 256)
@@ -106,6 +107,26 @@ public sealed class DriverPackagePreflightService
                 ? "Предварительно найден INF с точным Hardware ID. Это не является разрешением на установку."
                 : "Не найден INF с точным Hardware ID; автоматическая установка не рекомендуется.",
             results);
+    }
+
+    private static IEnumerable<string> EnumerateFilesWithoutReparsePoints(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Пакет содержит reparse point; поиск INF остановлен.");
+                if ((attributes & FileAttributes.Directory) != 0)
+                    pending.Push(entry);
+                else
+                    yield return entry;
+            }
+        }
     }
 
     private static string? DecodeInf(byte[] bytes)
