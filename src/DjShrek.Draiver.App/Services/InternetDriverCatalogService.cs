@@ -116,8 +116,8 @@ public sealed class InternetDriverCatalogService
                             SearchQuery = query,
                             PublishedDate = published,
                             Evidence = isExactHardwareId
-                                ? "Поиск выполнен по точному Hardware ID устройства."
-                                : "Результат найден по Compatible ID; этого недостаточно для подтверждения совместимости.",
+                                ? "Точный Hardware ID использован в поисковом запросе; страница производителя ещё не подтверждает поддержку устройства."
+                                : "Compatible ID использован в поисковом запросе; этого недостаточно для подтверждения совместимости.",
                             SourceUrl = uri.AbsoluteUri
                         });
                         deviceCount++;
