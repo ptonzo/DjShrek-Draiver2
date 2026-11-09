@@ -397,10 +397,14 @@ public partial class MainWindow
                 throw new InvalidDataException("План установки заблокирован: " + string.Join("; ", plan.Blockers));
 
             StatusText.Text = "Передача проверенного INF в Windows и повторная проверка устройства...";
+            IEnumerable<DeviceInfo>? refreshedDevices = null;
             var workflow = await new DriverInstallationWorkflowService().InstallAndVerifyAsync(
-                plan, packageRoot, userConfirmed: true, device.DriverVersion,
-                async cancellationToken =>
-                    (IEnumerable<DeviceInfo>)await _inventory.ScanAsync(),
+                plan,
+                packageRoot,
+                userConfirmed: true,
+                previousVersion: device.DriverVersion,
+                refreshDeviceInventory: async cancellationToken =>
+                    refreshedDevices = await _inventory.ScanAsync(),
                 executionTimeout: TimeSpan.FromMinutes(3));
             var result = workflow.Execution.Summary +
                 (string.IsNullOrWhiteSpace(workflow.Execution.StandardOutput) ? "" :
@@ -417,11 +421,8 @@ public partial class MainWindow
                 : workflow.Execution.Started && workflow.Execution.ExitCode == 0
                     ? "Передан Windows; фактическая версия пока не подтверждена"
                     : "Установка не выполнена или заблокирована";
-            if (workflow.Execution.Started && workflow.Execution.ExitCode == 0)
-            {
-                var refreshedDevices = await _inventory.ScanAsync();
+            if (refreshedDevices is not null)
                 ApplyDevices(refreshedDevices);
-            }
 
             try
             {
