@@ -66,12 +66,11 @@ public sealed class OemPackageExtractionService
                 normalized.Contains(':') ||
                 normalized.Split('/').Any(part => part == ".."))
                 throw new InvalidDataException("Архив содержит небезопасный путь.");
-            if (string.IsNullOrEmpty(entry.Name)) continue;
-
-            // Unix ZIP archives can encode symbolic links in the external attributes.
+            // Check metadata before skipping directory entries: directory symlinks are unsafe too.
             var unixType = (entry.ExternalAttributes >> 16) & 0xF000;
             if (unixType == 0xA000)
                 throw new InvalidDataException("Архив содержит символическую ссылку. Использование такого пакета заблокировано.");
+            if (string.IsNullOrEmpty(entry.Name)) continue;
 
             extractedFiles++;
             if (extractedFiles > MaxFiles)
@@ -115,7 +114,12 @@ public sealed class OemPackageExtractionService
 
     private static void ExtractCab(string source, string destination, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("expand.exe")
+        var systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+        var expandPath = Path.Combine(systemDirectory, "expand.exe");
+        if (!File.Exists(expandPath))
+            throw new FileNotFoundException("Штатная утилита Windows expand.exe не найдена.", expandPath);
+
+        var start = new ProcessStartInfo(expandPath)
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
