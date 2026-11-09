@@ -64,7 +64,20 @@ public partial class App : Application
                 throw new InvalidOperationException("Partial hardware ID was incorrectly accepted.");
             if (DriverCompatibilityMatcher.FindExactMatch(matcherDevices, "") is not null)
                 throw new InvalidOperationException("Empty hardware ID was incorrectly accepted.");
-            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");            var ambiguousDevices = new[]
+            checks.Add("PASS: exact Hardware ID matcher accepts full IDs and rejects partial/empty IDs.");
+
+            var newerDriver = DriverVersionComparisonService.Compare("31.0.15.5212", "31.0.15.5123");
+            var sameDriver = DriverVersionComparisonService.Compare("1.2.3.4", "1.2.3.4");
+            var olderDriver = DriverVersionComparisonService.Compare("1.2.3.3", "1.2.3.4");
+            var unknownDriver = DriverVersionComparisonService.Compare("версия неизвестна", "1.2.3.4");
+            var missingInstalled = DriverVersionComparisonService.Compare("2.0.0.0", "");
+            if (newerDriver.Relation != DriverVersionRelation.Newer ||
+                sameDriver.Relation != DriverVersionRelation.Same ||
+                olderDriver.Relation != DriverVersionRelation.Older ||
+                unknownDriver.Relation != DriverVersionRelation.Unknown ||
+                missingInstalled.Relation != DriverVersionRelation.Unknown)
+                throw new InvalidOperationException("Driver version comparison produced an incorrect or unsafe result.");
+            checks.Add("PASS: driver version comparison distinguishes newer/same/older and never promotes unknown versions to updates.");            var ambiguousDevices = new[]
             {
                 matcherDevices[0],
                 new DeviceInfo
