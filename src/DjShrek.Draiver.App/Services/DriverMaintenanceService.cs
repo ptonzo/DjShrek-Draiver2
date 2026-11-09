@@ -89,6 +89,8 @@ public sealed class DriverMaintenanceService
             throw new InvalidDataException("Восстановление остановлено: найдены пакеты без подтверждённой цифровой подписи каталога. Ничего не установлено." +
                 Environment.NewLine + string.Join(Environment.NewLine, invalid));
 
+        // Create a Windows restore point before importing any backup packages.
+        CreateSystemRestorePoint();
         var result = RunElevated("pnputil.exe", $"/add-driver \"{Path.Combine(root, "*.inf")}\" /subdirs /install");
         return integrityResult + Environment.NewLine + result + Environment.NewLine +
             $"Проверка перед восстановлением: все {infFiles.Length} INF-пакетов имеют действительную подпись каталога. Повторно проверьте состояние устройств.";
