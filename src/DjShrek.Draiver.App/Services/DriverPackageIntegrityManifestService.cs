@@ -70,7 +70,8 @@ public sealed class DriverPackageIntegrityManifestService
     {
         ArgumentNullException.ThrowIfNull(manifest);
         if (manifest.SchemaVersion != 1 || manifest.Files is null ||
-            manifest.Files.Count == 0 || manifest.Files.Count > MaximumFiles)
+            manifest.Files.Count == 0 || manifest.Files.Count > MaximumFiles ||
+            manifest.TotalBytes < 0 || manifest.TotalBytes > MaximumTotalBytes)
             return DriverPackageIntegrityVerification.Failed("Неподдерживаемая или повреждённая структура манифеста.");
 
         var root = GetSafeRoot(packageDirectory);
@@ -78,7 +79,7 @@ public sealed class DriverPackageIntegrityManifestService
         foreach (var entry in manifest.Files)
         {
             if (entry is null || string.IsNullOrWhiteSpace(entry.RelativePath) ||
-                entry.Length < 0 || !IsSha256(entry.Sha256))
+                entry.Length < 0 || entry.Length > MaximumTotalBytes || !IsSha256(entry.Sha256))
                 return DriverPackageIntegrityVerification.Failed("Манифест содержит некорректную запись файла.");
             try { EnsureSafeRelativePath(entry.RelativePath); }
             catch { return DriverPackageIntegrityVerification.Failed("Манифест содержит небезопасный путь."); }
@@ -104,6 +105,8 @@ public sealed class DriverPackageIntegrityManifestService
                 return DriverPackageIntegrityVerification.Failed($"В пакете появился лишний файл: {relative}");
             seen.Add(relative);
             totalBytes = checked(totalBytes + info.Length);
+            if (totalBytes > MaximumTotalBytes || seen.Count > MaximumFiles)
+                return DriverPackageIntegrityVerification.Failed("Фактический пакет превышает допустимые ограничения.");
             if (info.Length != entry.Length)
                 return DriverPackageIntegrityVerification.Failed($"Изменился размер файла: {relative}");
 
