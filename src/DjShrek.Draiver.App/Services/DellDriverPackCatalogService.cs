@@ -73,7 +73,10 @@ public sealed class DellDriverPackCatalogService
             var xmlPath = Path.Combine(root, "DriverPackCatalog.xml");
             var expand = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "expand.exe");
             if (!File.Exists(expand)) throw new FileNotFoundException("Не найден системный expand.exe.", expand);
-            var start = new ProcessStartInfo(expand, $"\\"{cabPath}\\" \\"{xmlPath}\\"")
+            var start = new ProcessStartInfo(expand)
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
+            start.ArgumentList.Add(cabPath);
+            start.ArgumentList.Add(xmlPath);
             { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
             using (var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось распаковать CAB Dell."))
             {
