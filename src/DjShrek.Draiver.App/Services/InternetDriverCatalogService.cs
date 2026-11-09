@@ -39,7 +39,7 @@ public sealed class InternetDriverCatalogService
         "lenovo.com", "asus.com", "acer.com", "msi.com", "gigabyte.com",
         "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com",
         "downloadmirror.intel.com", "download.nvidia.com", "drivers.amd.com",
-        "ftp.hp.com", "download.lenovo.com", "dlcdnets.asus.com",
+        "ftp.hp.com", "hpcloud.hp.com", "download.lenovo.com", "dlcdnets.asus.com",
         "global-download.acer.com", "download.msi.com", "download.gigabyte.com",
         "download.realtek.com", "microsoft.com", "surface.com", "logitech.com",
         "chicony.com", "steelseries.com", "razer.com", "corsair.com", "apple.com",
