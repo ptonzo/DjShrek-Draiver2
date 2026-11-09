@@ -653,8 +653,13 @@
                                 <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Ellipse Width="13" Height="13" Fill="{DynamicResource AccentSecondaryBrush}"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Path x:Name="ScanProgressArc" Stroke="#FFFF3B45" StrokeThickness="9"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      IsHitTestVisible="False" Data="{x:Null}"/>
+                                <TextBlock x:Name="ScanPercentText" Text="0%" FontSize="21"
+                                           FontWeight="Black" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsHitTestVisible="False"/>
                                 <Border Background="{DynamicResource AccentBrush}" CornerRadius="14" Padding="24,14"
                                         HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,35">
                                     <TextBlock Text="СКАНИРОВАТЬ" FontSize="25" FontWeight="Black"
@@ -673,6 +678,10 @@
                 <TextBlock x:Name="StartupScanStatusText" Text="Готов к проверке устройств и драйверов"
                            TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
                            Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0"/>
+                <TextBlock x:Name="StartupScanPercentCaption" Text="0% · ОЖИДАНИЕ"
+                           TextWrapping="Wrap" TextAlignment="Center" FontSize="10"
+                           FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"
+                           Margin="0,7,0,0"/>
             </StackPanel>
         </Grid>
     </Grid>
