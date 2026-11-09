@@ -16,6 +16,8 @@ public sealed class InternetDriverCatalogService
     private const int MaxIdsPerDevice = 6;
     private const int MaxResultsPerDevice = 12;
     private const int MaxTotalResults = 160;
+    private readonly DriverRuCatalogProvider _driverRuProvider = new();
+
     private static readonly HttpClient Client = new(new HttpClientHandler
     {
         AutomaticDecompression = DecompressionMethods.All,
@@ -68,6 +70,21 @@ public sealed class InternetDriverCatalogService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (output.Count >= MaxTotalResults) return Rank(output);
+
+                // Query Driver.ru directly by the documented /Search/{escaped Hardware ID} route.
+                // Its records are surfaced as independent, unverified catalog leads.
+                var driverRuResults = await _driverRuProvider.SearchAsync(device, hardwareId, cancellationToken);
+                foreach (var driverRuResult in driverRuResults)
+                {
+                    if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
+                    var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
+                        ? device.Name + "|" + device.Manufacturer
+                        : device.InstanceId;
+                    if (!seen.Add(deviceKey + "|" + driverRuResult.UpdateId)) continue;
+                    output.Add(driverRuResult);
+                    deviceCount++;
+                }
+
                 var query = BuildQuery(device, hardwareId);
                 var requestUrl = "https://www.bing.com/search?format=rss&q=" + Uri.EscapeDataString(query);
 
