@@ -13,7 +13,7 @@ public static class DeviceHardwareIdParser
         @"^USB\\VID_([0-9A-F]{4})&PID_([0-9A-F]{4})",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex Hdaudio = new(
-        @"^HDAUDIO\\FUNC_([0-9A-F]{4})&VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})",
+        @"^HDAUDIO\\FUNC_([0-9A-F]{2})&VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly IReadOnlyDictionary<string, string> Vendors =
