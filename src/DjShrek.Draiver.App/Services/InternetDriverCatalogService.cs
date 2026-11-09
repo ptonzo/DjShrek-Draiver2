@@ -59,6 +59,19 @@ public sealed class InternetDriverCatalogService
         IEnumerable<DeviceInfo> devices, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(devices);
+        IReadOnlyList<DriverVendorCatalogEntry> signedEntries;
+        try
+        {
+            signedEntries = await new SignedVendorCatalogManifestService()
+                .DownloadAndVerifyAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch
+        {
+            // Offline operation retains the built-in curated registry.
+            signedEntries = new DriverVendorCatalogRegistry().GetAll();
+        }
+
         var output = new List<DriverUpdateCandidate>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -89,7 +102,7 @@ public sealed class InternetDriverCatalogService
                     }
                 }
 
-                var query = BuildQuery(device, hardwareId);
+                var query = BuildQuery(device, hardwareId, signedEntries);
                 var requestUrl = "https://www.bing.com/search?format=rss&q=" + Uri.EscapeDataString(query);
 
                 try
@@ -163,9 +176,10 @@ public sealed class InternetDriverCatalogService
         return Rank(output);
     }
 
-    private static string BuildQuery(DeviceInfo device, string hardwareId)
+    private static string BuildQuery(
+        DeviceInfo device, string hardwareId, IReadOnlyList<DriverVendorCatalogEntry> availableEntries)
     {
-        var vendor = GetVendorDomain(device, hardwareId);
+        var vendor = GetVendorDomain(device, hardwareId, availableEntries);
         var parts = new List<string>
         {
             "driver download",
@@ -185,10 +199,13 @@ public sealed class InternetDriverCatalogService
     private static string LimitQueryText(string value, int maxLength) =>
         new(value.Where(c => !char.IsControl(c) && c != '"').Take(maxLength).ToArray());
 
-    internal static string? GetVendorDomain(DeviceInfo device, string hardwareId)
+    internal static string? GetVendorDomain(
+        DeviceInfo device, string hardwareId, IReadOnlyList<DriverVendorCatalogEntry>? availableEntries = null)
     {
-        var vendor = new DriverVendorCatalogRegistry().Resolve(
-            hardwareId, device.Manufacturer, device.DriverProvider);
+        var registry = new DriverVendorCatalogRegistry();
+        var vendor = availableEntries is null
+            ? registry.Resolve(hardwareId, device.Manufacturer, device.DriverProvider)
+            : registry.Resolve(hardwareId, device.Manufacturer, device.DriverProvider, availableEntries);
         return vendor?.SearchDomain;
     }
 
