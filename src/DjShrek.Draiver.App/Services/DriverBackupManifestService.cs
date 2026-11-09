@@ -35,7 +35,7 @@ public sealed class DriverBackupManifestService
             entries.Add(new FileEntry(
                 Path.GetRelativePath(fullRoot, file).Replace(Path.DirectorySeparatorChar, '/'),
                 info.Length,
-                Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(file)))));
+                Convert.ToHexString(SHA256.HashData(File.OpenRead(file)))));
         }
 
         var packageCount = files.Count(x => Path.GetExtension(x).Equals(".inf", StringComparison.OrdinalIgnoreCase));
@@ -85,7 +85,7 @@ public sealed class DriverBackupManifestService
                 continue;
             }
 
-            var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+            var hash = Convert.ToHexString(SHA256.HashData(File.OpenRead(path)));
             if (!CryptographicOperations.FixedTimeEquals(
                     Convert.FromHexString(hash), Convert.FromHexString(entry.Sha256)))
             {
