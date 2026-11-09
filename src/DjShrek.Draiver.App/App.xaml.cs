@@ -335,6 +335,14 @@ public partial class App : Application
             var sensors = new HardwareSensorService().ReadMetrics();
             checks.Add("PASS: hardware sensor provider queried (unavailable sensors are reported as N/A).");
 
+            var updatesGrid = window.FindName("DriverUpdatesGrid") as DataGrid;
+            var batchDownloadButton = window.FindName("DownloadSelectedDriverPackagesButton") as Button;
+            var batchInstallButton = window.FindName("InstallSelectedVerifiedDriversButton") as Button;
+            if (updatesGrid is null || updatesGrid.SelectionMode != DataGridSelectionMode.Extended ||
+                batchDownloadButton is null || batchInstallButton is null)
+                throw new InvalidOperationException("Multi-select driver update controls are incomplete.");
+            checks.Add("PASS: update center exposes multi-row selection, batch package preparation and per-device confirmed batch install.");
+
             var gameComponentsPanel = window.FindName("GameComponentsText") as TextBlock;
             if (gameComponentsPanel is null)
                 throw new InvalidOperationException("Game Components panel output is missing.");
