@@ -402,7 +402,10 @@ public partial class MainWindow
                 $"Путь резервной копии: {backupPath}; {backupVerification}");
 
             StatusText.Text = "Повторная предварительная проверка пакета и формирование плана установки...";
-            // Reuse the original extraction root verified immediately before installation.
+            // Recheck after confirmation and backup, immediately before Driver Store submission.
+            packageVerification = await _packageIntegrity.VerifyAsync(packageRoot, candidate.VerifiedPackageManifest);
+            if (!packageVerification.IsValid)
+                throw new InvalidDataException("Содержимое пакета изменилось перед передачей в Driver Store: " + packageVerification.Message);
             var preflight = await _packagePreflight.InspectAsync(packageRoot, candidate.HardwareId);
             var selectedInf = preflight.InfResults.FirstOrDefault(x =>
                 x.IsReadable && x.HasExactHardwareIdMatch &&
