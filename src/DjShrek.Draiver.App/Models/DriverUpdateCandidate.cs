@@ -32,7 +32,7 @@ public sealed class DriverUpdateCandidate
     public string PublishedDate { get; init; } = "";
     public string Evidence { get; init; } = "";
     /// <summary>Evidence scope: DeviceExact, DeviceCompatible, SearchDiscovery, ModelPack, or SupportPortal.</summary>
-    public string CandidateScope { get; set; } = "DeviceCompatible";
+    public string CandidateScope { get; set; } = "SearchDiscovery";
     /// <summary>Human-readable evidence strength; never a signature verdict.</summary>
     public string EvidenceLevel { get; set; } = "Search lead only";
     public string OperatingSystemTarget { get; set; } = "";
