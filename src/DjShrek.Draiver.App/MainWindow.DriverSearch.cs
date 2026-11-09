@@ -442,6 +442,54 @@ public partial class MainWindow
 
             try
             {
+                var nvidiaDevices = _devices.Where(device =>
+                    device.HardwareIds.Any(id => id.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase)) ||
+                    device.Manufacturer.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ||
+                    device.DriverProvider.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)).ToArray();
+                var nvidiaCatalog = new NvidiaDriverCatalogService();
+                foreach (var device in nvidiaDevices)
+                {
+                    var productName = device.Name
+                        .Replace("NVIDIA ", "", StringComparison.OrdinalIgnoreCase).Trim();
+                    var nvidiaEntries = await nvidiaCatalog.FindDriversAsync(productName,
+                        Environment.OSVersion.Version.Build >= 22000, _driverSearchCts.Token);
+                    foreach (var entry in nvidiaEntries)
+                    {
+                        results.Add(new DriverUpdateCandidate
+                        {
+                            UpdateId = entry.DetailUri.AbsoluteUri,
+                            Title = "NVIDIA: " + entry.ProductName + " — " + entry.Version,
+                            Manufacturer = "NVIDIA",
+                            Model = entry.ProductName,
+                            Provider = "NVIDIA Driver Lookup API",
+                            DeviceClass = device.Class,
+                            MatchType = "Exact NVIDIA product-name catalog match",
+                            DeviceName = device.Name,
+                            HardwareId = device.HardwareIds.FirstOrDefault(id =>
+                                id.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase)) ?? "",
+                            InstanceId = device.InstanceId,
+                            CurrentVersion = device.DriverVersion,
+                            Compatibility = "Модель сопоставлена с точным названием продукта в официальном lookup NVIDIA; пакет и INF ещё не проверены",
+                            AvailableVersion = entry.Version,
+                            VersionComparison = "Версия/описание извлечены из официальной страницы результатов NVIDIA; сравнение с установленной версией требует нормализации",
+                            Description = entry.Summary,
+                            Evidence = "NVIDIA lookupValueSearch.aspx → processFind.aspx",
+                            SourceType = "OfficialManufacturer",
+                            SourceTrust = "OfficialCatalogPage_UnverifiedPackage",
+                            SourceUrl = entry.DetailUri.AbsoluteUri,
+                            PackageStatus = "Открыть страницу NVIDIA; пакет не загружен"
+                        });
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог NVIDIA пропущен: " + ex.GetType().Name);
+            }
+
+            try
+            {
                 var acerIdentity = AcerSupportIdentityService.GetCurrentMachineIdentity();
                 if (acerIdentity.IsAcer && !string.IsNullOrWhiteSpace(acerIdentity.Model))
                 {
