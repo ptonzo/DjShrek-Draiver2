@@ -83,7 +83,14 @@ public sealed class GameComponentService
                     "dotnet --list-runtimes превысил 5 секунд.", "https://dotnet.microsoft.com/en-us/download/dotnet/8.0");
             }
 
-            var versions = outputTask.GetAwaiter().GetResult().Split(new[] { '\r', '\n' },
+            var output = outputTask.GetAwaiter().GetResult();
+            var error = errorTask.GetAwaiter().GetResult();
+            if (process.ExitCode != 0)
+                return new("Microsoft .NET Windows Desktop Runtime", "Не определена", "Проверка недоступна",
+                    string.IsNullOrWhiteSpace(error) ? "dotnet --list-runtimes завершился с ошибкой." : error,
+                    "https://dotnet.microsoft.com/en-us/download/dotnet/8.0");
+
+            var versions = output.Split(new[] { '\r', '\n' },
                     StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => RuntimeLine.Match(line))
                 .Where(match => match.Success)
