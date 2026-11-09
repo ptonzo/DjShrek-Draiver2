@@ -69,6 +69,24 @@ if (-not $startupOverlay.Success) { throw 'Startup scan overlay is missing or ma
 if ($startupOverlay.Value -match '#[0-9A-Fa-f]{6,8}') {
     throw 'Startup scan turntable must use theme resources instead of fixed colors.'
 }
+$scanArc = [regex]::Match($xamlText, '(?s)<Path x:Name="ScanProgressArc".*?/>')
+if (-not $scanArc.Success -or $scanArc.Value -notmatch 'ScanProgressBrush' -or
+    $xamlText -notmatch 'x:Name="ScanPercentText"' -or
+    $xamlText -notmatch 'x:Name="StartupScanPercentCaption"') {
+    throw 'Startup scan progress arc or percentage labels are missing.'
+}
+if ($code -notmatch 'SweepDirection\.Clockwise' -or
+    $code -notmatch 'ArcTo\(' -or $code -notmatch 'FindName\("ScanProgressArc"') {
+    throw 'Scan progress arc must be rendered clockwise and resolved from the button template.'
+}
+$inventoryPath = Join-Path $repoRoot 'src\DjShrek.Draiver.App\Services\DeviceInventoryService.cs'
+$inventoryCode = Get-Content -LiteralPath $inventoryPath -Raw
+if ($inventoryCode -notmatch 'DJSHREK_PROGRESS:' -or
+    $inventoryCode -notmatch 'ReadProgressAndErrorsAsync' -or
+    $inventoryCode -notmatch 'progress\?\.Report') {
+    throw 'Device scan must report measured incremental progress from the Windows PnP scan.'
+}
+
 if ($xamlText -notmatch 'DjShrek-Draiver Cyber Club 1\.7\.0' -or $xamlText -notmatch 'Версия 1\.7\.0') {
     throw 'Visible application version labels are inconsistent with version 1.7.0.'
 }
