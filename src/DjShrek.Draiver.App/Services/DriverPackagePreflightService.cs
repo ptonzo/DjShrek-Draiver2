@@ -129,6 +129,9 @@ public sealed class DriverPackagePreflightService
         }
     }
 
+    [DllImport("kernel32.dll")]
+    private static extern uint GetACP();
+
     private static string? DecodeInf(byte[] bytes)
     {
         try
@@ -140,7 +143,11 @@ public sealed class DriverPackagePreflightService
             if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
                 return new UTF8Encoding(true, true).GetString(bytes, 3, bytes.Length - 3);
             try { return new UTF8Encoding(false, true).GetString(bytes); }
-            catch (DecoderFallbackException) { return Encoding.Default.GetString(bytes); }
+            catch (DecoderFallbackException)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                return Encoding.GetEncoding((int)GetACP()).GetString(bytes);
+            }
         }
         catch (DecoderFallbackException) { return null; }
     }
