@@ -701,8 +701,10 @@ public partial class MainWindow
                 AppendEvent("Идентификация модели MSI пропущена: " + ex.GetType().Name);
             }
 
-            var visibleResults = results.Where(x =>
-                string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            var notIgnoredResults = results.Where(x =>
+                string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId));
+            var visibleResults = new DriverCatalogCandidateRankingService()
+                .RankAndDeduplicate(notIgnoredResults);
             foreach (var item in visibleResults)
                 _driverUpdates.Add(item);
 
@@ -710,11 +712,15 @@ public partial class MainWindow
             var deviceCount = visibleResults.Select(x => x.DeviceName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
             var ignoredCount = _driverIgnore.GetIgnored().Count;
             UpdatesCountText.Text = $"Найдено страниц: {visibleResults.Length}; устройств с результатами: {deviceCount}; исключено: {ignoredCount}.";
+            var exactCount = visibleResults.Count(x => x.CandidateScope == "DeviceExact");
+            var compatibleCount = visibleResults.Count(x => x.CandidateScope == "DeviceCompatible");
+            var modelPackCount = visibleResults.Count(x => x.CandidateScope == "ModelPack");
+            var portalCount = visibleResults.Count(x => x.CandidateScope == "SupportPortal");
             DriverUpdatesSummaryText.Text = visibleResults.Length == 0
                 ? "В подключённых каталогах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
-                : "Результаты — страницы производителей и независимых каталогов, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя. Исключённые устройства скрыты из списка.";
-            StatusText.Text = $"Поиск завершён. Результатов каталогов: {visibleResults.Length}.";
-            AppendEvent($"Поиск страниц каталогов завершён: найдено {visibleResults.Length}; исключено устройств: {_driverIgnore.GetIgnored().Count}.");
+                : $"После объединения повторов: точные Hardware ID — {exactCount}; Compatible ID/поисковые результаты — {compatibleCount}; модельные OEM-пакеты — {modelPackCount}; порталы поддержки — {portalCount}. Ни одна запись не считается готовым обновлением до проверки INF/CAT, издателя, ОС и архитектуры.";
+            StatusText.Text = $"Поиск завершён. Уникальных кандидатов: {visibleResults.Length}.";
+            AppendEvent($"Поиск каталогов завершён: уникальных кандидатов {visibleResults.Length}; точных совпадений {exactCount}; модельных пакетов {modelPackCount}; исключено устройств {_driverIgnore.GetIgnored().Count}.");
         }
         catch (OperationCanceledException)
         {
