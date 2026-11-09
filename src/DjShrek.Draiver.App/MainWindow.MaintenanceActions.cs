@@ -10,6 +10,27 @@ namespace DjShrek.Draiver.App;
 
 public partial class MainWindow
 {
+    private void OpenFixTool_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string target || string.IsNullOrWhiteSpace(target))
+            return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target)
+            {
+                UseShellExecute = true
+            });
+            StatusText.Text = "Открыт системный инструмент Windows: " + button.Content;
+            AppendEvent("Открыт инструмент исправления Windows: " + button.Content);
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "Не удалось открыть системный инструмент Windows.";
+            MessageBox.Show(this, ex.Message, "Инструменты исправления",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void RollbackDrivers_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show(this,
