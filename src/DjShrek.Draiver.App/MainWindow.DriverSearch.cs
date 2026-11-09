@@ -132,7 +132,7 @@ public partial class MainWindow
                 ? "В подключённых каталогах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
                 : "Результаты — страницы производителей и независимых каталогов, а не подтверждённые обновления. Версия, поддерживаемая ОС и совместимость требуют проверки на сайте производителя. Исключённые устройства скрыты из списка.";
             StatusText.Text = $"Поиск завершён. Результатов каталогов: {visibleResults.Length}.";
-            AppendEvent($"Поиск страниц производителей завершён: найдено {visibleResults.Length}; исключено устройств: {_driverIgnore.GetIgnored().Count}.");
+            AppendEvent($"Поиск страниц каталогов завершён: найдено {visibleResults.Length}; исключено устройств: {_driverIgnore.GetIgnored().Count}.");
         }
         catch (OperationCanceledException)
         {
@@ -141,7 +141,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            UpdatesCountText.Text = "Ошибка поиска страниц производителей.";
+            UpdatesCountText.Text = "Ошибка поиска страниц каталогов.";
             DriverUpdatesSummaryText.Text = ex.Message;
             StatusText.Text = "Не удалось выполнить поиск драйверов.";
             AppendEvent("Ошибка поиска драйверов: " + ex.GetType().Name);
@@ -158,10 +158,10 @@ public partial class MainWindow
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        var hasOfficialPage = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate &&
+        var hasCatalogPage = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate &&
             IsCandidateOpenable(candidate);
-        InstallSelectedDriverButton.IsEnabled = hasOfficialPage;
-        DownloadOfficialDriverPackageButton.IsEnabled = hasOfficialPage;
+        InstallSelectedDriverButton.IsEnabled = hasCatalogPage;
+        DownloadOfficialDriverPackageButton.IsEnabled = hasCatalogPage;
     }
 
     private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
@@ -176,7 +176,7 @@ public partial class MainWindow
 
         if (MessageBox.Show(this,
                 "Откроется страница источника. Проверьте модель устройства, версию Windows и описание пакета. Страница независимого каталога не означает, что пакет проверен. Программа не устанавливает драйвер автоматически.\n\n" + candidate.SourceUrl,
-                "Переход на сайт производителя", MessageBoxButton.OKCancel, MessageBoxImage.Information) != MessageBoxResult.OK)
+                "Переход на страницу источника", MessageBoxButton.OKCancel, MessageBoxImage.Information) != MessageBoxResult.OK)
             return;
 
         Process.Start(new ProcessStartInfo(candidate.SourceUrl) { UseShellExecute = true });
