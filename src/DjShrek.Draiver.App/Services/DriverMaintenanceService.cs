@@ -45,7 +45,9 @@ public sealed class DriverMaintenanceService
             throw new IOException("pnputil завершился без ошибки, но INF-пакеты в резервной папке не найдены. Проверьте журнал Windows.");
         if (infCount > MaxRestorePackages)
             throw new IOException("В резервной копии неожиданно много INF-пакетов. Проверьте содержимое вручную.");
-        return result + Environment.NewLine + $"Проверка резервной копии: найдено INF-пакетов — {infCount}.";
+        var manifestResult = new DriverBackupManifestService().Create(target);
+        return result + Environment.NewLine + $"Проверка резервной копии: найдено INF-пакетов — {infCount}." +
+            Environment.NewLine + manifestResult;
     }
 
     public string InstallInf(string infPath)
@@ -66,6 +68,8 @@ public sealed class DriverMaintenanceService
     {
         var root = Path.GetFullPath(source);
         if (!Directory.Exists(root)) throw new ArgumentException("Папка резервной копии не существует.");
+        // New backups are verified byte-for-byte before any package reaches Driver Store.
+        var integrityResult = new DriverBackupManifestService().VerifyIfPresent(root);
         var infFiles = Directory.EnumerateFiles(root, "*.inf", SearchOption.AllDirectories)
             .Take(MaxRestorePackages + 1).ToArray();
         if (infFiles.Length == 0) throw new ArgumentException("В выбранной папке не найдены INF-пакеты.");
@@ -86,7 +90,7 @@ public sealed class DriverMaintenanceService
                 Environment.NewLine + string.Join(Environment.NewLine, invalid));
 
         var result = RunElevated("pnputil.exe", $"/add-driver \"{Path.Combine(root, "*.inf")}\" /subdirs /install");
-        return result + Environment.NewLine +
+        return integrityResult + Environment.NewLine + result + Environment.NewLine +
             $"Проверка перед восстановлением: все {infFiles.Length} INF-пакетов имеют действительную подпись каталога. Повторно проверьте состояние устройств.";
     }
 
