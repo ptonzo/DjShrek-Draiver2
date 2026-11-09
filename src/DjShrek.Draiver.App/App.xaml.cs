@@ -135,7 +135,8 @@ public partial class App : Application
                 driverRuParsed[0].AvailableVersion != "26.7.1" ||
                 driverRuParsed[0].Provider != "driver.ru" ||
                 driverRuParsed[0].SourceTrust != "IndependentCatalog_UnverifiedPackage" ||
-                driverRuParsed[0].PublishedDate != "2026-07-24")
+                driverRuParsed[0].PublishedDate != "2026-07-24" ||
+                !driverRuParsed[0].VersionComparison.Contains("новее", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Driver.ru search result parsing failed or promoted an unverified package.");
             checks.Add("PASS: direct Driver.ru route and Hardware ID result parser extract version/date without trusting the package.");
             var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
