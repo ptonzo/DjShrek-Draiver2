@@ -347,6 +347,9 @@ public partial class MainWindow
                         results.Add(new DriverUpdateCandidate
                         {
                             UpdateId = pack.PackageUri.AbsoluteUri,
+                            CatalogRecordId = pack.MachineType,
+                            CatalogReleaseDate = pack.ReleaseDate,
+                            OperatingSystemTarget = pack.OperatingSystem,
                             Title = "OEM-пакет Lenovo: " + pack.Model,
                             Manufacturer = "Lenovo",
                             Model = lenovoMachine.Model,
@@ -390,6 +393,10 @@ public partial class MainWindow
                     results.Add(new DriverUpdateCandidate
                     {
                         UpdateId = pack.PackageUri.AbsoluteUri,
+                        CatalogRecordId = pack.SystemId,
+                        CatalogReleaseVersion = pack.PackageVersion,
+                        CatalogReleaseDate = pack.ReleaseDate,
+                        OperatingSystemTarget = pack.OperatingSystem,
                         Title = "OEM-пакет Dell: " + pack.Model,
                         Manufacturer = "Dell",
                         Model = pack.Model,
@@ -432,6 +439,10 @@ public partial class MainWindow
                     results.Add(new DriverUpdateCandidate
                     {
                         UpdateId = pack.PackageUri.AbsoluteUri,
+                        CatalogRecordId = pack.SystemId,
+                        CatalogReleaseVersion = pack.PackageVersion,
+                        CatalogReleaseDate = pack.ReleaseDate,
+                        OperatingSystemTarget = pack.OperatingSystem,
                         Title = "OEM-пакет HP: " + pack.Model,
                         Manufacturer = "HP",
                         Model = pack.Model,
@@ -643,6 +654,10 @@ public partial class MainWindow
                         results.Add(new DriverUpdateCandidate
                         {
                             UpdateId = pack.PackageUri.AbsoluteUri,
+                            CatalogRecordId = pack.Model,
+                            CatalogReleaseVersion = pack.Version,
+                            CatalogReleaseDate = pack.ReleaseDate,
+                            OperatingSystemTarget = pack.OperatingSystem,
                             Title = "Драйвер GIGABYTE: " + pack.FileName,
                             Manufacturer = "GIGABYTE",
                             Model = pack.Model,
