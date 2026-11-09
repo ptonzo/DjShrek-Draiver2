@@ -539,6 +539,55 @@ public partial class MainWindow
                 AppendEvent("Каталог GIGABYTE пропущен: " + ex.GetType().Name);
             }
 
+            try
+            {
+                using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                var msiManufacturer = bios?.GetValue("BaseBoardManufacturer")?.ToString() ?? "";
+                var msiModel = bios?.GetValue("BaseBoardProduct")?.ToString()?.Trim();
+                if (msiManufacturer.Contains("MSI", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(msiModel))
+                {
+                    var msiPackages = await new MsiDriverCatalogService()
+                        .GetMotherboardDriversAsync(msiModel, Environment.OSVersion.Version.Build >= 22000,
+                            _driverSearchCts.Token);
+                    foreach (var pack in msiPackages)
+                    {
+                        results.Add(new DriverUpdateCandidate
+                        {
+                            UpdateId = pack.DownloadId,
+                            Title = "Драйвер MSI: " + pack.Name,
+                            Manufacturer = "MSI",
+                            Model = pack.Model,
+                            Provider = "MSI Support API",
+                            DeviceClass = "Motherboard Driver",
+                            MatchType = "OEM motherboard model",
+                            DeviceName = pack.Model,
+                            CurrentVersion = "Версия установленного драйвера сопоставляется отдельно",
+                            Compatibility = "Позиция каталога модели; соответствие отдельному Hardware ID ещё не подтверждено",
+                            AvailableVersion = pack.Version,
+                            VersionComparison = "Версия из каталога MSI; требуется анализ INF",
+                            DriverVersionDate = pack.ReleaseDate,
+                            PublishedDate = pack.ReleaseDate,
+                            Description = pack.Description,
+                            Evidence = "MSI product support panel API; модель из SMBIOS",
+                            SourceType = "OfficialManufacturer",
+                            SourceTrust = "OfficialDomain_UnverifiedPackage",
+                            SourceUrl = pack.CatalogUri.AbsoluteUri,
+                            PackageUrl = pack.PackageUri.AbsoluteUri,
+                            PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
+                            PackageStatus = string.IsNullOrWhiteSpace(pack.Sha256)
+                                ? "Пакет не загружен"
+                                : "Пакет не загружен; SHA-256 опубликован MSI: " + pack.Sha256
+                        });
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог MSI пропущен: " + ex.GetType().Name);
+            }
+
             var visibleResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
