@@ -85,6 +85,9 @@ public sealed class DriverInfPackageInspector
         {
             try
             {
+                var catalogAttributes = File.GetAttributes(catalogPath);
+                if ((catalogAttributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("CAT-файл является reparse point; проверка пакета остановлена.");
                 DriverMaintenanceService.ValidateSignedInfPackage(fullPath);
                 DriverMaintenanceService.ValidateCatalogFileSignature(catalogPath);
                 signature = "Valid";
