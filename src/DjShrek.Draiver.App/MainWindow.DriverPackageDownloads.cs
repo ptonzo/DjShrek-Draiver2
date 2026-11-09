@@ -231,6 +231,7 @@ public partial class MainWindow
 
         InstallSelectedVerifiedDriversButton.IsEnabled = false;
         var submitted = 0;
+        var verified = 0;
         var notSubmitted = 0;
         try
         {
@@ -238,13 +239,21 @@ public partial class MainWindow
             {
                 DriverUpdatesGrid.SelectedItem = candidate;
                 if (await InstallVerifiedDriverCandidateAsync(candidate))
+                {
                     submitted++;
+                    if (candidate.PackageStatus == "Установлен; версия подтверждена повторным сканированием")
+                        verified++;
+                }
                 else
+                {
                     notSubmitted++;
+                }
             }
 
             MessageBox.Show(this,
-                $"Передано Windows: {submitted}.{Environment.NewLine}Не установлено, отменено или заблокировано: {notSubmitted}.{Environment.NewLine}{Environment.NewLine}" +
+                $"Передано Windows: {submitted}.{Environment.NewLine}Подтверждено повторным сканированием: {verified}.{Environment.NewLine}" +
+                $"Передано, но пока не подтверждено: {submitted - verified}.{Environment.NewLine}" +
+                $"Не передано, отменено или заблокировано: {notSubmitted}.{Environment.NewLine}{Environment.NewLine}" +
                 "Факт передачи пакета Windows не подтверждает фактическую смену версии. Выполните повторное сканирование устройств.",
                 "Итог пакетного обновления", MessageBoxButton.OK,
                 notSubmitted == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
@@ -400,7 +409,7 @@ public partial class MainWindow
             MessageBox.Show(this, backupInfo + Environment.NewLine + Environment.NewLine + result +
                 Environment.NewLine + Environment.NewLine + historyMessage,
                 "Результат передачи драйвера Windows", MessageBoxButton.OK, MessageBoxImage.Information);
-            return historyStatus == "InstalledAndVerified";
+            return true;
         }
         catch (System.ComponentModel.Win32Exception)
         {
