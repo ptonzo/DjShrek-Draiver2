@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
 
@@ -14,12 +15,12 @@ namespace DjShrek.Draiver.App.Services;
 public sealed class OfficialDriverPackageDownloader
 {
     private const long MaxPackageBytes = 2L * 1024 * 1024 * 1024;
+    private const int MaxSupportPageBytes = 12 * 1024 * 1024;
     private static readonly string[] PackageExtensions = { ".exe", ".msi", ".zip", ".cab", ".7z" };
     private static readonly HttpClient Client = new(new HttpClientHandler
     {
         AutomaticDecompression = DecompressionMethods.All,
-        AllowAutoRedirect = true,
-        MaxAutomaticRedirections = 8
+        AllowAutoRedirect = false
     })
     {
         Timeout = TimeSpan.FromMinutes(15)
@@ -36,7 +37,7 @@ public sealed class OfficialDriverPackageDownloader
         if (!InternetDriverCatalogService.IsOfficialVendorUrl(supportPageUrl))
             throw new InvalidDataException("Источник не входит в список официальных сайтов производителей.");
 
-        using var response = await Client.GetAsync(supportPageUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await GetTrustedResponseAsync(new Uri(supportPageUrl), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         if (response.RequestMessage?.RequestUri is not { } finalPage || !IsTrustedVendorHost(finalPage.Host))
             throw new InvalidDataException("Страница перенаправила на посторонний домен. Загрузка заблокирована.");
@@ -46,7 +47,7 @@ public sealed class OfficialDriverPackageDownloader
             !mediaType.Contains("xhtml", StringComparison.OrdinalIgnoreCase))
             return IsPackageUri(finalPage) ? new[] { finalPage } : Array.Empty<Uri>();
 
-        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var html = await ReadBoundedTextAsync(response.Content, MaxSupportPageBytes, cancellationToken);
         var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (Match match in Regex.Matches(html, @"(?:href|data-download-url)\s*=\s*[""']([^""']+)[""']", RegexOptions.IgnoreCase))
         {
@@ -66,7 +67,7 @@ public sealed class OfficialDriverPackageDownloader
         if (packageUri.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(packageUri.Host) || !IsPackageUri(packageUri))
             throw new InvalidDataException("Ссылка на пакет не прошла проверку домена, HTTPS и расширения.");
 
-        using var response = await Client.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await GetTrustedResponseAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
         var finalUri = response.RequestMessage?.RequestUri;
         if (finalUri is null || finalUri.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(finalUri.Host))
@@ -85,7 +86,7 @@ public sealed class OfficialDriverPackageDownloader
         if (!PackageExtensions.Contains(Path.GetExtension(target), StringComparer.OrdinalIgnoreCase))
             throw new InvalidDataException("Выбранный путь имеет неподдерживаемое расширение.");
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-        var temporary = target + ".download";
+        var temporary = target + "." + Guid.NewGuid().ToString("N") + ".download";
         try
         {
             await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -112,6 +113,52 @@ public sealed class OfficialDriverPackageDownloader
             if (File.Exists(temporary)) File.Delete(temporary);
             throw;
         }
+    }
+
+    private static async Task<HttpResponseMessage> GetTrustedResponseAsync(
+        Uri startUri, HttpCompletionOption completionOption, CancellationToken cancellationToken)
+    {
+        var current = startUri;
+        for (var redirect = 0; redirect <= 8; redirect++)
+        {
+            if (current.Scheme != Uri.UriSchemeHttps || !IsTrustedVendorHost(current.Host))
+                throw new InvalidDataException("Переход на адрес вне списка официальных доменов заблокирован.");
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, current);
+            var response = await Client.SendAsync(request, completionOption, cancellationToken);
+            var isRedirect = response.StatusCode is HttpStatusCode.MovedPermanently
+                or HttpStatusCode.Redirect or HttpStatusCode.RedirectMethod
+                or HttpStatusCode.TemporaryRedirect or HttpStatusCode.PermanentRedirect;
+            if (!isRedirect) return response;
+
+            var location = response.Headers.Location;
+            response.Dispose();
+            if (location is null)
+                throw new InvalidDataException("Сервер вернул перенаправление без адреса.");
+            current = location.IsAbsoluteUri ? location : new Uri(current, location);
+        }
+
+        throw new InvalidDataException("Превышено допустимое число перенаправлений производителя.");
+    }
+
+    private static async Task<string> ReadBoundedTextAsync(
+        HttpContent content, int maxBytes, CancellationToken cancellationToken)
+    {
+        if (content.Headers.ContentLength is > 0 and var length && length > maxBytes)
+            throw new InvalidDataException("Страница производителя слишком большая для безопасного анализа.");
+
+        await using var input = await content.ReadAsStreamAsync(cancellationToken);
+        using var output = new MemoryStream();
+        var buffer = new byte[64 * 1024];
+        int read;
+        while ((read = await input.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            if (output.Length + read > maxBytes)
+                throw new InvalidDataException("Чтение страницы остановлено: превышен лимит 12 МБ.");
+            await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+
+        return Encoding.UTF8.GetString(output.ToArray());
     }
 
     private static bool IsPackageUri(Uri uri) =>
