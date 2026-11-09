@@ -93,7 +93,7 @@ public sealed class DriverBackupManifestService
             var segments = normalizedPath.Split('/');
             var relative = normalizedPath.Replace('/', Path.DirectorySeparatorChar);
             if (Path.IsPathRooted(relative) || normalizedPath.Contains(':') ||
-                normalizedPath.Contains('\\0') ||
+                normalizedPath.Contains('\0') ||
                 segments.Any(segment => segment.Length == 0 || segment == "." || segment == ".."))
                 throw new InvalidDataException("Манифест содержит небезопасный путь за пределы папки резервной копии.");
 
