@@ -384,7 +384,7 @@ public partial class MainWindow
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DjShrek-Draiver2", "DriverBackups",
                     DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"));
-                backupInfo = await _maintenance.ExportDriverPackageAsync(device.InfName, backupPath);
+                backupInfo = await _maintenance.ExportDriverPackageAsync(device.InfName!, backupPath);
             }
             else
             {
@@ -429,14 +429,14 @@ public partial class MainWindow
             await Task.Run(() => DriverMaintenanceService.CreateSystemRestorePoint());
 
             StatusText.Text = "Передача проверенного INF в Windows и повторная проверка устройства...";
-            IEnumerable<DeviceInfo>? refreshedDevices = null;
+            IReadOnlyList<DeviceInfo>? refreshedDevices = null;
             var workflow = await new DriverInstallationWorkflowService().InstallAndVerifyAsync(
                 plan,
                 packageRoot,
                 userConfirmed: true,
                 previousVersion: device.DriverVersion,
                 refreshDeviceInventory: async cancellationToken =>
-                    refreshedDevices = await _inventory.ScanAsync(),
+                    refreshedDevices = (await _inventory.ScanAsync()).ToList(),
                 executionTimeout: TimeSpan.FromMinutes(3));
             var result = workflow.Execution.Summary +
                 (string.IsNullOrWhiteSpace(workflow.Execution.StandardOutput) ? "" :
