@@ -442,6 +442,51 @@ public partial class MainWindow
 
             try
             {
+                var amdDevices = _devices.Where(device =>
+                    device.HardwareIds.Any(id =>
+                        id.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase) ||
+                        id.Contains("VEN_1022", StringComparison.OrdinalIgnoreCase)) ||
+                    device.Manufacturer.Contains("AMD", StringComparison.OrdinalIgnoreCase) ||
+                    device.DriverProvider.Contains("AMD", StringComparison.OrdinalIgnoreCase)).ToArray();
+
+                foreach (var device in amdDevices)
+                {
+                    var supportUri = new Uri("https://www.amd.com/en/support/download/drivers.html");
+                    var hardwareId = device.HardwareIds.FirstOrDefault(id =>
+                        id.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase) ||
+                        id.Contains("VEN_1022", StringComparison.OrdinalIgnoreCase)) ?? "";
+                    results.Add(new DriverUpdateCandidate
+                    {
+                        UpdateId = "amd-support:" + (string.IsNullOrWhiteSpace(device.InstanceId) ? hardwareId : device.InstanceId),
+                        Title = "AMD Drivers and Support — " + device.Name,
+                        Manufacturer = "AMD",
+                        Model = device.Name,
+                        Provider = "AMD Drivers and Support",
+                        DeviceClass = device.Class,
+                        MatchType = "AMD vendor Hardware ID",
+                        DeviceName = device.Name,
+                        HardwareId = hardwareId,
+                        InstanceId = device.InstanceId,
+                        CurrentVersion = device.DriverVersion,
+                        Compatibility = "Определён производитель AMD; конкретный продукт и совместимый пакет должны быть выбраны в официальном каталоге AMD",
+                        AvailableVersion = "Не получена",
+                        VersionComparison = "Сравнение невозможно: машинно-читаемый результат каталога для этой модели не получен",
+                        Description = "Официальная страница выбора драйверов AMD. Не является найденным обновлением и не содержит автоматически подтверждённый пакет.",
+                        Evidence = "Hardware ID VEN_1002/VEN_1022 или производитель/поставщик AMD",
+                        SourceType = "OfficialManufacturer",
+                        SourceTrust = "OfficialSupportPortal",
+                        SourceUrl = supportUri.AbsoluteUri,
+                        PackageStatus = "Требуется выбор точной модели на сайте AMD; пакет не загружен"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог AMD пропущен: " + ex.GetType().Name);
+            }
+
+            try
+            {
                 var nvidiaDevices = _devices.Where(device =>
                     device.HardwareIds.Any(id => id.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase)) ||
                     device.Manufacturer.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ||
