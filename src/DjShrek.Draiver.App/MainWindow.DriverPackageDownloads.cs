@@ -496,7 +496,7 @@ public partial class MainWindow
                 "Проверка пакета", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
 
-        candidate.PackageIntegrityStatus = "Проверка выполняется";
+        candidate.PackageIntegrityStatus = "Локальный контроль изменений выполняется";
         candidate.PackagePreflightStatus = "Ожидает проверки";
         candidate.VerifiedInfPath = "";
         candidate.VerifiedInfVersion = "";
@@ -516,11 +516,11 @@ public partial class MainWindow
             var integrity = await _packageIntegrity.VerifyAsync(extractedFolder, manifest);
             if (!integrity.IsValid)
             {
-                candidate.PackageIntegrityStatus = "Ошибка проверки: " + integrity.Message;
+                candidate.PackageIntegrityStatus = "Контроль изменений не пройден: " + integrity.Message;
                 throw new InvalidDataException("Проверка целостности распакованного пакета не пройдена: " + integrity.Message);
             }
             candidate.PackageIntegrityStatus =
-                $"Проверен: {integrity.VerifiedFileCount} файлов, {integrity.VerifiedBytes:N0} байт";
+                $"Манифест совпал: {integrity.VerifiedFileCount} файлов, {integrity.VerifiedBytes:N0} байт (не проверка подлинности)";
 
             await _operationJournal.AppendAsync(
                 "DriverPackageIntegrityVerified", "Verified", device.InstanceId, candidate.HardwareId,
@@ -583,7 +583,7 @@ public partial class MainWindow
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException or UnauthorizedAccessException or InvalidOperationException)
         {
-            if (candidate.PackageIntegrityStatus == "Проверка выполняется")
+            if (candidate.PackageIntegrityStatus == "Локальный контроль изменений выполняется")
                 candidate.PackageIntegrityStatus = "Не завершена";
             if (candidate.PackagePreflightStatus == "Ожидает проверки")
                 candidate.PackagePreflightStatus = "Не выполнена";
