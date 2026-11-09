@@ -12,6 +12,7 @@ public sealed class DriverCandidateAssessmentService
     {
         ArgumentNullException.ThrowIfNull(candidate);
         var reasons = new List<string>();
+        ClassifyDeviceEvidence(candidate, device);
 
         if (device is null)
         {
@@ -68,6 +69,62 @@ public sealed class DriverCandidateAssessmentService
             candidate.VersionAssessment.StartsWith("Доступная версия", StringComparison.Ordinal))
             candidate.InstallEligibility = "Требуется отдельное подтверждение и проверка установочного сценария";
     }
+
+    private static void ClassifyDeviceEvidence(DriverUpdateCandidate candidate, DeviceInfo? device)
+    {
+        if (candidate.CandidateScope is "ModelPack" or "SupportPortal")
+            return;
+
+        if (device is null || string.IsNullOrWhiteSpace(candidate.HardwareId))
+        {
+            candidate.MatchType = "Unverified catalog/search result";
+            candidate.CandidateScope = "SearchDiscovery";
+            candidate.EvidenceLevel = "Связь с конкретным PnP-устройством не подтверждена";
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(candidate.InstanceId) &&
+            !string.Equals(candidate.InstanceId, device.InstanceId, StringComparison.OrdinalIgnoreCase))
+        {
+            candidate.MatchType = "Unverified catalog/search result";
+            candidate.CandidateScope = "SearchDiscovery";
+            candidate.EvidenceLevel = "InstanceId результата не совпадает с выбранным устройством";
+            return;
+        }
+
+        var candidateIds = candidate.HardwareId
+            .Split(new[] { ',', ';', '\\r', '\\n' },
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(NormalizeHardwareId)
+            .Where(x => x.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var exact = (device.HardwareIds ?? Array.Empty<string>())
+            .Select(NormalizeHardwareId).Any(candidateIds.Contains);
+        if (exact)
+        {
+            candidate.MatchType = "Hardware ID";
+            candidate.CandidateScope = "DeviceExact";
+            candidate.EvidenceLevel = "Идентификатор результата присутствует среди Hardware ID устройства";
+            return;
+        }
+
+        var compatible = (device.CompatibleIds ?? Array.Empty<string>())
+            .Select(NormalizeHardwareId).Any(candidateIds.Contains);
+        if (compatible)
+        {
+            candidate.MatchType = "Compatible ID";
+            candidate.CandidateScope = "DeviceCompatible";
+            candidate.EvidenceLevel = "Идентификатор результата присутствует только среди Compatible ID";
+            return;
+        }
+
+        candidate.MatchType = "Unverified catalog/search result";
+        candidate.CandidateScope = "SearchDiscovery";
+        candidate.EvidenceLevel = "Идентификаторы результата не найдены среди ID выбранного устройства";
+    }
+
+    private static string NormalizeHardwareId(string value) =>
+        (value ?? string.Empty).Trim().Trim('"').ToUpperInvariant();
 
     public static string AssessOperatingSystem(string target, string current)
     {
