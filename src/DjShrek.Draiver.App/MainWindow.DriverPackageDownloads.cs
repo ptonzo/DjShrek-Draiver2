@@ -342,8 +342,17 @@ public partial class MainWindow
             }
             else
             {
-                backupInfo = "Текущий пакет не имеет опубликованного имени OEM INF для точечного экспорта. Перед установкой будет создана точка восстановления Windows.";
+                throw new InvalidOperationException(
+                    "У текущего драйвера нет опубликованного OEM INF, поэтому программа не может создать и проверить точечную резервную копию пакета. " +
+                    "Установка заблокирована: одной точки восстановления Windows недостаточно для гарантированного отката конкретного драйвера.");
             }
+
+            // Do not continue if the targeted backup did not produce a verifiable manifest.
+            var backupManifest = Path.Combine(backupPath, DriverBackupManifestService.ManifestFileName);
+            if (string.IsNullOrWhiteSpace(backupPath) || !Directory.Exists(backupPath) || !File.Exists(backupManifest))
+                throw new InvalidDataException("Резервная копия текущего драйвера не подтверждена манифестом. Установка заблокирована.");
+            var backupVerification = new DriverBackupManifestService().VerifyIfPresent(backupPath);
+            backupInfo += Environment.NewLine + backupVerification;
 
             StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
             var result = await _maintenance.InstallInfAsync(inspection.InfPath);
