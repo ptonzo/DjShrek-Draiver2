@@ -66,6 +66,10 @@ public partial class MainWindow
                 "Загрузка завершена", MessageBoxButton.OK, MessageBoxImage.Information);
             StatusText.Text = "Пакет драйвера загружен; требуется проверка INF/CAT.";
             AppendEvent($"Загружен пакет драйвера из {new Uri(downloaded.FinalUrl).Host}: {Path.GetFileName(downloaded.FilePath)}");
+            var packageExtension = Path.GetExtension(downloaded.FilePath);
+            if (packageExtension.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
+                packageExtension.Equals(".cab", StringComparison.OrdinalIgnoreCase))
+                await ExtractAndInspectDownloadedPackageAsync(candidate, downloaded.FilePath);
         }
         catch (OperationCanceledException)
         {
@@ -77,6 +81,40 @@ public partial class MainWindow
             MessageBox.Show(this, ex.Message, "Ошибка загрузки драйвера",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private async Task ExtractAndInspectDownloadedPackageAsync(DriverUpdateCandidate candidate, string packagePath)
+    {
+        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
+        if (device is null)
+        {
+            MessageBox.Show(this,
+                "Пакет сохранён, но найденный Hardware ID не удалось однозначно сопоставить с текущим устройством. Автоматическая проверка INF не выполнялась.",
+                "Проверка совместимости", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (MessageBox.Show(this,
+                "Распаковать ZIP/CAB в отдельную папку и проверить INF-файлы на соответствие выбранному устройству? Установка драйвера выполняться не будет.",
+                "Проверка пакета", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        StatusText.Text = "Безопасная распаковка пакета и поиск совместимых INF...";
+        var extractedFolder = await _packageExtraction.ExtractAsync(packagePath);
+        var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
+        var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
+        var summary = string.Join(Environment.NewLine, candidates.Take(8).Select(x => "• " + x.DisplayText));
+        if (string.IsNullOrWhiteSpace(summary)) summary = "Подходящие INF-файлы не найдены.";
+        MessageBox.Show(this,
+            $"Устройство: {device.Name}{Environment.NewLine}Распаковано в: {extractedFolder}{Environment.NewLine}" +
+            $"Найдено INF-кандидатов: {candidates.Count}{Environment.NewLine}" +
+            $"Прошли предварительную проверку: {installable.Length}{Environment.NewLine}{Environment.NewLine}{summary}" +
+            $"{Environment.NewLine}{Environment.NewLine}Установка не запускалась. Для установки используйте отдельную проверку INF и явное подтверждение.",
+            "Результат проверки пакета", MessageBoxButton.OK,
+            installable.Length > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        StatusText.Text = $"Проверка завершена: INF-кандидатов {candidates.Count}, прошли предварительные проверки {installable.Length}.";
+        AppendEvent($"Проверка пакета {Path.GetFileName(packagePath)}: INF {candidates.Count}, допустимых кандидатов {installable.Length}.");
+        Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", extractedFolder) { UseShellExecute = true });
     }
 
     private Uri? SelectPackageLink(IReadOnlyList<Uri> links)
