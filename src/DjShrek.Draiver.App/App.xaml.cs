@@ -119,7 +119,7 @@ public partial class App : Application
                 SourceTrust = "IndependentCatalog_UnverifiedPackage"
             };
             if (sourceMetadata.SourceType != "IndependentCatalog" ||
-                sourceMetadata.SourceTrust.Contains("Verified", StringComparison.OrdinalIgnoreCase))
+                sourceMetadata.SourceTrust != "IndependentCatalog_UnverifiedPackage")
                 throw new InvalidOperationException("Independent source provenance was incorrectly treated as a verified package.");
             checks.Add("PASS: Driver.ru/DriverGuide/FlyDrivers source classification and cloud-download origin policy are covered.");
             var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
