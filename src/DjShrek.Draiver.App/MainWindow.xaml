@@ -374,6 +374,10 @@
                                                 <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
                                                 <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
                                                 <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
+                                                <DataGridTextColumn Header="Шина" Binding="{Binding BusType}" Width="*"/>
+                                                <DataGridTextColumn Header="Vendor ID" Binding="{Binding VendorId}" Width="*"/>
+                                                <DataGridTextColumn Header="Device ID" Binding="{Binding DeviceId}" Width="*"/>
+                                                <DataGridTextColumn Header="Subsystem ID" Binding="{Binding SubsystemId}" Width="*"/>
                                                 <DataGridTextColumn Header="Hardware ID" Binding="{Binding HardwareId}" Width="2*"/>
                                                 <DataGridTextColumn Header="Пакет" Binding="{Binding PackageStatus}" Width="1.2*"/>
                                                 <DataGridTextColumn Header="SHA-256" Binding="{Binding PackageSha256}" Width="2*"/>
