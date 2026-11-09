@@ -39,7 +39,9 @@ public sealed class DriverCatalogCandidateRankingService
         candidate.CandidateScope = isPortal ? "SupportPortal" :
             isModelPack ? "ModelPack" :
             candidate.MatchType.Equals("Hardware ID", StringComparison.OrdinalIgnoreCase)
-                ? "DeviceExact" : "DeviceCompatible";
+                ? "DeviceExact" :
+            candidate.MatchType.Equals("Compatible ID", StringComparison.OrdinalIgnoreCase)
+                ? "DeviceCompatible" : "SearchDiscovery";
 
         candidate.EvidenceLevel = candidate.CandidateScope switch
         {
@@ -47,6 +49,7 @@ public sealed class DriverCatalogCandidateRankingService
             "DeviceCompatible" => "Совпадение Compatible ID или поисковая зацепка; INF не подтверждён",
             "ModelPack" => "Пакет модели OEM; соответствие отдельному устройству не подтверждено",
             "SupportPortal" => "Официальный портал; конкретный пакет не получен",
+            "SearchDiscovery" => "Найден результат каталога/поиска; связь с устройством не доказана",
             _ => "Недостаточно сведений"
         };
 
@@ -69,7 +72,7 @@ public sealed class DriverCatalogCandidateRankingService
     private static string BuildIdentityKey(DriverUpdateCandidate candidate)
     {
         var scope = candidate.CandidateScope;
-        var device = scope == "ModelPack" || scope == "SupportPortal"
+        var device = scope == "ModelPack" || scope == "SupportPortal" || scope == "SearchDiscovery"
             ? Normalize(candidate.Manufacturer + "|" + candidate.Model)
             : Normalize(!string.IsNullOrWhiteSpace(candidate.InstanceId)
                 ? candidate.InstanceId : candidate.HardwareId + "|" + candidate.DeviceName);
@@ -87,6 +90,7 @@ public sealed class DriverCatalogCandidateRankingService
             "DeviceCompatible" => 300,
             "ModelPack" => 200,
             "SupportPortal" => 50,
+            "SearchDiscovery" => 100,
             _ => 0
         };
         if (candidate.SourceType == "OfficialManufacturer") score += 100;
