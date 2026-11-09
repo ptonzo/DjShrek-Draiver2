@@ -31,6 +31,9 @@ public sealed class NvidiaDriverCatalogService
             detectedProductName.Any(char.IsControl))
             return Array.Empty<NvidiaDriverCatalogItem>();
 
+        // NVIDIA exposes a hierarchy: TypeID=2 contains product series (PSID),
+        // TypeID=3 contains products (PFID) whose ParentID points to a series.
+        var seriesEntries = await ReadLookupAsync(2, cancellationToken);
         var products = await ReadLookupAsync(3, cancellationToken);
         var osEntries = await ReadLookupAsync(4, cancellationToken);
         var product = products
@@ -41,13 +44,15 @@ public sealed class NvidiaDriverCatalogService
             .Select(x => x.Entry)
             .FirstOrDefault();
         if (product is null || !int.TryParse(product.Value, out var productId) ||
-            !int.TryParse(product.ParentId, out var seriesId))
+            !int.TryParse(product.ParentId, out var seriesId) ||
+            !seriesEntries.Any(x => x.Value == product.ParentId))
             return Array.Empty<NvidiaDriverCatalogItem>();
 
         var osName = windows11 ? "Windows 11" : "Windows 10";
+        var normalizedOsName = Normalize(osName);
         var os = osEntries.FirstOrDefault(x =>
-            Normalize(x.Name).Equals(Normalize(osName), StringComparison.Ordinal) ||
-            Normalize(x.Name).Equals(Normalize(osName + " 64-bit"), StringComparison.Ordinal));
+            Normalize(x.Name).Equals(normalizedOsName, StringComparison.Ordinal) ||
+            Normalize(x.Name).Equals(normalizedOsName + " 64 bit", StringComparison.Ordinal));
         if (os is null || !int.TryParse(os.Value, out var osId))
             return Array.Empty<NvidiaDriverCatalogItem>();
 
@@ -121,9 +126,15 @@ public sealed class NvidiaDriverCatalogService
         return Encoding.UTF8.GetString(output.ToArray());
     }
 
-    private static string Normalize(string value) =>
-        string.Join(" ", Regex.Replace(value, @"[^a-zA-Z0-9]+", " ")
+    private static string Normalize(string value)
+    {
+        var normalized = string.Join(" ", Regex.Replace(value, @"[^a-zA-Z0-9]+", " ")
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+        if (normalized.StartsWith("nvidia ", StringComparison.Ordinal))
+            normalized = normalized[7..];
+        normalized = Regex.Replace(normalized, @"\s+with max q design$", "", RegexOptions.IgnoreCase);
+        return normalized;
+    }
 
     private static string ExtractVersion(string value)
     {
