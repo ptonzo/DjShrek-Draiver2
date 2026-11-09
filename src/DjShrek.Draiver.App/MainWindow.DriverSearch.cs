@@ -7,6 +7,11 @@ namespace DjShrek.Draiver.App;
 
 public partial class MainWindow
 {
+    internal static bool IsCandidateOpenable(DriverUpdateCandidate? candidate) =>
+        candidate is not null &&
+        !string.Equals(candidate.Compatibility, DriverUpdateCandidate.UnmatchedDeviceNotice, StringComparison.Ordinal) &&
+        InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
+
     private bool _driverSearchRunning;
     private CancellationTokenSource? _driverSearchCts;
     private readonly DriverUpdateIgnoreService _driverIgnore = new();
@@ -153,11 +158,8 @@ public partial class MainWindow
 
     private void DriverUpdatesGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        var hasOfficialPage =
-            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate &&
-            Uri.TryCreate(candidate.SourceUrl, UriKind.Absolute, out var uri) &&
-            uri.Scheme == Uri.UriSchemeHttps &&
-            InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl);
+        var hasOfficialPage = DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate candidate &&
+            IsCandidateOpenable(candidate);
         InstallSelectedDriverButton.IsEnabled = hasOfficialPage;
         DownloadOfficialDriverPackageButton.IsEnabled = hasOfficialPage;
     }
@@ -165,7 +167,7 @@ public partial class MainWindow
     private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
     {
         if (DriverUpdatesGrid.SelectedItem is not DriverUpdateCandidate candidate ||
-            !InternetDriverCatalogService.IsOfficialVendorUrl(candidate.SourceUrl))
+            !IsCandidateOpenable(candidate))
         {
             MessageBox.Show(this, "Выберите подтверждённую HTTPS-страницу производителя.", "Страница драйвера",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
