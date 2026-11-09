@@ -542,6 +542,8 @@ public partial class MainWindow
                 return;
             }
 
+            candidate.VerifiedPackageRoot = extractedFolder;
+            candidate.VerifiedPackageManifest = manifest;
             candidate.PackagePreflightStatus = "Пройдено: точный Hardware ID найден";
             await _operationJournal.AppendAsync(
                 "DriverPackagePreflightPassed", "ExactHardwareIdMatch", device.InstanceId, candidate.HardwareId,
@@ -563,6 +565,8 @@ public partial class MainWindow
         {
             candidate.VerifiedInfPath = "";
             candidate.VerifiedInfVersion = "";
+            candidate.VerifiedPackageRoot = "";
+            candidate.VerifiedPackageManifest = null;
             candidate.PackageStatus = "INF найден, но новое совместимое обновление не подтверждено";
             InstallVerifiedDriverButton.IsEnabled = false;
         }
@@ -589,6 +593,8 @@ public partial class MainWindow
                 candidate.PackagePreflightStatus = "Не выполнена";
             candidate.VerifiedInfPath = "";
             candidate.VerifiedInfVersion = "";
+            candidate.VerifiedPackageRoot = "";
+            candidate.VerifiedPackageManifest = null;
             InstallVerifiedDriverButton.IsEnabled = false;
             DriverUpdatesGrid.Items.Refresh();
             StatusText.Text = "Пакет сохранён, но распаковка или проверка INF не завершилась.";
