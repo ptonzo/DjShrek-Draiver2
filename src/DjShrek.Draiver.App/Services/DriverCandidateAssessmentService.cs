@@ -62,12 +62,9 @@ public sealed class DriverCandidateAssessmentService
             reasons.Add("Ссылка на пакет не является допустимым HTTPS-адресом.");
 
         candidate.RejectionReasons = string.Join(" ", reasons.Distinct(StringComparer.Ordinal));
-        candidate.InstallEligibility = "Заблокирована до локальной проверки INF/CAT, Hardware ID и подписи";
-        if (candidate.PackagePreflightStatus.Contains("готов", StringComparison.OrdinalIgnoreCase) &&
-            candidate.PackageIntegrityStatus.Contains("совпадает", StringComparison.OrdinalIgnoreCase) &&
-            candidate.CandidateScope == "DeviceExact" &&
-            candidate.VersionAssessment.StartsWith("Доступная версия", StringComparison.Ordinal))
-            candidate.InstallEligibility = "Требуется отдельное подтверждение и проверка установочного сценария";
+        // Catalog-search assessments are always non-authoritative. Do not reuse cached
+        // preflight strings here: the package URL or selected device may have changed.
+        candidate.InstallEligibility = "Заблокирована: требуется актуальная локальная проверка выбранного пакета INF/CAT и устройства";
     }
 
     private static void ClassifyDeviceEvidence(DriverUpdateCandidate candidate, DeviceInfo? device)
