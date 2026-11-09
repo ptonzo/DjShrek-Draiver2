@@ -205,7 +205,11 @@ public partial class MainWindow
                             $"{integrity}\n\nПеред установкой Windows создаст точку восстановления. Продолжить?",
                             "Подтверждение отката драйвера",
                             MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    {
+                        close.IsEnabled = true;
+                        rollback.IsEnabled = true;
                         return;
+                    }
 
                     StatusText.Text = "Создание точки восстановления и возврат предыдущего драйвера...";
                     var installResult = await _maintenance.InstallInfAsync(package.InfPath);
@@ -237,6 +241,11 @@ public partial class MainWindow
                         verified ? "Откат подтверждён" : "Откат требует проверки",
                         MessageBoxButton.OK, verified ? MessageBoxImage.Information : MessageBoxImage.Warning);
                     if (verified) dialog.DialogResult = true;
+                    else
+                    {
+                        close.IsEnabled = true;
+                        rollback.IsEnabled = false;
+                    }
                     StatusText.Text = verified
                         ? "Предыдущая версия драйвера восстановлена и подтверждена."
                         : "Команда отката выполнена, но результат не подтверждён.";
