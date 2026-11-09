@@ -42,7 +42,18 @@ public static class DriverVersionComparisonService
             return new(DriverVersionRelation.Unknown, candidateText, installedText,
                 "Не удалось распознать установленную версию — сравнение невозможно.");
 
-        var result = candidateVersion.CompareTo(installedVersion);
+        // Windows driver versions may be written with three or four components.
+        // Treat omitted trailing components as zero (e.g. 1.2.3 == 1.2.3.0).
+        var candidateParts = new[] { candidateVersion.Major, candidateVersion.Minor,
+            Math.Max(0, candidateVersion.Build), Math.Max(0, candidateVersion.Revision) };
+        var installedParts = new[] { installedVersion.Major, installedVersion.Minor,
+            Math.Max(0, installedVersion.Build), Math.Max(0, installedVersion.Revision) };
+        var result = 0;
+        for (var index = 0; index < candidateParts.Length; index++)
+        {
+            result = candidateParts[index].CompareTo(installedParts[index]);
+            if (result != 0) break;
+        }
         return result switch
         {
             > 0 => new(DriverVersionRelation.Newer, candidateText, installedText,
