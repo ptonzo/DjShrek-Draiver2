@@ -276,7 +276,7 @@ public partial class MainWindow
             return false;
         }
 
-        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
+        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId, candidate.InstanceId);
         if (device is null)
         {
             candidate.PackageStatus = "Устройство не сопоставлено; установка заблокирована";
@@ -365,7 +365,7 @@ public partial class MainWindow
                 StatusText.Text = "Повторное сканирование устройства для проверки установленной версии...";
                 var refreshedDevices = await _inventory.ScanAsync();
                 ApplyDevices(refreshedDevices);
-                var refreshedDevice = DriverCompatibilityMatcher.FindExactMatch(refreshedDevices, candidate.HardwareId);
+                var refreshedDevice = DriverCompatibilityMatcher.FindExactMatch(refreshedDevices, candidate.HardwareId, candidate.InstanceId);
                 if (refreshedDevice is not null)
                 {
                     var installedComparison = DriverVersionComparisonService.Compare(
@@ -400,7 +400,7 @@ public partial class MainWindow
                 _driverHistory.Append(new DriverUpdateHistoryEntry(
                     DateTime.UtcNow, device.Name, candidate.HardwareId, device.DriverVersion,
                     inspection.DriverVersion, candidate.Provider, candidate.PackageSha256,
-                    inspection.InfPath, backupPath, historyStatus, historyMessage));
+                    inspection.InfPath, backupPath, historyStatus, historyMessage, device.InstanceId));
             }
             catch (Exception historyError)
             {
