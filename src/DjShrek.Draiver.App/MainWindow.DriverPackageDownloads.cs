@@ -47,7 +47,7 @@ public partial class MainWindow
             {
                 Title = "Сохранить пакет драйвера из выбранного источника",
                 FileName = Path.GetFileName(selected.LocalPath),
-                Filter = "Пакеты драйверов (*.exe;*.msi;*.zip;*.cab;*.7z;*.rar)|*.exe;*.msi;*.zip;*.cab;*.7z;*.rar|Все файлы (*.*)|*.*",
+                Filter = "Пакеты драйверов (*.exe;*.msi;*.zip;*.cab)|*.exe;*.msi;*.zip;*.cab|Все файлы (*.*)|*.*",
                 AddExtension = false,
                 OverwritePrompt = true
             };
