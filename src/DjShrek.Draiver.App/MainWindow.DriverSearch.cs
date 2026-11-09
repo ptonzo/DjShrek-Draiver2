@@ -442,6 +442,39 @@ public partial class MainWindow
 
             try
             {
+                var acerIdentity = AcerSupportIdentityService.GetCurrentMachineIdentity();
+                if (acerIdentity.IsAcer && !string.IsNullOrWhiteSpace(acerIdentity.Model))
+                {
+                    results.Add(new DriverUpdateCandidate
+                    {
+                        UpdateId = "acer-support:" + acerIdentity.Model,
+                        Title = "Поддержка Acer: " + acerIdentity.Model,
+                        Manufacturer = "Acer",
+                        Model = acerIdentity.Model,
+                        Provider = "Acer Drivers and Manuals",
+                        DeviceClass = "OEM Support",
+                        MatchType = "OEM model identity",
+                        DeviceName = acerIdentity.Model,
+                        CurrentVersion = "Не применимо",
+                        Compatibility = "Официальная страница Acer; автоматический список пакетов для этой модели пока не получен",
+                        AvailableVersion = "Требуется выбор модели на сайте Acer",
+                        VersionComparison = "Версия драйвера не получена",
+                        Description = acerIdentity.IdentityEvidence + ". Acer требует идентификацию по серийному номеру, SNID или Product Number; приложение не отправляет серийный номер автоматически.",
+                        Evidence = "SMBIOS SystemManufacturer/SystemProductName/SystemSKU/BaseBoardProduct",
+                        SourceType = "OfficialManufacturer",
+                        SourceTrust = "OfficialSupportPortal",
+                        SourceUrl = acerIdentity.SupportUri.AbsoluteUri,
+                        PackageStatus = "Переход на страницу поддержки; пакет не загружен"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendEvent("Идентификация модели Acer пропущена: " + ex.GetType().Name);
+            }
+
+            try
+            {
                 using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
                 var asusManufacturer = bios?.GetValue("SystemManufacturer")?.ToString() ?? "";
                 var asusModel = bios?.GetValue("SystemSKU")?.ToString()?.Trim();
