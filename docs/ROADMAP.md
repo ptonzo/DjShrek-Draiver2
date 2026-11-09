@@ -20,7 +20,7 @@
 
 ## Этап 2 — база производителей и каталогов
 
-- [x] Единый реестр официальных источников NVIDIA, AMD, Intel, Realtek, Qualcomm, MediaTek, Broadcom и основных OEM.
+- [x] Единый реестр официальных источников NVIDIA, AMD, Intel, Realtek, Qualcomm, MediaTek, Broadcom, основных OEM и ряда периферийных/USB-производителей (Logitech, Chicony, SteelSeries, Razer, Corsair, FTDI, Silicon Labs, Prolific, WCH, Arduino и др.).
 - [x] Определение приоритетного домена по Hardware ID (PCI/USB/HDAUDIO) с резервным определением по производителю устройства/драйвера.
 - [x] Поиск по Hardware ID ограничивается доменом определённого производителя и отдельно помеченными независимыми каталогами.
 - [x] NVIDIA: подключён официальный lookup к обнаруженным GPU; нечеткие названия не принимаются, выдаются только найденные официальные страницы.
