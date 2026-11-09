@@ -145,7 +145,7 @@ public sealed class DriverInstallExecutionService
                 current = Path.Combine(current, parts[i]);
                 FileAttributes attributes = i == parts.Length - 1
                     ? File.GetAttributes(current)
-                    : Directory.GetAttributes(current);
+                    : File.GetAttributes(current);
                 if ((attributes & FileAttributes.ReparsePoint) != 0)
                     return true;
             }
