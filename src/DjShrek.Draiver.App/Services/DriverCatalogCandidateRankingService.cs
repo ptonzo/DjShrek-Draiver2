@@ -74,10 +74,18 @@ public sealed class DriverCatalogCandidateRankingService
     private static string BuildIdentityKey(DriverUpdateCandidate candidate)
     {
         var scope = candidate.CandidateScope;
-        var device = scope == "ModelPack" || scope == "SupportPortal" || scope == "SearchDiscovery"
-            ? Normalize(candidate.Manufacturer + "|" + candidate.Model)
-            : Normalize(!string.IsNullOrWhiteSpace(candidate.InstanceId)
-                ? candidate.InstanceId : candidate.HardwareId + "|" + candidate.DeviceName);
+        var device = scope switch
+        {
+            "ModelPack" or "SupportPortal" =>
+                Normalize(candidate.Manufacturer + "|" + candidate.Model),
+            "SearchDiscovery" =>
+                Normalize(!string.IsNullOrWhiteSpace(candidate.InstanceId)
+                    ? candidate.InstanceId
+                    : candidate.HardwareId + "|" + candidate.DeviceName + "|" +
+                      candidate.Manufacturer + "|" + candidate.Model),
+            _ => Normalize(!string.IsNullOrWhiteSpace(candidate.InstanceId)
+                ? candidate.InstanceId : candidate.HardwareId + "|" + candidate.DeviceName)
+        };
         var artifact = !string.IsNullOrWhiteSpace(candidate.PackageUrl)
             ? NormalizeUri(candidate.PackageUrl)
             : NormalizeUri(candidate.SourceUrl);
