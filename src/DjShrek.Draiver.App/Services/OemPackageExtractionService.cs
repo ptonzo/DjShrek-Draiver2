@@ -60,7 +60,16 @@ public sealed class OemPackageExtractionService
         foreach (var entry in archive.Entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var normalized = entry.FullName.Replace('\\\\', '/');
+            if (normalized.StartsWith("/", StringComparison.Ordinal) ||
+                normalized.Contains(':') ||
+                normalized.Split('/').Any(part => part == ".."))
+                throw new InvalidDataException("Архив содержит небезопасный путь.");
             if (string.IsNullOrEmpty(entry.Name)) continue;
+            // Unix ZIP archives can encode symbolic links in the external attributes.
+            var unixType = (entry.ExternalAttributes >> 16) & 0xF000;
+            if (unixType == 0xA000)
+                throw new InvalidDataException("Архив содержит символическую ссылку. Использование такого пакета заблокировано.");
             if (entry.Length < 0 || entry.Length > MaxExpandedBytes - total)
                 throw new InvalidDataException("Распакованный архив превышает ограничение 8 ГБ.");
             total += entry.Length;
@@ -101,7 +110,11 @@ public sealed class OemPackageExtractionService
         var deadline = DateTime.UtcNow + CabTimeout;
         while (!process.WaitForExit(250))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                try { process.Kill(entireProcessTree: true); } catch { }
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             if (DateTime.UtcNow >= deadline)
             {
                 try { process.Kill(entireProcessTree: true); } catch { }
@@ -127,11 +140,18 @@ public sealed class OemPackageExtractionService
 
     private static void RejectReparsePoints(string root)
     {
-        foreach (var entry in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories))
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
         {
-            var attributes = File.GetAttributes(entry);
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidDataException("Распакованный пакет содержит ссылку или reparse point. Использование такого пакета заблокировано.");
+            var current = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(current))
+            {
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Распакованный пакет содержит ссылку или reparse point. Использование такого пакета заблокировано.");
+                if ((attributes & FileAttributes.Directory) != 0) pending.Push(entry);
+            }
         }
     }
 }
