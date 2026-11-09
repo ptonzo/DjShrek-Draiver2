@@ -23,7 +23,13 @@ public static class DeviceHardwareIdParser
             ["10EC"] = "Realtek", ["14E4"] = "Broadcom", ["168C"] = "Qualcomm Atheros",
             ["17CB"] = "Qualcomm", ["14C3"] = "MediaTek", ["13B1"] = "Cisco",
             ["1969"] = "Qualcomm Atheros", ["1B4B"] = "Marvell", ["1AF4"] = "Red Hat VirtIO",
-            ["1022"] = "AMD", ["103C"] = "HP", ["1043"] = "ASUS", ["17AA"] = "Lenovo"
+            ["1022"] = "AMD", ["103C"] = "HP", ["1043"] = "ASUS", ["17AA"] = "Lenovo",
+            ["046D"] = "Logitech", ["045E"] = "Microsoft", ["04F2"] = "Chicony",
+            ["0BDA"] = "Realtek", ["0B05"] = "ASUS", ["1038"] = "SteelSeries",
+            ["1532"] = "Razer", ["1B1C"] = "Corsair", ["0E8D"] = "MediaTek",
+            ["0CF3"] = "Qualcomm Atheros", ["8087"] = "Intel", ["1050"] = "Yubico",
+            ["28DE"] = "Valve", ["057E"] = "Nintendo", ["054C"] = "Sony",
+            ["18D1"] = "Google", ["05AC"] = "Apple", ["093A"] = "Pixart"
         };
 
     public static DeviceHardwareIdentity? Parse(string? hardwareId)
