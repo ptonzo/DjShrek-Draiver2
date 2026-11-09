@@ -53,7 +53,12 @@ public sealed class DriverOperationJournalService
                 ?? throw new InvalidOperationException("Journal directory is unavailable.");
             Directory.CreateDirectory(directory);
 
-            var previousHash = await ReadLastHashAsync(cancellationToken).ConfigureAwait(false);
+            EnsureJournalFileIsSafe();
+            var verification = await VerifyCoreAsync(cancellationToken).ConfigureAwait(false);
+            if (!verification.Verification.IsValid)
+                throw new InvalidDataException($"Журнал повреждён (строка {verification.Verification.FirstInvalidLine}); добавление записи заблокировано: {verification.Verification.Summary}");
+
+            var previousHash = verification.LastHash;
             var entry = new DriverOperationJournalEntry(
                 Guid.NewGuid().ToString("N"),
                 DateTimeOffset.UtcNow,
@@ -92,73 +97,54 @@ public sealed class DriverOperationJournalService
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (!File.Exists(_journalPath))
-                return new DriverOperationJournalVerification(true, 0, null, "Журнал пока пуст.");
-
-            string expectedPrevious = string.Empty;
-            var lineNumber = 0;
-            await using var stream = new FileStream(
-                _journalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-                16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            using var reader = new StreamReader(stream, Encoding.UTF8, true);
-
-            while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
-            {
-                lineNumber++;
-                DriverOperationJournalEntry? entry;
-                try { entry = JsonSerializer.Deserialize<DriverOperationJournalEntry>(line, JsonOptions); }
-                catch (JsonException)
-                {
-                    return new DriverOperationJournalVerification(false, lineNumber, lineNumber,
-                        "Повреждена запись журнала.");
-                }
-
-                if (entry is null || !string.Equals(entry.PreviousEntrySha256, expectedPrevious, StringComparison.Ordinal))
-                    return new DriverOperationJournalVerification(false, lineNumber, lineNumber,
-                        "Нарушена цепочка целостности журнала.");
-
-                var canonical = JsonSerializer.Serialize(entry with { EntrySha256 = string.Empty }, JsonOptions);
-                var actualHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
-                if (!CryptographicOperations.FixedTimeEquals(
-                    Encoding.ASCII.GetBytes(actualHash),
-                    Encoding.ASCII.GetBytes(entry.EntrySha256 ?? string.Empty)))
-                    return new DriverOperationJournalVerification(false, lineNumber, lineNumber,
-                        "Контрольная сумма записи не совпадает.");
-
-                expectedPrevious = entry.EntrySha256;
-            }
-
-            return new DriverOperationJournalVerification(true, lineNumber, null,
-                $"Проверено записей: {lineNumber}. Цепочка контрольных сумм цела.");
+            EnsureJournalFileIsSafe();
+            var result = await VerifyCoreAsync(cancellationToken).ConfigureAwait(false);
+            return result.Verification;
         }
-        finally
-        {
-            _gate.Release();
-        }
+        finally { _gate.Release(); }
     }
 
-    private async Task<string> ReadLastHashAsync(CancellationToken cancellationToken)
+    // Caller holds _gate. Append uses only the last hash from a fully verified chain.
+    private async Task<(DriverOperationJournalVerification Verification, string LastHash)> VerifyCoreAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_journalPath))
-            return string.Empty;
+            return (new DriverOperationJournalVerification(true, 0, null, "Журнал пока пуст."), string.Empty);
 
-        string? last = null;
-        await using var stream = new FileStream(
-            _journalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
-            16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        string expectedPrevious = string.Empty;
+        var lineNumber = 0;
+        await using var stream = new FileStream(_journalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 16 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
         using var reader = new StreamReader(stream, Encoding.UTF8, true);
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (string.IsNullOrWhiteSpace(line)) continue;
-            try
+            lineNumber++;
+            if (string.IsNullOrWhiteSpace(line))
+                return (new DriverOperationJournalVerification(false, lineNumber, lineNumber, "Обнаружена пустая строка в журнале."), expectedPrevious);
+
+            DriverOperationJournalEntry? entry;
+            try { entry = JsonSerializer.Deserialize<DriverOperationJournalEntry>(line, JsonOptions); }
+            catch (JsonException)
             {
-                var entry = JsonSerializer.Deserialize<DriverOperationJournalEntry>(line, JsonOptions);
-                if (entry is not null) last = entry.EntrySha256;
+                return (new DriverOperationJournalVerification(false, lineNumber, lineNumber, "Повреждена запись журнала."), expectedPrevious);
             }
-            catch (JsonException) { throw new InvalidDataException("Журнал повреждён; запись остановлена, чтобы не продолжать нарушенную цепочку."); }
+
+            if (entry is null || string.IsNullOrWhiteSpace(entry.EntrySha256) ||
+                !string.Equals(entry.PreviousEntrySha256, expectedPrevious, StringComparison.Ordinal))
+                return (new DriverOperationJournalVerification(false, lineNumber, lineNumber, "Нарушена цепочка целостности журнала."), expectedPrevious);
+
+            var canonical = JsonSerializer.Serialize(entry with { EntrySha256 = string.Empty }, JsonOptions);
+            var actualHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
+            if (!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(actualHash), Encoding.ASCII.GetBytes(entry.EntrySha256)))
+                return (new DriverOperationJournalVerification(false, lineNumber, lineNumber, "Контрольная сумма записи не совпадает."), expectedPrevious);
+
+            expectedPrevious = entry.EntrySha256;
         }
-        return last ?? string.Empty;
+        return (new DriverOperationJournalVerification(true, lineNumber, null, $"Проверено записей: {lineNumber}. Цепочка контрольных сумм цела."), expectedPrevious);
+    }
+
+    private void EnsureJournalFileIsSafe()
+    {
+        if (File.Exists(_journalPath) && (File.GetAttributes(_journalPath) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Файл журнала является reparse point; чтение и запись заблокированы.");
     }
 
     private static string? NormalizeSha256(string? value)
