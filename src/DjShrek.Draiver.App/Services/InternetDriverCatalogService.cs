@@ -187,55 +187,9 @@ public sealed class InternetDriverCatalogService
 
     internal static string? GetVendorDomain(DeviceInfo device, string hardwareId)
     {
-        var identity = DeviceHardwareIdParser.Parse(hardwareId);
-        var vendorDomains = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["10DE"] = "nvidia.com", ["1002"] = "amd.com", ["1022"] = "amd.com",
-            ["8086"] = "intel.com", ["8087"] = "intel.com", ["10EC"] = "realtek.com",
-            ["0BDA"] = "realtek.com", ["14E4"] = "broadcom.com", ["168C"] = "qualcomm.com",
-            ["0CF3"] = "qualcomm.com", ["17CB"] = "qualcomm.com", ["14C3"] = "mediatek.com",
-            ["0E8D"] = "mediatek.com", ["046D"] = "logitech.com", ["045E"] = "microsoft.com",
-            ["0B05"] = "asus.com", ["1043"] = "asus.com", ["17AA"] = "lenovo.com",
-            ["103C"] = "hp.com", ["04F2"] = "chicony.com", ["1038"] = "steelseries.com",
-            ["1532"] = "razer.com", ["1B1C"] = "corsair.com", ["05AC"] = "apple.com",
-            ["18D1"] = "google.com", ["1050"] = "yubico.com", ["28DE"] = "steampowered.com",
-            ["057E"] = "nintendo.com", ["054C"] = "playstation.com", ["093A"] = "pixart.com",
-            ["03F0"] = "hp.com", ["04E8"] = "samsung.com", ["04A9"] = "canon.com",
-            ["04B8"] = "epson.com", ["04F9"] = "brother.com", ["12D1"] = "huawei.com",
-            ["19D2"] = "zte.com.cn", ["2717"] = "mi.com", ["0403"] = "ftdichip.com",
-            ["10C4"] = "silabs.com", ["067B"] = "prolific.com.tw", ["1A86"] = "wch-ic.com",
-            ["2341"] = "arduino.cc"
-        };
-        if (identity is not null && vendorDomains.TryGetValue(identity.VendorId, out var idDomain))
-            return idDomain;
-
-        var text = NormalizeVendorText(device.Manufacturer + " " + device.DriverProvider);
-        bool HasToken(string token) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Contains(token, StringComparer.Ordinal);
-        bool HasPhrase(string phrase) => text.Contains(phrase, StringComparison.Ordinal);
-
-        if (hardwareId.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase) || HasToken("nvidia")) return "nvidia.com";
-        if (hardwareId.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase) || HasToken("amd") || HasPhrase("advanced micro devices")) return "amd.com";
-        if (hardwareId.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) || HasToken("intel")) return "intel.com";
-        if (hardwareId.Contains("VEN_10EC", StringComparison.OrdinalIgnoreCase) || HasToken("realtek")) return "realtek.com";
-        if (hardwareId.Contains("VEN_168C", StringComparison.OrdinalIgnoreCase) || HasToken("qualcomm") || HasToken("atheros")) return "qualcomm.com";
-        if (hardwareId.Contains("VEN_14E4", StringComparison.OrdinalIgnoreCase) || HasToken("broadcom")) return "broadcom.com";
-        if (hardwareId.Contains("VEN_14C3", StringComparison.OrdinalIgnoreCase) || HasToken("mediatek")) return "mediatek.com";
-        if (HasToken("dell") || HasToken("alienware")) return "dell.com";
-        if (HasToken("hp") || HasPhrase("hewlett packard")) return "hp.com";
-        if (HasToken("lenovo") || HasToken("thinkpad")) return "lenovo.com";
-        if (HasToken("asus")) return "asus.com";
-        if (HasToken("acer")) return "acer.com";
-        if (HasToken("msi") || HasPhrase("micro star")) return "msi.com";
-        if (HasToken("gigabyte") || HasToken("aorus")) return "gigabyte.com";
-        return null;
-    }
-
-    private static string NormalizeVendorText(string value)
-    {
-        var normalized = new string(value.ToLowerInvariant()
-            .Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray());
-        return string.Join(" ", normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        var vendor = new DriverVendorCatalogRegistry().Resolve(
+            hardwareId, device.Manufacturer, device.DriverProvider);
+        return vendor?.SearchDomain;
     }
 
     private static IEnumerable<string> GetIds(DeviceInfo device)
