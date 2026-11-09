@@ -11,6 +11,8 @@ public partial class MainWindow
     private readonly CatalogDriverPackageDownloader _packageDownloader = new();
     private readonly DriverUpdateHistoryService _driverHistory = new();
     private readonly DriverOperationJournalService _operationJournal = new();
+    private readonly DriverPackageIntegrityManifestService _packageIntegrity = new();
+    private readonly DriverSourceProvenanceService _sourceProvenance = new();
 
     private async void DownloadOfficialDriverPackage_Click(object sender, RoutedEventArgs e)
     {
@@ -59,7 +61,9 @@ public partial class MainWindow
             candidate.PackageUrl = downloaded.FinalUrl;
             candidate.PackageFileName = downloaded.FilePath;
             candidate.PackageSha256 = downloaded.Sha256;
-            candidate.PackageStatus = "Загружен; подпись требует проверки";
+            var sourceAssessment = _sourceProvenance.Assess(candidate.Manufacturer, downloaded.FinalUrl, candidate.SourceType);
+            candidate.SourceTrust = sourceAssessment.TrustLabel;
+            candidate.PackageStatus = "Загружен; источник: " + sourceAssessment.TrustLabel;
             candidate.IsDownloaded = true;
 
             MessageBox.Show(this,
@@ -158,7 +162,9 @@ public partial class MainWindow
                     candidate.PackageUrl = downloaded.FinalUrl;
                     candidate.PackageFileName = downloaded.FilePath;
                     candidate.PackageSha256 = downloaded.Sha256;
-                    candidate.PackageStatus = "Загружен; подпись требует проверки";
+                    var sourceAssessment = _sourceProvenance.Assess(candidate.Manufacturer, downloaded.FinalUrl, candidate.SourceType);
+                    candidate.SourceTrust = sourceAssessment.TrustLabel;
+                    candidate.PackageStatus = "Загружен; источник: " + sourceAssessment.TrustLabel;
                     candidate.IsDownloaded = true;
                     completed.Add(candidate.DeviceName + ": " + Path.GetFileName(downloaded.FilePath));
 
@@ -483,7 +489,23 @@ public partial class MainWindow
         {
             StatusText.Text = "Безопасная распаковка пакета и поиск совместимых INF...";
             var extractedFolder = await _packageExtraction.ExtractAsync(packagePath);
-        var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
+
+            // Persist an integrity baseline outside the extracted package and verify it immediately.
+            // This detects subsequent package changes; it does not assert publisher authenticity.
+            var manifest = await _packageIntegrity.CreateAsync(extractedFolder, candidate.PackageUrl ?? "");
+            var manifestPath = extractedFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + ".integrity.json";
+            await _packageIntegrity.SaveAsync(manifest, manifestPath);
+            var integrity = await _packageIntegrity.VerifyAsync(extractedFolder, manifest);
+            if (!integrity.IsValid)
+                throw new InvalidDataException("Проверка целостности распакованного пакета не пройдена: " + integrity.Message);
+
+            await _operationJournal.AppendAsync(
+                "DriverPackageIntegrityVerified", "Verified", device.InstanceId, candidate.HardwareId,
+                candidate.PackageSha256, candidate.VerifiedInfVersion,
+                $"Файлов проверено: {integrity.VerifiedFileCount}; байт: {integrity.VerifiedBytes}; манифест: {manifestPath}");
+
+            var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
         var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
         var newerCandidate = candidates.FirstOrDefault(x =>
             x.Inspection.IsInstallableForDevice && x.IsNewerThanInstalled);
