@@ -181,7 +181,7 @@ public partial class MainWindow
                     StatusText.Text = "Проверка резервной копии и повторное сканирование устройства...";
                     var currentDevices = await _inventory.ScanAsync();
                     ApplyDevices(currentDevices);
-                    var device = DriverCompatibilityMatcher.FindExactMatch(currentDevices, entry.HardwareId);
+                    var device = DriverCompatibilityMatcher.FindExactMatch(currentDevices, entry.HardwareId, entry.InstanceId);
                     if (device is null)
                         throw new InvalidOperationException("Устройство с исходным Hardware ID больше не обнаружено. Откат не выполнялся.");
 
