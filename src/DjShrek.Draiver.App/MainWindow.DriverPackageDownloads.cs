@@ -142,6 +142,21 @@ public partial class MainWindow
                     MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
                 return;
 
+            StatusText.Text = "Резервное копирование текущего драйвера и создание точки восстановления...";
+            string backupInfo;
+            if (System.Text.RegularExpressions.Regex.IsMatch(device.InfName ?? "", @"^oem[0-9]+\.inf$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                var backupFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "DjShrek-Draiver2", "DriverBackups",
+                    DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"));
+                backupInfo = await _maintenance.ExportDriverPackageAsync(device.InfName, backupFolder);
+            }
+            else
+            {
+                backupInfo = "Текущий пакет не имеет опубликованного имени OEM INF для точечного экспорта. Перед установкой будет создана точка восстановления Windows.";
+            }
+
             StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
             var result = await _maintenance.InstallInfAsync(inspection.InfPath);
             candidate.PackageStatus = "Передан Windows; проверьте версию и состояние устройства";
@@ -150,7 +165,7 @@ public partial class MainWindow
             DriverUpdatesGrid.Items.Refresh();
             AppendEvent($"Пакет {inspection.Provider} {inspection.DriverVersion} передан Windows для {device.Name}.");
             StatusText.Text = "Команда установки завершилась. Проверьте фактическую версию драйвера и состояние устройства.";
-            MessageBox.Show(this, result, "Результат передачи драйвера Windows",
+            MessageBox.Show(this, backupInfo + Environment.NewLine + Environment.NewLine + result, "Результат передачи драйвера Windows",
                 MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception)
