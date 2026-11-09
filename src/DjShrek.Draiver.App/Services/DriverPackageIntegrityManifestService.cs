@@ -88,7 +88,7 @@ public sealed class DriverPackageIntegrityManifestService
 
         long totalBytes = 0;
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+        foreach (var file in EnumerateFilesWithoutReparsePoints(root))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var info = new FileInfo(file);
