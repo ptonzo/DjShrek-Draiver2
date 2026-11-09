@@ -75,9 +75,13 @@ public sealed class DellDriverPackCatalogService
             start.ArgumentList.Add(xmlPath);
             using (var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось распаковать CAB Dell."))
             {
+                var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+                var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
                 await process.WaitForExitAsync(cancellationToken);
+                var error = await errorTask;
+                _ = await outputTask;
                 if (process.ExitCode != 0 || !File.Exists(xmlPath))
-                    throw new InvalidDataException("Не удалось извлечь XML из CAB Dell: " + await process.StandardError.ReadToEndAsync(cancellationToken));
+                    throw new InvalidDataException("Не удалось извлечь XML из CAB Dell: " + error);
             }
             if (new FileInfo(xmlPath).Length > MaxXmlBytes)
                 throw new InvalidDataException("XML-каталог Dell превышает лимит 256 МБ.");
