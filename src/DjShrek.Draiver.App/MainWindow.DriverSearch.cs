@@ -315,6 +315,20 @@ public partial class MainWindow
         {
             var results = (await _internetDriverCatalog.SearchAsync(_devices.ToArray(), _driverSearchCts.Token)).ToList();
 
+            // Intel DSA publishes a dynamic software-configurations feed. Candidates are
+            // matched by the feed's DetectionValues; INF/package compatibility remains pending.
+            try
+            {
+                var intelCandidates = await new IntelDsaCatalogService()
+                    .FindCandidatesAsync(_devices.ToArray(), _driverSearchCts.Token);
+                results.AddRange(intelCandidates);
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог Intel DSA пропущен: " + ex.GetType().Name);
+            }
+
             // Lenovo publishes a machine-readable SCCM pack catalog. Surface model-level
             // packages separately from per-device Hardware ID search results.
             try
