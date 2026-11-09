@@ -402,6 +402,10 @@
                                                 <DataGridTextColumn Header="Категория источника" Binding="{Binding SourceCategory}" Width="1.4*"/>
                                                 <DataGridTextColumn Header="Домен пакета" Binding="{Binding PackageSourceHost}" Width="1.4*"/>
                                                 <DataGridTextColumn Header="Категория пакета" Binding="{Binding PackageSourceCategory}" Width="1.4*"/>
+                                                <DataGridTextColumn Header="Пояснение источника" Binding="{Binding SourceExplanation}" Width="3*"/>
+                                                <DataGridTextColumn Header="ID записи каталога" Binding="{Binding CatalogRecordId}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Версия каталога" Binding="{Binding CatalogReleaseVersion}" Width="1.3*"/>
+                                                <DataGridTextColumn Header="Дата каталога" Binding="{Binding CatalogReleaseDate}" Width="1.3*"/>
                                                 <DataGridTextColumn Header="Получение пакета" Binding="{Binding PackageAcquisitionStatus}" Width="1.5*"/>
                                                 <DataGridTextColumn Header="Оценка версии" Binding="{Binding VersionAssessment}" Width="2*"/>
                                                 <DataGridTextColumn Header="Совместимость ОС" Binding="{Binding OsCompatibilityAssessment}" Width="1.6*"/>
