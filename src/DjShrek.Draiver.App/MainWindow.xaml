@@ -373,6 +373,7 @@
                                                 <DataGridTextColumn Header="Доступный драйвер" Binding="{Binding Title}" Width="2.2*"/>
                                                 <DataGridTextColumn Header="Текущая версия" Binding="{Binding CurrentVersion}" Width="*"/>
                                                 <DataGridTextColumn Header="Новая версия" Binding="{Binding AvailableVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Сравнение версий" Binding="{Binding VersionComparison}" Width="2*"/>
                                                 <DataGridTextColumn Header="Совместимость" Binding="{Binding Compatibility}" Width="1.5*"/>
                                                 <DataGridTextColumn Header="Тип совпадения" Binding="{Binding MatchType}" Width="*"/>
                                                 <DataGridTextColumn Header="Дата публикации" Binding="{Binding PublishedDate}" Width="*"/>
