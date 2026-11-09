@@ -376,7 +376,13 @@ public sealed class DriverMaintenanceService
 
     private static string RunElevated(string file, string arguments)
     {
-        var start = new ProcessStartInfo(file, arguments)
+        var executable = string.Equals(file, "pnputil.exe", StringComparison.OrdinalIgnoreCase)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "pnputil.exe")
+            : file;
+        if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable))
+            throw new FileNotFoundException("Не найдена системная утилита Windows.", executable);
+
+        var start = new ProcessStartInfo(executable, arguments)
         {
             UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Normal
         };
