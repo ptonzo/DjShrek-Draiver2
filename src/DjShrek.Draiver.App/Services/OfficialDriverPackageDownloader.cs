@@ -122,7 +122,10 @@ public sealed class OfficialDriverPackageDownloader
         host = host.TrimEnd('.').ToLowerInvariant();
         return new[] { "intel.com", "nvidia.com", "amd.com", "dell.com", "hp.com",
             "lenovo.com", "asus.com", "acer.com", "msi.com", "gigabyte.com",
-            "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com", "surface.com" }
+            "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com", "surface.com",
+            "logitech.com", "chicony.com", "steelseries.com", "razer.com", "corsair.com",
+            "apple.com", "google.com", "yubico.com", "steampowered.com", "nintendo.com",
+            "playstation.com", "pixart.com" }
             .Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
     }
 }
