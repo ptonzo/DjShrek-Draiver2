@@ -20,6 +20,9 @@ public sealed class DriverBackupManifestService
     public string Create(string root)
     {
         var fullRoot = Path.GetFullPath(root);
+        if (!Directory.Exists(fullRoot))
+            throw new DirectoryNotFoundException("Папка резервной копии не существует.");
+        RejectReparsePoint(fullRoot);
         var files = EnumerateSafeFiles(fullRoot)
             .Where(path => !Path.GetFileName(path).Equals(ManifestFileName, StringComparison.OrdinalIgnoreCase))
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
@@ -48,6 +51,9 @@ public sealed class DriverBackupManifestService
     public string VerifyIfPresent(string root)
     {
         var fullRoot = Path.GetFullPath(root);
+        if (!Directory.Exists(fullRoot))
+            throw new DirectoryNotFoundException("Папка резервной копии не существует.");
+        RejectReparsePoint(fullRoot);
         var manifestPath = Path.Combine(fullRoot, ManifestFileName);
         if (!File.Exists(manifestPath))
             return "Манифест отсутствует: использована старая резервная копия; проверка целостности по SHA-256 недоступна.";
@@ -113,6 +119,12 @@ public sealed class DriverBackupManifestService
         return $"Целостность подтверждена: {manifest.Files.Count} файлов, {manifest.PackageCount} INF-пакетов; SHA-256 совпадает.";
     }
 
+    private static void RejectReparsePoint(string path)
+    {
+        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Путь резервной копии содержит reparse point.");
+    }
+
     private static string ComputeSha256(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -129,7 +141,8 @@ public sealed class DriverBackupManifestService
             foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
             {
                 var attributes = File.GetAttributes(entry);
-                if ((attributes & FileAttributes.ReparsePoint) != 0) continue;
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Резервная копия содержит символическую ссылку или reparse point.");
                 if ((attributes & FileAttributes.Directory) != 0) pending.Push(entry);
                 else yield return entry;
             }
