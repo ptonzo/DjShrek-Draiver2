@@ -77,6 +77,33 @@ public partial class MainWindow : Window
         Closed += (_, _) => _monitorTimer.Stop();
     }
 
+    private void DetectOem()
+    {
+        string manufacturer = "";
+        string product = "";
+        string baseboard = "";
+        try
+        {
+            using var bios = Registry.LocalMachine.OpenSubKey(@"HARDWARE\\DESCRIPTION\\System\\BIOS");
+            manufacturer = bios?.GetValue("SystemManufacturer")?.ToString()?.Trim() ?? "";
+            product = bios?.GetValue("SystemProductName")?.ToString()?.Trim() ?? "";
+            baseboard = bios?.GetValue("BaseBoardManufacturer")?.ToString()?.Trim() ?? "";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // OEM detection is optional; a restricted registry must not stop the dashboard.
+        }
+        catch (System.Security.SecurityException)
+        {
+            // OEM detection is optional; a restricted registry must not stop the dashboard.
+        }
+
+        _detectedOem = _oemCatalog.Detect(manufacturer + " " + product + " " + baseboard);
+        OemDetectText.Text = _detectedOem is null
+            ? $"Производитель компьютера не распознан. BIOS: {manufacturer}; модель: {product}. Можно выбрать каталог вручную."
+            : $"Обнаружен производитель компьютера: {_detectedOem.Name}. Модель: {product}. Откроется официальный сайт поддержки производителя.";
+    }
+
     private void AppendEvent(string message)
     {
         if (EventLogList is null) return;
