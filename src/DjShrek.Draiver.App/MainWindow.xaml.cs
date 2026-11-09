@@ -84,7 +84,7 @@ public partial class MainWindow : Window
         string baseboard = "";
         try
         {
-            using var bios = Registry.LocalMachine.OpenSubKey(@"HARDWARE\\DESCRIPTION\\System\\BIOS");
+            using var bios = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
             manufacturer = bios?.GetValue("SystemManufacturer")?.ToString()?.Trim() ?? "";
             product = bios?.GetValue("SystemProductName")?.ToString()?.Trim() ?? "";
             baseboard = bios?.GetValue("BaseBoardManufacturer")?.ToString()?.Trim() ?? "";
