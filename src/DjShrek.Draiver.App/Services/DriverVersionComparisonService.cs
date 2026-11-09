@@ -26,7 +26,7 @@ public sealed record DriverVersionComparison(
 public static class DriverVersionComparisonService
 {
     private static readonly Regex NumericVersion = new(
-        @"(?<!\\d)(\\d+(?:\\.\\d+){1,3})(?!\\d)",
+        @"(?<!\d)(\d+(?:\.\d+){1,3})(?!\d)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public static DriverVersionComparison Compare(string? candidate, string? installed)
