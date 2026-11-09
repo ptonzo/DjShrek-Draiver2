@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly InternetDriverCatalogService _internetDriverCatalog = new();
     private readonly DriverInfPackageInspector _infPackageInspector = new();
     private readonly DriverFolderScannerService _driverFolderScanner = new();
+    private readonly OemPackageExtractionService _packageExtraction = new();
 
         private readonly ObservableCollection<DeviceInfo> _devices = new();
     private readonly ObservableCollection<DriverUpdateCandidate> _driverUpdates = new();
