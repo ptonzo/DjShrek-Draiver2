@@ -1,6 +1,5 @@
 using System.Net;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace DjShrek.Draiver.App.Services;
@@ -66,7 +65,7 @@ public sealed class SignedVendorCatalogManifestService
         using var verifier = ECDsa.Create();
         verifier.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PinnedPublicKey), out _);
         if (!verifier.VerifyData(payload, signature, HashAlgorithmName.SHA256,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
+                DSASignatureFormat.Rfc3279DerSequence))
             throw new CryptographicException("Подпись манифеста источников недействительна.");
 
         using var document = JsonDocument.Parse(payload);
