@@ -144,7 +144,8 @@ public sealed class OfficialDriverPackageDownloader
     private static async Task<string> ReadBoundedTextAsync(
         HttpContent content, int maxBytes, CancellationToken cancellationToken)
     {
-        if (content.Headers.ContentLength is > 0 and var length && length > maxBytes)
+        var contentLength = content.Headers.ContentLength;
+        if (contentLength.HasValue && contentLength.Value > maxBytes)
             throw new InvalidDataException("Страница производителя слишком большая для безопасного анализа.");
 
         await using var input = await content.ReadAsStreamAsync(cancellationToken);
