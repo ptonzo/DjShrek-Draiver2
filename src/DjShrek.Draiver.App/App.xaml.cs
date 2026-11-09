@@ -101,6 +101,27 @@ public partial class App : Application
                 InternetDriverCatalogService.IsOfficialVendorUrl("javascript:alert(1)"))
                 throw new InvalidOperationException("Official vendor URL validation accepted an unsafe URL or rejected a valid vendor URL.");
             checks.Add("PASS: official vendor URL allowlist accepts legitimate subdomains and rejects lookalike, HTTP and script URLs.");
+            if (!InternetDriverCatalogService.IsIndependentCatalogUrl("https://driver.ru/device/123") ||
+                !InternetDriverCatalogService.IsIndependentCatalogUrl("https://www.driverguide.com/driver/detail/123") ||
+                !InternetDriverCatalogService.IsIndependentCatalogUrl("https://flydrivers.com/device") ||
+                InternetDriverCatalogService.IsIndependentCatalogUrl("http://driver.ru/device/123") ||
+                InternetDriverCatalogService.IsIndependentCatalogUrl("https://driver.ru.attacker.example/device"))
+                throw new InvalidOperationException("Independent catalog URL policy accepted an unsafe URL or rejected a configured catalog.");
+            if (!CatalogDriverPackageDownloader.IsAllowedCatalogPage("https://driver.ru/device/123") ||
+                !CatalogDriverPackageDownloader.IsAllowedCatalogPage("https://support.lenovo.com/driver") ||
+                CatalogDriverPackageDownloader.IsAllowedCatalogPage("https://drive.google.com/file/d/abc") ||
+                CatalogDriverPackageDownloader.IsAllowedCatalogPage("http://driver.ru/device/123"))
+                throw new InvalidOperationException("Catalog package resolver page-origin policy is incorrect.");
+            var sourceMetadata = new DriverUpdateCandidate
+            {
+                SourceUrl = "https://driver.ru/device/123",
+                SourceType = "IndependentCatalog",
+                SourceTrust = "IndependentCatalog_UnverifiedPackage"
+            };
+            if (sourceMetadata.SourceType != "IndependentCatalog" ||
+                sourceMetadata.SourceTrust.Contains("Verified", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Independent source provenance was incorrectly treated as a verified package.");
+            checks.Add("PASS: Driver.ru/DriverGuide/FlyDrivers source classification and cloud-download origin policy are covered.");
             var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
             if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "USB\\\\VID_1234&PID_5678") != "hp.com")
                 throw new InvalidOperationException("Short OEM name HP was not mapped to its official domain.");
