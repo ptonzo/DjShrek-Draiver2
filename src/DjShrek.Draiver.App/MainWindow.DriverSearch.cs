@@ -313,8 +313,49 @@ public partial class MainWindow
 
         try
         {
-            var results = await _internetDriverCatalog.SearchAsync(_devices.ToArray(), _driverSearchCts.Token);
-            var visibleResults = results.Where(x => !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
+            var results = (await _internetDriverCatalog.SearchAsync(_devices.ToArray(), _driverSearchCts.Token)).ToList();
+
+            // Lenovo publishes a machine-readable SCCM pack catalog. Surface model-level
+            // packages separately from per-device Hardware ID search results.
+            var lenovoMachine = await _lenovoCatalog.GetCurrentMachineIdentityAsync(_driverSearchCts.Token);
+            if (lenovoMachine.Manufacturer.Contains("Lenovo", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(lenovoMachine.MachineType) &&
+                !string.IsNullOrWhiteSpace(lenovoMachine.OperatingSystem))
+            {
+                var packs = await _lenovoCatalog.FindModelPacksAsync(
+                    lenovoMachine.MachineType, lenovoMachine.OperatingSystem, _driverSearchCts.Token);
+                foreach (var pack in packs)
+                {
+                    results.Add(new DriverUpdateCandidate
+                    {
+                        UpdateId = pack.PackageUri.AbsoluteUri,
+                        Title = "OEM-пакет Lenovo: " + pack.Model,
+                        Manufacturer = "Lenovo",
+                        Model = lenovoMachine.Model,
+                        Provider = "Lenovo SCCM catalog",
+                        DeviceClass = "OEM Driver Pack",
+                        MatchType = "OEM model pack",
+                        DeviceName = lenovoMachine.Model,
+                        CurrentVersion = "Пакетная версия не сравнивается с версией отдельного устройства",
+                        Compatibility = "Совпадение модели/MTM; совместимость каждого INF не проверена",
+                        AvailableVersion = pack.PackageVersion,
+                        VersionComparison = "Пакет модели; версия драйвера определяется после анализа INF",
+                        DriverVersionDate = pack.ReleaseDate,
+                        PublishedDate = pack.ReleaseDate,
+                        Description = pack.OperatingSystem + "; " + pack.CompatibilityEvidence,
+                        Evidence = pack.CompatibilityEvidence,
+                        SourceType = "OfficialManufacturer",
+                        SourceTrust = "OfficialDomain_UnverifiedPackage",
+                        SourceUrl = pack.CatalogSource,
+                        PackageUrl = pack.PackageUri.AbsoluteUri,
+                        PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
+                        PackageStatus = "Пакет не загружен"
+                    });
+                }
+            }
+
+            var visibleResults = results.Where(x =>
+                string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
                 _driverUpdates.Add(item);
 
