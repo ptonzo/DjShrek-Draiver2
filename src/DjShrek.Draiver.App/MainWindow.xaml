@@ -422,6 +422,7 @@
                                             <Button Content="Экспортировать все драйверы" Click="Backup_Click"/>
                                             <Button Content="Восстановить из папки" Click="RestoreDrivers_Click"/>
                                             <Button Content="Установить INF вручную" Click="Install_Click"/>
+                                            <Button Content="Откат через точку восстановления" Click="RollbackDrivers_Click"/>
                                             <Button Content="Список пакетов" Click="ListPackages_Click"/>
                                         </WrapPanel>
                                         <TextBox x:Name="PackagesText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
