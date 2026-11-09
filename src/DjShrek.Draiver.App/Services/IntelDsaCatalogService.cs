@@ -107,7 +107,6 @@ public sealed class IntelDsaCatalogService
                     ? componentVersion : "Не указана в каталоге";
                 var releaseDate = TryGetString(config, "DisplayReleaseDate", out var date) ? date : "";
                 var details = TryGetString(config, "Details", out var detailText) ? detailText : "";
-                var fileHash = TryGetString(file.Element, "Hash", out var hash) ? hash : "";
                 foreach (var match in matches)
                 {
                     if (results.Count >= MaxCandidates) return results;
@@ -135,7 +134,9 @@ public sealed class IntelDsaCatalogService
                         PublishedDate = releaseDate,
                         Description = details,
                         Evidence = "Intel DSA DetectionValues совпало с идентификатором устройства: " + hardwareId +
-                                   ". Версия и совместимость должны быть подтверждены анализом INF после загрузки.",
+                                   ". Feed version: " + (feedVersion.Length == 0 ? "не указана" : feedVersion) +
+                                   "; X-DSA-Hash: " + (feedHash.Length == 0 ? "не предоставлен" : "SHA-1 сверён с заголовком") +
+                                   ". Это контроль целостности канала, не подпись издателя. Совместимость подтверждается анализом INF.",
                         SourceType = "OfficialManufacturer",
                         SourceTrust = "OfficialDomain_UnverifiedPackage",
                         SourceUrl = FeedUri.AbsoluteUri,
