@@ -38,4 +38,6 @@ public sealed class DriverUpdateCandidate
     public string PackageFileName { get; set; } = "";
     public string PackageSha256 { get; set; } = "";
     public string PackageStatus { get; set; } = "Пакет не загружен";
+    public string VerifiedInfPath { get; set; } = "";
+    public string VerifiedInfVersion { get; set; } = "";
 }
