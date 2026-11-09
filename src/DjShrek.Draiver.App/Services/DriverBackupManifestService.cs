@@ -67,10 +67,20 @@ public sealed class DriverBackupManifestService
         if (manifest.FormatVersion != 1 || manifest.Files is null || manifest.Files.Count == 0 || manifest.Files.Count > MaxFiles)
             throw new InvalidDataException("Формат или состав манифеста резервной копии недопустим.");
 
+        if (manifest.Files.Any(entry => entry is null))
+            throw new InvalidDataException("Манифест содержит пустую запись файла.");
+
+        var actualInfCount = manifest.Files.Count(entry =>
+            Path.GetExtension(entry.Path ?? "").Equals(".inf", StringComparison.OrdinalIgnoreCase));
+        if (manifest.FileCount != manifest.Files.Count || manifest.PackageCount != actualInfCount)
+            throw new InvalidDataException("Счётчики файлов в манифесте не соответствуют его содержимому.");
+
         var failures = new List<string>();
         var expectedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in manifest.Files)
         {
+            if (string.IsNullOrWhiteSpace(entry.Path) || string.IsNullOrWhiteSpace(entry.Sha256))
+                throw new InvalidDataException("Манифест содержит пустой путь или хеш файла.");
             if (!expectedPaths.Add(entry.Path))
                 throw new InvalidDataException("Манифест содержит повторяющиеся пути файлов.");
             if (entry.Length < 0 || entry.Sha256.Length != 64 ||
