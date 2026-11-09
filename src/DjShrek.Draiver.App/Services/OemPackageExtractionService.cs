@@ -60,7 +60,7 @@ public sealed class OemPackageExtractionService
         foreach (var entry in archive.Entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var normalized = entry.FullName.Replace('\\\\', '/');
+            var normalized = entry.FullName.Replace('\\', '/');
             if (normalized.StartsWith("/", StringComparison.Ordinal) ||
                 normalized.Contains(':') ||
                 normalized.Split('/').Any(part => part == ".."))
@@ -73,12 +73,6 @@ public sealed class OemPackageExtractionService
             if (entry.Length < 0 || entry.Length > MaxExpandedBytes - total)
                 throw new InvalidDataException("Распакованный архив превышает ограничение 8 ГБ.");
             total += entry.Length;
-
-            var normalized = entry.FullName.Replace('\\', '/');
-            if (normalized.StartsWith("/", StringComparison.Ordinal) ||
-                normalized.Contains(':') ||
-                normalized.Split('/').Any(part => part == ".."))
-                throw new InvalidDataException("Архив содержит небезопасный путь.");
 
             var target = Path.GetFullPath(Path.Combine(destination, normalized.Replace('/', Path.DirectorySeparatorChar)));
             if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
