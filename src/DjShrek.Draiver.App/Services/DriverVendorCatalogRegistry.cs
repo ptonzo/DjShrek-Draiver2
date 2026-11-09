@@ -120,17 +120,55 @@ public sealed class DriverVendorCatalogRegistry
         var merged = Entries.ToDictionary(x => x.Id, StringComparer.OrdinalIgnoreCase);
         foreach (var entry in signedEntries)
         {
-            if (string.IsNullOrWhiteSpace(entry.Id) || string.IsNullOrWhiteSpace(entry.DisplayName) ||
+            if (entry is null ||
+                string.IsNullOrWhiteSpace(entry.Id) ||
+                entry.Id.Length > 80 ||
+                !entry.Id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_') ||
+                string.IsNullOrWhiteSpace(entry.DisplayName) ||
+                entry.DisplayName.Length > 120 ||
                 string.IsNullOrWhiteSpace(entry.SearchDomain) ||
+                entry.SearchDomain.Length > 253 ||
+                !Uri.TryCreate("https://" + entry.SearchDomain, UriKind.Absolute, out var domainUri) ||
+                !string.Equals(domainUri.Host, entry.SearchDomain, StringComparison.OrdinalIgnoreCase) ||
                 !Uri.TryCreate(entry.SupportUrl, UriKind.Absolute, out var supportUri) ||
                 supportUri.Scheme != Uri.UriSchemeHttps ||
-                !string.Equals(supportUri.Host, entry.SearchDomain, StringComparison.OrdinalIgnoreCase) &&
-                !supportUri.Host.EndsWith("." + entry.SearchDomain, StringComparison.OrdinalIgnoreCase))
+                !IsHostWithinDomain(supportUri.Host, entry.SearchDomain) ||
+                entry.VendorIds is null || entry.DeviceFamilies is null ||
+                entry.VendorIds.Count > 64 || entry.DeviceFamilies.Count > 32 ||
+                entry.VendorIds.Any(id => string.IsNullOrWhiteSpace(id) ||
+                    id.Length is not (4 or 8) || !id.All(Uri.IsHexDigit)) ||
+                entry.DeviceFamilies.Any(family => string.IsNullOrWhiteSpace(family) || family.Length > 40))
                 throw new InvalidDataException("Запись подписанного каталога источников содержит некорректные поля.");
-            merged[entry.Id] = entry;
+
+            var safe = entry with
+            {
+                Id = entry.Id.Trim(),
+                DisplayName = entry.DisplayName.Trim(),
+                SearchDomain = domainUri.IdnHost.ToLowerInvariant(),
+                SupportUrl = supportUri.GetLeftPart(UriPartial.Path),
+                VendorIds = new HashSet<string>(entry.VendorIds.Select(x => x.ToUpperInvariant()),
+                    StringComparer.OrdinalIgnoreCase),
+                DeviceFamilies = new HashSet<string>(entry.DeviceFamilies.Select(x => x.Trim()),
+                    StringComparer.OrdinalIgnoreCase)
+            };
+            merged[safe.Id] = safe;
         }
+
+        var duplicateVendorIds = merged.Values
+            .SelectMany(entry => entry.VendorIds.Select(id => (id, entry.Id)))
+            .GroupBy(item => item.id, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Select(item => item.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+            .ToArray();
+        if (duplicateVendorIds.Length > 0)
+            throw new InvalidDataException("Подписанный каталог содержит неоднозначные Vendor ID: " +
+                string.Join(", ", duplicateVendorIds.Select(x => x.Key)));
+
         return merged.Values.OrderBy(x => x.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToArray();
     }
+
+    private static bool IsHostWithinDomain(string host, string domain) =>
+        host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+        host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase);
 
 
     public DriverVendorCatalogEntry? Resolve(string? hardwareId, string? manufacturer = null, string? driverProvider = null)
