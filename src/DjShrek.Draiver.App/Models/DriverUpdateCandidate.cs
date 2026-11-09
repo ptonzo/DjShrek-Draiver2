@@ -47,6 +47,11 @@ public sealed class DriverUpdateCandidate
     public string CatalogRecordId { get; set; } = "";
     public string CatalogReleaseVersion { get; set; } = "";
     public string CatalogReleaseDate { get; set; } = "";
+    public string SourceHost { get; set; } = "";
+    public string SourceCategory { get; set; } = "Unverified";
+    public string SourceExplanation { get; set; } = "Источник не оценён";
+    public string PackageSourceHost { get; set; } = "";
+    public string PackageSourceCategory { get; set; } = "Unverified";
     /// <summary>Origin category: OfficialManufacturer, IndependentCatalog, or SearchDiscovery.</summary>
     public string SourceType { get; init; } = "SearchDiscovery";
     /// <summary>Provenance assessment only; not a package signature verdict.</summary>
