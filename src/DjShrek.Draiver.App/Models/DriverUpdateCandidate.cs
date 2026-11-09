@@ -1,3 +1,5 @@
+using DjShrek.Draiver.App.Services;
+
 namespace DjShrek.Draiver.App.Models;
 
 public sealed class DriverUpdateCandidate
