@@ -150,13 +150,33 @@ public sealed class OemPackageExtractionService
 
         long total = 0;
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(destination, "*", SearchOption.AllDirectories))
+        foreach (var file in EnumerateFilesWithoutReparsePoints(destination))
         {
             cancellationToken.ThrowIfCancellationRequested();
             count++;
             total = checked(total + new FileInfo(file).Length);
             if (count > MaxFiles || total > MaxExpandedBytes)
                 throw new InvalidDataException("CAB превышает ограничения: максимум 20 000 файлов и 8 ГБ распакованных данных.");
+        }
+    }
+
+    private static IEnumerable<string> EnumerateFilesWithoutReparsePoints(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("CAB содержит reparse point; проверка распакованного содержимого остановлена.");
+                if ((attributes & FileAttributes.Directory) != 0)
+                    pending.Push(entry);
+                else
+                    yield return entry;
+            }
         }
     }
 
