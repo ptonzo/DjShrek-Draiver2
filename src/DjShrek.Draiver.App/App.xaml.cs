@@ -102,6 +102,22 @@ public partial class App : Application
                 throw new InvalidOperationException("PCI vendor ID did not take priority for NVIDIA.");
             checks.Add("PASS: OEM/component vendor routing handles HP/MSI names, rejects incidental substrings, and prioritizes PCI vendor IDs.");
 
+            var parsedPci = DeviceHardwareIdParser.Parse(@"PCI\VEN_10DE&DEV_2684&SUBSYS_12345678&REV_A1");
+            if (parsedPci is null || parsedPci.Bus != "PCI" || parsedPci.VendorId != "10DE" ||
+                parsedPci.DeviceId != "2684" || parsedPci.SubsystemId != "12345678" || parsedPci.RevisionId != "A1")
+                throw new InvalidOperationException("PCI hardware ID parsing lost vendor, device, subsystem or revision data.");
+            var parsedUsb = DeviceHardwareIdParser.Parse(@"USB\VID_046D&PID_C534");
+            if (parsedUsb is null || parsedUsb.Bus != "USB" || parsedUsb.VendorId != "046D" ||
+                parsedUsb.ProductId != "C534" || parsedUsb.FriendlyVendorName != "Logitech")
+                throw new InvalidOperationException("USB VID/PID parsing failed.");
+            var parsedAudio = DeviceHardwareIdParser.Parse(@"HDAUDIO\FUNC_01&VEN_10EC&DEV_0295&SUBSYS_104386C7");
+            if (parsedAudio is null || parsedAudio.Bus != "HDAUDIO" || parsedAudio.VendorId != "10EC" ||
+                parsedAudio.DeviceId != "0295")
+                throw new InvalidOperationException("HDAUDIO vendor/device parsing failed.");
+            if (InternetDriverCatalogService.GetVendorDomain(new DeviceInfo { Manufacturer = "Unknown" },
+                    @"USB\VID_046D&PID_C534") != "logitech.com")
+                throw new InvalidOperationException("USB Logitech VID did not select the official vendor domain.");
+            checks.Add("PASS: PCI, USB and HDAUDIO identifiers are parsed and USB vendor routing is resolved.");
 
             var matchedCandidate = new DriverUpdateCandidate
             {
