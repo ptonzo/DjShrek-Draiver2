@@ -78,7 +78,7 @@ public sealed class DriverInfPackageInspector
         if (!architectureApplicable) warnings.Add("INF не содержит секции, применимой к архитектуре этой Windows.");
         if (string.IsNullOrWhiteSpace(catalog)) warnings.Add("В INF не найден CatalogFile для проверки подписи.");
 
-        var catalogPath = string.IsNullOrWhiteSpace(catalog) ? null : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fullPath)!, catalog));
+        var catalogPath = string.IsNullOrWhiteSpace(catalog) ? null : ResolveCatalogPath(fullPath, catalog);
         string signature = "Not checked";
         string catalogHash = "";
         if (catalogPath is not null && File.Exists(catalogPath))
@@ -109,6 +109,26 @@ public sealed class DriverInfPackageInspector
             fullPath, provider, className, driverVersionNumber, driverDate, catalog ?? "", signature,
             ComputeSha256(fullPath), catalogHash, matchKind, matched, architectureApplicable,
             architectures, ids, warnings);
+    }
+
+    private static string ResolveCatalogPath(string infPath, string catalogFile)
+    {
+        if (Path.IsPathRooted(catalogFile) ||
+            catalogFile.Contains(':', StringComparison.Ordinal) ||
+            catalogFile.StartsWith('\\\\') ||
+            catalogFile.StartsWith('/'))
+            throw new InvalidDataException("CatalogFile содержит абсолютный или недопустимый путь.");
+
+        var root = Path.GetFullPath(Path.GetDirectoryName(infPath)!);
+        var resolved = Path.GetFullPath(Path.Combine(root, catalogFile));
+        var relative = Path.GetRelativePath(root, resolved);
+        if (relative.Equals("..", StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal) ||
+            Path.IsPathRooted(relative))
+            throw new InvalidDataException("CatalogFile выходит за пределы папки INF-пакета.");
+
+        return resolved;
     }
 
     private static Dictionary<string, Dictionary<string, string>> ParseSections(string path)
