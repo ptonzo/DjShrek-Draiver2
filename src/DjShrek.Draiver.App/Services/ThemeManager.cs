@@ -69,6 +69,7 @@ public static class ThemeManager
         Set(resources, "AccentBrush", theme.Accent);
         Set(resources, "AccentSecondaryBrush", theme.Accent2);
         Set(resources, "SuccessBrush", theme.Success);
+        resources["ScanProgressBrush"] = new SolidColorBrush(Color.FromRgb(255, 59, 69));
         Set(resources, "NavigationBrush", theme.Navigation);
         var hero = new LinearGradientBrush(
             (Color)ColorConverter.ConvertFromString(theme.HeroStart),
