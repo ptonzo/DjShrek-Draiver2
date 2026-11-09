@@ -46,14 +46,14 @@ public sealed class GigabyteDriverCatalogService
             var name = Read(element, "productName", "name", "model", "title");
             if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name)) return;
             var normalized = Normalize(name);
-            var score = normalized == target ? 100 :
-                normalized.Contains(target, StringComparison.Ordinal) || target.Contains(normalized, StringComparison.Ordinal)
-                    ? 60 : 0;
+            // SMBIOS board names must match the catalog product exactly. Substring
+            // matching can select a different board in the same product family.
+            var score = normalized == target ? 100 : 0;
             if (score > 0) candidates.Add((id, name, score));
         });
-        var best = candidates.OrderByDescending(x => x.Score)
-            .ThenBy(x => Math.Abs(x.Name.Length - model.Length)).FirstOrDefault();
-        return best.Id is null ? null : (best.Id, best.Name);
+        var exact = candidates.Select(x => (x.Id, x.Name))
+            .DistinctBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToArray();
+        return exact.Length == 1 ? exact[0] : null;
     }
 
     private static IReadOnlyList<GigabyteDriverPackage> ParsePackages(
