@@ -25,6 +25,12 @@ public sealed class InternetDriverCatalogService
         Timeout = TimeSpan.FromSeconds(20)
     };
 
+    private static readonly string[] CatalogDomains =
+    {
+        "driver.ru", "driverguide.com", "flydrivers.com", "driverpack.io",
+        "station-drivers.com", "driverscollection.com", "driverscape.com"
+    };
+
     private static readonly string[] OfficialDomains =
     {
         "intel.com", "nvidia.com", "amd.com", "dell.com", "hp.com",
@@ -77,7 +83,7 @@ public sealed class InternetDriverCatalogService
                     {
                         if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
                         var rawLink = (string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "link");
-                        if (!TryGetOfficialUri(rawLink, out var uri)) continue;
+                        if (!TryGetCatalogUri(rawLink, out var uri)) continue;
 
                         var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
                             ? device.Name + "|" + device.Manufacturer
@@ -105,6 +111,8 @@ public sealed class InternetDriverCatalogService
                             Manufacturer = device.Manufacturer,
                             Model = device.Name,
                             Provider = uri.Host,
+                            SourceType = IsOfficial(uri.Host) ? "OfficialManufacturer" : "IndependentCatalog",
+                            SourceTrust = IsOfficial(uri.Host) ? "OfficialDomain_UnverifiedPackage" : "IndependentCatalog_UnverifiedPackage",
                             DeviceClass = device.Class,
                             HardwareId = hardwareId,
                             MatchType = isExactHardwareId ? "Hardware ID" : "Compatible ID",
@@ -116,8 +124,8 @@ public sealed class InternetDriverCatalogService
                             SearchQuery = query,
                             PublishedDate = published,
                             Evidence = isExactHardwareId
-                                ? "Точный Hardware ID использован в поисковом запросе; страница производителя ещё не подтверждает поддержку устройства."
-                                : "Compatible ID использован в поисковом запросе; этого недостаточно для подтверждения совместимости.",
+                                ? "Точный Hardware ID использован в поисковом запросе. Результат каталога/сайта — только зацепка; совместимость пакета не подтверждена."
+                                : "Compatible ID использован в поисковом запросе. Это только зацепка; совместимость пакета не подтверждена.",
                             SourceUrl = uri.AbsoluteUri
                         });
                         deviceCount++;
@@ -143,10 +151,11 @@ public sealed class InternetDriverCatalogService
         };
         if (!string.IsNullOrWhiteSpace(device.Name))
             parts.Add("\"" + LimitQueryText(device.Name, 90) + "\"");
-        if (!string.IsNullOrWhiteSpace(vendor))
-            parts.Add("site:" + vendor);
-        else
-            parts.Add("(site:intel.com OR site:nvidia.com OR site:amd.com OR site:dell.com OR site:hp.com OR site:lenovo.com OR site:asus.com OR site:acer.com OR site:msi.com OR site:realtek.com)");
+        var sourceSites = new List<string>();
+        if (!string.IsNullOrWhiteSpace(vendor)) sourceSites.Add("site:" + vendor);
+        else sourceSites.Add("(site:intel.com OR site:nvidia.com OR site:amd.com OR site:dell.com OR site:hp.com OR site:lenovo.com OR site:asus.com OR site:acer.com OR site:msi.com OR site:realtek.com)");
+        sourceSites.Add("(site:driver.ru OR site:driverguide.com OR site:flydrivers.com OR site:driverpack.io OR site:station-drivers.com OR site:driverscollection.com OR site:driverscape.com)");
+        parts.Add("(" + string.Join(" OR ", sourceSites) + ")");
         return string.Join(" ", parts);
     }
 
@@ -240,14 +249,27 @@ public sealed class InternetDriverCatalogService
         return "";
     }
 
-    private static bool TryGetOfficialUri(string? value, out Uri uri)
+    private static bool TryGetCatalogUri(string? value, out Uri uri)
     {
         uri = null!;
         if (!Uri.TryCreate(value, UriKind.Absolute, out var parsed) ||
-            parsed.Scheme != Uri.UriSchemeHttps || !IsOfficial(parsed.Host))
+            parsed.Scheme != Uri.UriSchemeHttps ||
+            (!IsOfficial(parsed.Host) && !IsIndependentCatalog(parsed.Host)))
             return false;
         uri = parsed;
         return true;
+    }
+
+    public static bool IsIndependentCatalogUrl(string? value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return false;
+        return IsIndependentCatalog(uri.Host);
+    }
+
+    private static bool IsIndependentCatalog(string host)
+    {
+        host = host.TrimEnd('.').ToLowerInvariant();
+        return CatalogDomains.Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
     }
 
     public static bool IsOfficialVendorUrl(string? value)
