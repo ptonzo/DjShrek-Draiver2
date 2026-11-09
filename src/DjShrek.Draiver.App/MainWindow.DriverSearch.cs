@@ -492,6 +492,53 @@ public partial class MainWindow
                 AppendEvent("Каталог ASUS пропущен: " + ex.GetType().Name);
             }
 
+            try
+            {
+                using var bios = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+                var boardManufacturer = bios?.GetValue("BaseBoardManufacturer")?.ToString() ?? "";
+                var boardModel = bios?.GetValue("BaseBoardProduct")?.ToString()?.Trim();
+                if (boardManufacturer.Contains("Gigabyte", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(boardModel))
+                {
+                    var gigabytePacks = await new GigabyteDriverCatalogService()
+                        .FindMotherboardDriversAsync(boardModel, Environment.OSVersion.Version.Build,
+                            _driverSearchCts.Token);
+                    foreach (var pack in gigabytePacks)
+                    {
+                        results.Add(new DriverUpdateCandidate
+                        {
+                            UpdateId = pack.PackageUri.AbsoluteUri,
+                            Title = "Драйвер GIGABYTE: " + pack.FileName,
+                            Manufacturer = "GIGABYTE",
+                            Model = pack.Model,
+                            Provider = "GIGABYTE DownloadCenter API",
+                            DeviceClass = pack.Category,
+                            MatchType = "OEM motherboard model",
+                            DeviceName = pack.Model,
+                            CurrentVersion = "Версия установленного драйвера сопоставляется отдельно",
+                            Compatibility = "Позиция каталога платы; соответствие отдельному Hardware ID ещё не подтверждено",
+                            AvailableVersion = pack.Version,
+                            VersionComparison = "Версия из каталога производителя; требуется анализ INF",
+                            DriverVersionDate = pack.ReleaseDate,
+                            PublishedDate = pack.ReleaseDate,
+                            Description = pack.Description + " " + pack.OperatingSystem,
+                            Evidence = "GIGABYTE GetProducts + GetProductTabDataAsync; модель платы из SMBIOS",
+                            SourceType = "OfficialManufacturer",
+                            SourceTrust = "OfficialDomain_UnverifiedPackage",
+                            SourceUrl = pack.CatalogUri.AbsoluteUri,
+                            PackageUrl = pack.PackageUri.AbsoluteUri,
+                            PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
+                            PackageStatus = "Пакет не загружен"
+                        });
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог GIGABYTE пропущен: " + ex.GetType().Name);
+            }
+
             var visibleResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
