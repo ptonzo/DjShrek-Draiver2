@@ -653,8 +653,10 @@
                                 <Ellipse Width="72" Height="72" Fill="{DynamicResource AccentBrush}"
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                <Path x:Name="ScanProgressArc" Stroke="#FFFF3B45" StrokeThickness="9"
+                                <Path x:Name="ScanProgressArc" Width="360" Height="360"
+                                      Stroke="#FFFF3B45" StrokeThickness="9"
                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                       IsHitTestVisible="False" Data="{x:Null}"/>
                                 <TextBlock x:Name="ScanPercentText" Text="0%" FontSize="21"
                                            FontWeight="Black" Foreground="White"
