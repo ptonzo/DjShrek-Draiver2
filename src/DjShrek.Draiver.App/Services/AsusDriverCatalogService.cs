@@ -116,14 +116,8 @@ public sealed class AsusDriverCatalogService
             .Where(item => !string.IsNullOrWhiteSpace(item.Id) && !string.IsNullOrWhiteSpace(item.Name)).ToArray();
     }
 
-    public async Task<IReadOnlyList<AsusDriverPackage>> GetDriversForDetectedModelAsync(
-        string model, int osId, string website = "global", string? cpu = null,
-        string? systemCode = null, CancellationToken cancellationToken = default)
-    {
-        ValidateToken(model, nameof(model), 128);
-        var identity = new AsusProductIdentity(model.Trim(), "0", null, cpu, systemCode);
-        return await GetDriversAsync(identity, osId, website, cancellationToken);
-    }
+    // GetDriversAsync intentionally requires a real ASUS PDId/PDHashedId.
+    // SMBIOS model strings alone are not sufficient to construct this API request.
 
     internal static IReadOnlyList<AsusDriverPackage> ParseDrivers(
         byte[] jsonBytes, AsusProductIdentity product, int osId, Uri catalogUri)
