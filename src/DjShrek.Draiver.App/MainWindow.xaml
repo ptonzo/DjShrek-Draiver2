@@ -379,6 +379,8 @@
                                                 <DataGridTextColumn Header="Производитель" Binding="{Binding Manufacturer}" Width="*"/>
                                                 <DataGridTextColumn Header="Модель" Binding="{Binding Model}" Width="1.2*"/>
                                                 <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
+                                                <DataGridTextColumn Header="Тип источника" Binding="{Binding SourceType}" Width="1.2*"/>
+                                                <DataGridTextColumn Header="Оценка источника" Binding="{Binding SourceTrust}" Width="1.6*"/>
                                                 <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
                                                 <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
                                                 <DataGridTextColumn Header="Шина" Binding="{Binding BusType}" Width="*"/>
@@ -391,7 +393,7 @@
                                                 <DataGridTextColumn Header="SHA-256" Binding="{Binding PackageSha256}" Width="2*"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
-                                        <TextBlock Text="Поиск выполняется в интернете по Hardware ID. В результатах показываются только HTTPS-страницы официальных производителей. Загрузка и установка выполняются после ручной проверки."
+                                        <TextBlock Text="Поиск выполняется по Hardware ID в каталогах производителей и независимых базах (Driver.ru, DriverGuide, FlyDrivers и других). Сторонний источник не считается доверенным автоматически: перед установкой проверяются INF, Hardware ID, версия, архитектура и подпись CAT."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
