@@ -321,7 +321,12 @@ public sealed class DriverMaintenanceService
         var escaped = catalogPath.Replace("'", "''");
         var script = $"$s=Get-AuthenticodeSignature -LiteralPath '{escaped}'; [Console]::Write($s.Status.ToString())";
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var start = new ProcessStartInfo("powershell.exe", $"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}")
+        var powershell = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe");
+        if (!File.Exists(powershell))
+            throw new FileNotFoundException("Штатный Windows PowerShell не найден для проверки подписи CAT.", powershell);
+        var start = new ProcessStartInfo(powershell, $"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}")
         {
             UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
             CreateNoWindow = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
@@ -345,7 +350,12 @@ public sealed class DriverMaintenanceService
                      "Enable-ComputerRestore -Drive $env:SystemDrive -ErrorAction SilentlyContinue; " +
                      $"Checkpoint-Computer -Description '{escaped}' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop";
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var start = new ProcessStartInfo("powershell.exe",
+        var powershell = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe");
+        if (!File.Exists(powershell))
+            throw new FileNotFoundException("Штатный Windows PowerShell не найден для создания точки восстановления.", powershell);
+        var start = new ProcessStartInfo(powershell,
             $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encoded}")
         {
             UseShellExecute = true,
