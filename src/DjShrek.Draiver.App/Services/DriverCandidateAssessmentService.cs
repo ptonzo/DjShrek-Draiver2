@@ -153,8 +153,12 @@ public sealed class DriverCandidateAssessmentService
     }
 
     public static string GetCurrentArchitecture() =>
-        Environment.Is64BitOperatingSystem
-            ? (System.Runtime.InteropServices.RuntimeInformation.OSArchitecture ==
-               System.Runtime.InteropServices.Architecture.Arm64 ? "ARM64" : "x64")
-            : "x86";
+        System.Runtime.InteropServices.RuntimeInformation.OSArchitecture switch
+        {
+            System.Runtime.InteropServices.Architecture.X86 => "x86",
+            System.Runtime.InteropServices.Architecture.X64 => "x64",
+            System.Runtime.InteropServices.Architecture.Arm => "ARM",
+            System.Runtime.InteropServices.Architecture.Arm64 => "ARM64",
+            _ => "Unknown"
+        };
 }
