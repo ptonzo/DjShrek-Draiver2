@@ -122,7 +122,7 @@ public partial class App : Application
                 sourceMetadata.SourceTrust != "IndependentCatalog_UnverifiedPackage")
                 throw new InvalidOperationException("Independent source provenance was incorrectly treated as a verified package.");
             checks.Add("PASS: Driver.ru/DriverGuide/FlyDrivers source classification and cloud-download origin policy are covered.");
-            var driverRuSearchUri = DriverRuCatalogProvider.BuildSearchUri(@"PCI\\VEN_1022&DEV_1502");
+            var driverRuSearchUri = DriverRuCatalogProvider.BuildSearchUri(@"PCI\VEN_1022&DEV_1502");
             if (driverRuSearchUri.AbsoluteUri != "https://driver.ru/Search/PCI%5CVEN_1022%26DEV_1502")
                 throw new InvalidOperationException("Driver.ru Hardware ID route was not encoded correctly.");
             var driverRuSample = "<div>Производитель: AMD<br>Оборудование: ACP Resource Management Device Extension<br>" +
@@ -130,7 +130,7 @@ public partial class App : Application
                 "Система: Windows 10 64-bit Windows 11<br>Описание: AMD audio package</div>";
             var driverRuParsed = DriverRuCatalogProvider.ParseSearchPage(
                 new DeviceInfo { Name = "Test Audio Device", Manufacturer = "AMD", DriverVersion = "24.7.1" },
-                @"PCI\\VEN_1022&DEV_1502", driverRuSearchUri, driverRuSample);
+                @"PCI\VEN_1022&DEV_1502", driverRuSearchUri, driverRuSample);
             if (driverRuParsed.Count != 1 ||
                 driverRuParsed[0].AvailableVersion != "26.7.1" ||
                 driverRuParsed[0].Provider != "driver.ru" ||
