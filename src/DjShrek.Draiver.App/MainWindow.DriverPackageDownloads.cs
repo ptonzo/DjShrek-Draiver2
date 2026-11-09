@@ -509,7 +509,12 @@ public partial class MainWindow
             await _packageIntegrity.SaveAsync(manifest, manifestPath);
             var integrity = await _packageIntegrity.VerifyAsync(extractedFolder, manifest);
             if (!integrity.IsValid)
+            {
+                candidate.PackageIntegrityStatus = "Ошибка проверки: " + integrity.Message;
                 throw new InvalidDataException("Проверка целостности распакованного пакета не пройдена: " + integrity.Message);
+            }
+            candidate.PackageIntegrityStatus =
+                $"Проверен: {integrity.VerifiedFileCount} файлов, {integrity.VerifiedBytes:N0} байт";
 
             await _operationJournal.AppendAsync(
                 "DriverPackageIntegrityVerified", "Verified", device.InstanceId, candidate.HardwareId,
@@ -520,6 +525,7 @@ public partial class MainWindow
             var preflight = await _packagePreflight.InspectAsync(extractedFolder, candidate.HardwareId);
             if (!preflight.HasExactHardwareIdMatch)
             {
+                candidate.PackagePreflightStatus = "Точное совпадение Hardware ID не найдено";
                 candidate.PackageStatus = "INF не прошёл предварительную проверку";
                 DriverUpdatesGrid.Items.Refresh();
                 var rejected = string.Join(Environment.NewLine,
@@ -530,6 +536,7 @@ public partial class MainWindow
                 return;
             }
 
+            candidate.PackagePreflightStatus = "Пройдено: точный Hardware ID найден";
             await _operationJournal.AppendAsync(
                 "DriverPackagePreflightPassed", "ExactHardwareIdMatch", device.InstanceId, candidate.HardwareId,
                 candidate.PackageSha256, null,
