@@ -393,7 +393,7 @@ public partial class MainWindow
                     results.Add(new DriverUpdateCandidate
                     {
                         UpdateId = pack.PackageUri.AbsoluteUri,
-                        CatalogRecordId = pack.SystemId,
+                        CatalogRecordId = pack.MachineType,
                         CatalogReleaseVersion = pack.PackageVersion,
                         CatalogReleaseDate = pack.ReleaseDate,
                         OperatingSystemTarget = pack.OperatingSystem,
@@ -439,7 +439,7 @@ public partial class MainWindow
                     results.Add(new DriverUpdateCandidate
                     {
                         UpdateId = pack.PackageUri.AbsoluteUri,
-                        CatalogRecordId = pack.SystemId,
+                        CatalogRecordId = pack.MachineType,
                         CatalogReleaseVersion = pack.PackageVersion,
                         CatalogReleaseDate = pack.ReleaseDate,
                         OperatingSystemTarget = pack.OperatingSystem,
