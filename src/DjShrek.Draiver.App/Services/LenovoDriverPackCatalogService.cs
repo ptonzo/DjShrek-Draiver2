@@ -75,7 +75,11 @@ $family = if ($caption -match 'Windows 11') { 'Windows 11' } elseif ($caption -m
 """;
 
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var start = new ProcessStartInfo("powershell.exe", $"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}")
+        var powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe");
+        if (!File.Exists(powershell))
+            throw new FileNotFoundException("Не найден системный Windows PowerShell.", powershell);
+        var start = new ProcessStartInfo(powershell, $"-NoLogo -NoProfile -NonInteractive -EncodedCommand {encoded}")
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
