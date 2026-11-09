@@ -116,6 +116,7 @@ public partial class MainWindow
         UpdatesCountText.Text = "Идёт поиск по Hardware ID в каталогах производителей и независимых базах...";
         DriverUpdatesSummaryText.Text = "Проверяются HTTPS-страницы производителей и независимых каталогов (включая Driver.ru, DriverGuide и FlyDrivers). Результат ещё не означает, что пакет новее или совместим.";
         _driverUpdates.Clear();
+        InstallVerifiedDriverButton.IsEnabled = false;
 
         try
         {
@@ -162,6 +163,11 @@ public partial class MainWindow
             IsCandidateOpenable(candidate);
         InstallSelectedDriverButton.IsEnabled = hasCatalogPage;
         DownloadOfficialDriverPackageButton.IsEnabled = hasCatalogPage;
+        InstallVerifiedDriverButton.IsEnabled =
+            DriverUpdatesGrid.SelectedItem is DriverUpdateCandidate selected &&
+            selected.PackageStatus == "Готово к установке после подтверждения" &&
+            !string.IsNullOrWhiteSpace(selected.VerifiedInfPath) &&
+            File.Exists(selected.VerifiedInfPath);
     }
 
     private void InstallSelectedDriver_Click(object sender, RoutedEventArgs e)
