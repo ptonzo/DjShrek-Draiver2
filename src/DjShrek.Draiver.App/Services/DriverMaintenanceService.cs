@@ -19,6 +19,14 @@ public sealed class DriverMaintenanceService
             return ExportDrivers(destination);
         }, cancellationToken);
 
+    public Task<string> ExportDriverPackageAsync(
+        string publishedInfName, string destination, CancellationToken cancellationToken = default) =>
+        Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ExportDriverPackage(publishedInfName, destination);
+        }, cancellationToken);
+
     public Task<string> InstallInfAsync(string infPath, CancellationToken cancellationToken = default) =>
         Task.Run(() =>
         {
@@ -48,6 +56,25 @@ public sealed class DriverMaintenanceService
         var manifestResult = new DriverBackupManifestService().Create(target);
         return result + Environment.NewLine + $"Проверка резервной копии: найдено INF-пакетов — {infCount}." +
             Environment.NewLine + manifestResult;
+    }
+
+    public string ExportDriverPackage(string publishedInfName, string destination)
+    {
+        var publishedName = Path.GetFileName(publishedInfName?.Trim() ?? "");
+        if (!Regex.IsMatch(publishedName, @"^oem[0-9]+\.inf$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            throw new ArgumentException("Для точечной резервной копии требуется опубликованное имя пакета вида oem42.inf.");
+
+        var target = Path.GetFullPath(destination);
+        Directory.CreateDirectory(target);
+        if (Directory.EnumerateFileSystemEntries(target).Any())
+            throw new IOException("Папка точечной резервной копии должна быть пустой.");
+
+        var result = RunElevated("pnputil.exe", $"/export-driver \"{publishedName}\" \"{target}\"");
+        var infCount = Directory.EnumerateFiles(target, "*.inf", SearchOption.AllDirectories).Take(2).Count();
+        if (infCount == 0)
+            throw new IOException("pnputil не экспортировал INF-пакет текущего драйвера.");
+        var manifestResult = new DriverBackupManifestService().Create(target);
+        return result + Environment.NewLine + manifestResult + Environment.NewLine + "Папка резервной копии: " + target;
     }
 
     public string InstallInf(string infPath)
