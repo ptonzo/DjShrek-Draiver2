@@ -114,7 +114,7 @@ public partial class MainWindow
             installable.Length > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
         StatusText.Text = $"Проверка завершена: INF-кандидатов {candidates.Count}, прошли предварительные проверки {installable.Length}.";
         AppendEvent($"Проверка пакета {Path.GetFileName(packagePath)}: INF {candidates.Count}, допустимых кандидатов {installable.Length}.");
-        Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", extractedFolder) { UseShellExecute = true });
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", extractedFolder) { UseShellExecute = true });
     }
 
     private Uri? SelectPackageLink(IReadOnlyList<Uri> links)
