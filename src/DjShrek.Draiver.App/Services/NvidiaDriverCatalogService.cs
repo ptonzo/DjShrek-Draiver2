@@ -100,7 +100,8 @@ public sealed class NvidiaDriverCatalogService
             .Select(x => new LookupEntry(
                 x.Elements().FirstOrDefault(e => e.Name.LocalName.Equals("Name", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "",
                 x.Elements().FirstOrDefault(e => e.Name.LocalName.Equals("Value", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "",
-                x.Attribute("ParentID")?.Value ?? ""))
+                x.Attribute("ParentID")?.Value ??
+                x.Elements().FirstOrDefault(e => e.Name.LocalName.Equals("ParentID", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? ""))
             .Where(x => x.Name.Length > 0 && x.Value.Length > 0).Take(5000).ToArray();
     }
 
