@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -7,19 +8,18 @@ using DjShrek.Draiver.App.Models;
 namespace DjShrek.Draiver.App.Services;
 
 /// <summary>
-/// Discovers official vendor support pages from Plug and Play identifiers.
-/// Search hits are leads only: this service does not claim package compatibility,
-/// download binaries, or install drivers.
+/// Finds official vendor support pages using the device's most specific Plug and Play IDs.
+/// Search results are discovery leads only; they are never treated as verified driver packages.
 /// </summary>
 public sealed class InternetDriverCatalogService
 {
-    private const int MaxIdsPerDevice = 3;
-    private const int MaxResultsPerDevice = 8;
-    private const int MaxTotalResults = 120;
+    private const int MaxIdsPerDevice = 6;
+    private const int MaxResultsPerDevice = 12;
+    private const int MaxTotalResults = 160;
     private static readonly HttpClient Client = new(new HttpClientHandler
     {
         AutomaticDecompression = DecompressionMethods.All,
-        AllowAutoRedirect = true
+        AllowAutoRedirect = false
     })
     {
         Timeout = TimeSpan.FromSeconds(20)
@@ -38,8 +38,8 @@ public sealed class InternetDriverCatalogService
 
     static InternetDriverCatalogService()
     {
-        Client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DjShrek-Draiver", "1.8"));
-        Client.DefaultRequestHeaders.Accept.ParseAdd("application/rss+xml, application/xml;q=0.9, */*;q=0.8");
+        Client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DjShrek-Draiver", "2.0"));
+        Client.DefaultRequestHeaders.Accept.ParseAdd("application/rss+xml, application/xml;q=0.9");
     }
 
     public async Task<IReadOnlyList<DriverUpdateCandidate>> SearchAsync(
@@ -63,6 +63,8 @@ public sealed class InternetDriverCatalogService
                 try
                 {
                     using var response = await Client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    // Do not follow redirects from the search endpoint. A redirect is not
+                    // needed for RSS discovery and could otherwise leave the trusted host.
                     if (!response.IsSuccessStatusCode) continue;
                     await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
                     var xml = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
@@ -71,9 +73,7 @@ public sealed class InternetDriverCatalogService
                         if (deviceCount >= MaxResultsPerDevice || output.Count >= MaxTotalResults) break;
                         var rawLink = (string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "link");
                         if (!TryGetOfficialUri(rawLink, out var uri)) continue;
-                        // The same vendor page can legitimately serve multiple devices.
-                        // Deduplicate per PnP instance, not globally, or later devices
-                        // silently lose a valid lead from the results list.
+
                         var deviceKey = string.IsNullOrWhiteSpace(device.InstanceId)
                             ? device.Name + "|" + device.Manufacturer
                             : device.InstanceId;
@@ -82,6 +82,9 @@ public sealed class InternetDriverCatalogService
                         var title = Clean((string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "title"));
                         var description = Clean((string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "description"));
                         if (string.IsNullOrWhiteSpace(title)) title = "Страница поддержки производителя";
+                        var published = ParsePublishedDate((string?)item.Elements().FirstOrDefault(x => x.Name.LocalName == "pubDate"));
+                        var isExactHardwareId = (device.HardwareIds ?? Array.Empty<string>())
+                            .Contains(hardwareId, StringComparer.OrdinalIgnoreCase);
 
                         output.Add(new DriverUpdateCandidate
                         {
@@ -92,11 +95,17 @@ public sealed class InternetDriverCatalogService
                             Provider = uri.Host,
                             DeviceClass = device.Class,
                             HardwareId = hardwareId,
+                            MatchType = isExactHardwareId ? "Hardware ID" : "Compatible ID",
                             DeviceName = device.Name,
                             CurrentVersion = device.DriverVersion,
                             Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
                             AvailableVersion = "Не подтверждена — проверьте на сайте производителя",
                             Description = description,
+                            SearchQuery = query,
+                            PublishedDate = published,
+                            Evidence = isExactHardwareId
+                                ? "Поиск выполнен по точному Hardware ID устройства."
+                                : "Результат найден по Compatible ID; этого недостаточно для подтверждения совместимости.",
                             SourceUrl = uri.AbsoluteUri
                         });
                         deviceCount++;
@@ -114,16 +123,26 @@ public sealed class InternetDriverCatalogService
     private static string BuildQuery(DeviceInfo device, string hardwareId)
     {
         var vendor = GetVendorDomain(device, hardwareId);
-        var parts = new List<string> { "driver", "download", hardwareId, "(Windows 10 OR Windows 11)" };
-        if (!string.IsNullOrWhiteSpace(vendor)) parts.Add("site:" + vendor);
-        else parts.Add("(site:intel.com OR site:nvidia.com OR site:amd.com OR site:dell.com OR site:hp.com OR site:lenovo.com OR site:asus.com OR site:acer.com OR site:msi.com OR site:realtek.com)");
+        var parts = new List<string>
+        {
+            "driver download",
+            "\"" + hardwareId + "\"",
+            "(Windows 10 OR Windows 11)"
+        };
+        if (!string.IsNullOrWhiteSpace(device.Name))
+            parts.Add("\"" + LimitQueryText(device.Name, 90) + "\"");
+        if (!string.IsNullOrWhiteSpace(vendor))
+            parts.Add("site:" + vendor);
+        else
+            parts.Add("(site:intel.com OR site:nvidia.com OR site:amd.com OR site:dell.com OR site:hp.com OR site:lenovo.com OR site:asus.com OR site:acer.com OR site:msi.com OR site:realtek.com)");
         return string.Join(" ", parts);
     }
 
+    private static string LimitQueryText(string value, int maxLength) =>
+        new(value.Where(c => !char.IsControl(c) && c != '"').Take(maxLength).ToArray());
+
     internal static string? GetVendorDomain(DeviceInfo device, string hardwareId)
     {
-        // Hardware vendor IDs take priority over descriptive names. Manufacturer strings
-        // are tokenized so "HP" and "MSI" work without matching unrelated words.
         var text = NormalizeVendorText(device.Manufacturer + " " + device.DriverProvider);
         bool HasToken(string token) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Contains(token, StringComparer.Ordinal);
@@ -153,15 +172,39 @@ public sealed class InternetDriverCatalogService
         return string.Join(" ", normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
-    private static IEnumerable<string> GetIds(DeviceInfo device) =>
-        (device.HardwareIds ?? Array.Empty<string>())
-            .Concat(device.CompatibleIds ?? Array.Empty<string>())
-            .Where(x => !string.IsNullOrWhiteSpace(x) && x.Length >= 8)
-            .Select(x => x.Trim().Trim('"'))
+    private static IEnumerable<string> GetIds(DeviceInfo device)
+    {
+        // Exact Hardware IDs are always searched before broader Compatible IDs.
+        var exact = (device.HardwareIds ?? Array.Empty<string>())
+            .Where(IsUsableId)
+            .Select(NormalizeId)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderByDescending(x => x.Contains("&SUBSYS_", StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(x => x.Contains("&REV_", StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(x => x.Count(c => c == '&'));
+            .OrderByDescending(IdSpecificity);
+        var compatible = (device.CompatibleIds ?? Array.Empty<string>())
+            .Where(IsUsableId)
+            .Select(NormalizeId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(IdSpecificity);
+        return exact.Concat(compatible).Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool IsUsableId(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Trim().Trim('"').Length >= 8;
+
+    private static string NormalizeId(string value) => value.Trim().Trim('"');
+
+    private static int IdSpecificity(string value) =>
+        (value.Contains("&SUBSYS_", StringComparison.OrdinalIgnoreCase) ? 100 : 0) +
+        (value.Contains("&REV_", StringComparison.OrdinalIgnoreCase) ? 20 : 0) +
+        value.Count(c => c == '&');
+
+    private static string ParsePublishedDate(string? value)
+    {
+        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal, out var parsed))
+            return parsed.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.CurrentCulture);
+        return "";
+    }
 
     private static bool TryGetOfficialUri(string? value, out Uri uri)
     {
@@ -190,8 +233,10 @@ public sealed class InternetDriverCatalogService
 
     private static IReadOnlyList<DriverUpdateCandidate> Rank(List<DriverUpdateCandidate> items) =>
         items.OrderBy(x => x.DeviceName, StringComparer.OrdinalIgnoreCase)
-            .ThenByDescending(x => x.HardwareId.Contains("&SUBSYS_", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(x => x.MatchType == "Hardware ID" ? 0 : 1)
+            .ThenByDescending(x => IdSpecificity(x.HardwareId))
             .ThenBy(x => x.Provider, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(x => x.PublishedDate, StringComparer.Ordinal)
             .ThenBy(x => x.Title, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 }
