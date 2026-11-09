@@ -136,13 +136,24 @@ public sealed class AsusDriverCatalogService
         var results = new List<AsusDriverPackage>();
         foreach (var item in list.Value.EnumerateArray().Take(500))
         {
-            var title = ReadString(item, "Title", "Name", "FileName", "DownloadName");
-            var version = ReadString(item, "Version", "Ver", "DriverVersion");
-            var date = ReadString(item, "ReleaseDate", "Date", "UpdateDate");
-            var description = ReadString(item, "Description", "Memo", "Info");
-            var category = ReadString(item, "Category", "Type", "OSName");
-            var sha256 = ReadString(item, "sha256", "SHA256", "Sha256");
-            var download = FindDownloadUrl(item);
+            var file = item;
+            if (TryProperty(item, "Files", out var files) &&
+                files.ValueKind == JsonValueKind.Array && files.GetArrayLength() > 0)
+                file = files[0];
+
+            var title = FirstNonEmpty(ReadString(item, "Title", "Name", "FileName", "DownloadName"),
+                ReadString(file, "Title", "Name", "FileName", "DownloadName"));
+            var version = FirstNonEmpty(ReadString(file, "Version", "Ver", "DriverVersion"),
+                ReadString(item, "Version", "Ver", "DriverVersion"));
+            var date = FirstNonEmpty(ReadString(file, "ReleaseDate", "Date", "UpdateDate"),
+                ReadString(item, "ReleaseDate", "Date", "UpdateDate"));
+            var description = FirstNonEmpty(ReadString(item, "Description", "Memo", "Info"),
+                ReadString(file, "Description", "Memo", "Info"));
+            var category = FirstNonEmpty(ReadString(item, "Category", "Type", "OSName"),
+                ReadString(file, "Category", "Type", "OSName"));
+            var sha256 = FirstNonEmpty(ReadString(file, "sha256", "SHA256", "Sha256"),
+                ReadString(item, "sha256", "SHA256", "Sha256"));
+            var download = FirstNonEmpty(FindDownloadUrl(file), FindDownloadUrl(item));
             if (string.IsNullOrWhiteSpace(title) || !Uri.TryCreate(download, UriKind.Absolute, out var packageUri))
                 continue;
             if (packageUri.Scheme != Uri.UriSchemeHttps ||
@@ -175,6 +186,9 @@ public sealed class AsusDriverCatalogService
         }
         return null;
     }
+
+    private static string FirstNonEmpty(string first, string second) =>
+        string.IsNullOrWhiteSpace(first) ? second : first;
 
     private static string FindDownloadUrl(JsonElement item)
     {
