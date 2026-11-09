@@ -160,7 +160,18 @@ public sealed class DriverVendorCatalogRegistry
         if (Has("msi") || text.Contains("micro star", StringComparison.Ordinal)) return Find("msi");
         if (Has("gigabyte") || Has("aorus")) return Find("gigabyte");
         if (Has("microsoft") || Has("surface")) return Find("microsoft");
-        return null;
+
+        // Keep manufacturer/provider fallback extensible as the curated registry grows.
+        // Longest display names win so compound names such as "Silicon Labs" resolve
+        // before a shorter overlapping token.
+        return Entries
+            .OrderByDescending(entry => Normalize(entry.DisplayName).Length)
+            .FirstOrDefault(entry =>
+            {
+                var displayName = Normalize(entry.DisplayName);
+                return displayName.Length > 0 &&
+                       (" " + text + " ").Contains(" " + displayName + " ", StringComparison.Ordinal);
+            });
     }
 
     public DriverVendorCatalogEntry? Resolve(
