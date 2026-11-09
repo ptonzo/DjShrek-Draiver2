@@ -360,7 +360,7 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return;
         StartScanButton.IsEnabled = false;
-        StartupScanStatusText.Text = "Сканирование оборудования и установленных драйверов...";
+        SetScanProgress(0, "Сканирование оборудования и установленных драйверов...");
         try
         {
             if (!await ScanDevicesAsync())
@@ -369,9 +369,9 @@ public partial class MainWindow : Window
                 return;
             }
 
-            StartupScanStatusText.Text = $"Устройств проверено: {_devices.Count}. Поиск доступных обновлений драйверов...";
+            SetScanProgress(92, $"Устройств проверено: {_devices.Count}. Поиск совместимых обновлений драйверов...");
             await SearchDriverUpdatesAsync();
-            StartupScanStatusText.Text = "Проверка завершена. Открывается DjShrek-Draiver.";
+            SetScanProgress(100, "Проверка завершена. Открывается DjShrek-Draiver.");
         }
         finally
         {
