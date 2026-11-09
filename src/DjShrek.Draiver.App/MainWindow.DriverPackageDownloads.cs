@@ -12,6 +12,7 @@ public partial class MainWindow
     private readonly DriverUpdateHistoryService _driverHistory = new();
     private readonly DriverOperationJournalService _operationJournal = new();
     private readonly DriverPackageIntegrityManifestService _packageIntegrity = new();
+    private readonly DriverPackagePreflightService _packagePreflight = new();
     private readonly DriverSourceProvenanceService _sourceProvenance = new();
 
     private async void DownloadOfficialDriverPackage_Click(object sender, RoutedEventArgs e)
@@ -504,6 +505,25 @@ public partial class MainWindow
                 "DriverPackageIntegrityVerified", "Verified", device.InstanceId, candidate.HardwareId,
                 candidate.PackageSha256, candidate.VerifiedInfVersion,
                 $"Файлов проверено: {integrity.VerifiedFileCount}; байт: {integrity.VerifiedBytes}; манифест: {manifestPath}");
+
+            StatusText.Text = "Предварительная проверка INF, архитектуры и точного Hardware ID...";
+            var preflight = await _packagePreflight.InspectAsync(extractedFolder, candidate.HardwareId);
+            if (!preflight.HasExactHardwareIdMatch)
+            {
+                candidate.PackageStatus = "INF не прошёл предварительную проверку";
+                DriverUpdatesGrid.Items.Refresh();
+                var rejected = string.Join(Environment.NewLine,
+                    preflight.InfResults.Select(x => Path.GetFileName(x.InfPath) + ": " + x.Message).Take(12));
+                MessageBox.Show(this,
+                    preflight.Summary + Environment.NewLine + Environment.NewLine + rejected,
+                    "Предварительная проверка пакета", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            await _operationJournal.AppendAsync(
+                "DriverPackagePreflightPassed", "ExactHardwareIdMatch", device.InstanceId, candidate.HardwareId,
+                candidate.PackageSha256, null,
+                $"INF-кандидатов с точным Hardware ID: {preflight.InfResults.Count(x => x.IsReadable && x.HasExactHardwareIdMatch)}");
 
             var candidates = await Task.Run(() => _driverFolderScanner.Scan(extractedFolder, device));
         var installable = candidates.Where(x => x.Inspection.IsInstallableForDevice).ToArray();
