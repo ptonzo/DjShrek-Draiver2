@@ -34,7 +34,15 @@ public sealed class DriverPackageSignaturePolicyService
             var subject = certificate.Subject;
             var thumbprint = certificate.Thumbprint ?? "";
 
+            // Microsoft WHQL signs many third-party driver catalogs on behalf of the hardware vendor.
+            // Accept this specific Windows hardware-publisher identity, while leaving package binding
+            // validation to Windows when pnputil imports the package.
+            var microsoftWhqlSigner =
+                Normalize(publisher).Contains("MICROSOFTWINDOWSHARDWARECOMPATIBILITYPUBLISHER", StringComparison.Ordinal) ||
+                Normalize(subject).Contains("MICROSOFTWINDOWSHARDWARECOMPATIBILITYPUBLISHER", StringComparison.Ordinal);
+
             if (!string.IsNullOrWhiteSpace(expectedPublisher) &&
+                !microsoftWhqlSigner &&
                 !PublisherMatches(expectedPublisher, publisher, subject))
             {
                 return new DriverPackageSignatureAssessment(
