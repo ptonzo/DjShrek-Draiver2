@@ -39,6 +39,14 @@ public sealed class DriverUpdateCandidate
     public string ArchitectureTarget { get; set; } = "";
     public string PublisherVerificationStatus { get; set; } = "Не проверена";
     public string PackageAcquisitionStatus { get; set; } = "Не загружен";
+    public string VersionAssessment { get; set; } = "Не оценена";
+    public string OsCompatibilityAssessment { get; set; } = "Не подтверждена";
+    public string ArchitectureAssessment { get; set; } = "Не подтверждена";
+    public string InstallEligibility { get; set; } = "Заблокирована до проверки INF/CAT";
+    public string RejectionReasons { get; set; } = "";
+    public string CatalogRecordId { get; set; } = "";
+    public string CatalogReleaseVersion { get; set; } = "";
+    public string CatalogReleaseDate { get; set; } = "";
     /// <summary>Origin category: OfficialManufacturer, IndependentCatalog, or SearchDiscovery.</summary>
     public string SourceType { get; init; } = "SearchDiscovery";
     /// <summary>Provenance assessment only; not a package signature verdict.</summary>
