@@ -465,6 +465,25 @@
                                         </WrapPanel>
                                         <TextBlock x:Name="GameProfileText" Text="Профиль не активирован." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0"/>
                                     </StackPanel>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="{DynamicResource PanelCornerRadius}" Padding="18" Margin="0,13,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="ИГРОВЫЕ КОМПОНЕНТЫ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Проверка распространённых игровых библиотек. Программа только определяет наличие компонентов и открывает официальные страницы загрузки; ничего не устанавливает без вашего участия."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Проверить компоненты" Click="ScanGameComponents_Click"/>
+                                            <Button Content="Visual C++ x64" Tag="https://aka.ms/vs/17/release/vc_redist.x64.exe" Click="OpenGameComponentDownload_Click"/>
+                                            <Button Content="Visual C++ x86" Tag="https://aka.ms/vs/17/release/vc_redist.x86.exe" Click="OpenGameComponentDownload_Click"/>
+                                            <Button Content="DirectX Runtime" Tag="https://www.microsoft.com/en-us/download/details.aspx?id=35" Click="OpenGameComponentDownload_Click"/>
+                                            <Button Content=".NET Desktop Runtime" Tag="https://dotnet.microsoft.com/en-us/download/dotnet/8.0" Click="OpenGameComponentDownload_Click"/>
+                                            <Button Content="NVIDIA PhysX" Tag="https://www.nvidia.com/en-us/drivers/" Click="OpenGameComponentDownload_Click"/>
+                                            <Button Content="OpenAL" Tag="https://www.openal.org/downloads/" Click="OpenGameComponentDownload_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="GameComponentsText" Text="Нажмите «Проверить компоненты», чтобы получить сведения о библиотеках."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+                                    </StackPanel>
+                                </Border>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>
