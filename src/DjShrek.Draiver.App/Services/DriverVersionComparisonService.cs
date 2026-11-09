@@ -25,8 +25,11 @@ public sealed record DriverVersionComparison(
 /// </summary>
 public static class DriverVersionComparisonService
 {
-    private static readonly Regex NumericVersion = new(
-        @"(?<!\d)(\d+(?:\.\d+){1,3})(?!\d)",
+    private static readonly Regex ExplicitVersion = new(
+        @"(?:driver\s*version|version|ver\.?|v)\s*[:=]?\s*(\d+(?:\.\d+){1,3})(?!\d)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex BareNumericVersion = new(
+        @"^\s*(\d+(?:\.\d+){1,3})\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     public static DriverVersionComparison Compare(string? candidate, string? installed)
@@ -70,7 +73,10 @@ public static class DriverVersionComparisonService
         version = new Version(0, 0);
         if (string.IsNullOrWhiteSpace(value)) return false;
 
-        var match = NumericVersion.Match(value);
+        // Accept a plain numeric version or one explicitly labelled as a driver version.
+        // Do not extract arbitrary dotted numbers from OS names, dates, hardware IDs or prose.
+        var match = BareNumericVersion.Match(value);
+        if (!match.Success) match = ExplicitVersion.Match(value);
         if (!match.Success ||
             !Version.TryParse(match.Groups[1].Value, out var parsed) ||
             parsed is null)
