@@ -654,7 +654,7 @@
                                          Stroke="{DynamicResource AccentSecondaryBrush}" StrokeThickness="3"
                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Path x:Name="ScanProgressArc" Width="360" Height="360"
-                                      Stroke="#FFFF3B45" StrokeThickness="9"
+                                      Stroke="{DynamicResource ScanProgressBrush}" StrokeThickness="9"
                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                       IsHitTestVisible="False" Data="{x:Null}"/>
