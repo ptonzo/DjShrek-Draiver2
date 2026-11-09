@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
+using Microsoft.Win32;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
@@ -119,12 +120,9 @@ public sealed class HpDriverPackCatalogService
 
     private static HpMachineIdentity GetCurrentIdentity()
     {
-        using var searcher = new System.Management.ManagementObjectSearcher(
-            "SELECT Product, Name, Version FROM Win32_ComputerSystemProduct");
-        using var rows = searcher.Get();
-        var row = rows.Cast<System.Management.ManagementObject>().FirstOrDefault();
-        var systemId = row?["Product"]?.ToString()?.Trim() ?? "";
-        var model = row?["Name"]?.ToString()?.Trim() ?? Environment.MachineName;
+        using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\BIOS");
+        var systemId = key?.GetValue("SystemSKU")?.ToString()?.Trim() ?? "";
+        var model = key?.GetValue("SystemProductName")?.ToString()?.Trim() ?? Environment.MachineName;
         var os = Environment.OSVersion.Version.Build >= 22000 ? "Windows 11" : "Windows 10";
         return new HpMachineIdentity(systemId, model, os);
     }
