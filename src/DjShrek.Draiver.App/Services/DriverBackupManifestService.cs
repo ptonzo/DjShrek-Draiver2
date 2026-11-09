@@ -62,8 +62,14 @@ public sealed class DriverBackupManifestService
             throw new InvalidDataException("Формат или состав манифеста резервной копии недопустим.");
 
         var failures = new List<string>();
+        var expectedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in manifest.Files)
         {
+            if (!expectedPaths.Add(entry.Path))
+                throw new InvalidDataException("Манифест содержит повторяющиеся пути файлов.");
+            if (entry.Length < 0 || entry.Sha256.Length != 64 ||
+                !entry.Sha256.All(Uri.IsHexDigit))
+                throw new InvalidDataException("Манифест содержит некорректные размеры или SHA-256.");
             var relative = entry.Path.Replace('/', Path.DirectorySeparatorChar);
             if (Path.IsPathRooted(relative) || relative.Split(Path.DirectorySeparatorChar).Any(x => x == ".."))
                 throw new InvalidDataException("Манифест содержит путь за пределы папки резервной копии.");
@@ -92,6 +98,13 @@ public sealed class DriverBackupManifestService
                 if (failures.Count < 20) failures.Add(entry.Path + ": SHA-256 не совпадает");
             }
         }
+
+        var actualPaths = EnumerateSafeFiles(fullRoot)
+            .Where(path => !Path.GetFileName(path).Equals(ManifestFileName, StringComparison.OrdinalIgnoreCase))
+            .Select(path => Path.GetRelativePath(fullRoot, path).Replace(Path.DirectorySeparatorChar, '/'))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var extra in actualPaths.Except(expectedPaths, StringComparer.OrdinalIgnoreCase).Take(20))
+            failures.Add(extra + ": файл отсутствует в манифесте");
 
         if (failures.Count > 0)
             throw new InvalidDataException("Восстановление остановлено: резервная копия повреждена или изменена." +
