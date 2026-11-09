@@ -8,7 +8,7 @@ namespace DjShrek.Draiver.App;
 
 public partial class MainWindow
 {
-    private readonly OfficialDriverPackageDownloader _packageDownloader = new();
+    private readonly CatalogDriverPackageDownloader _packageDownloader = new();
 
     private async void DownloadOfficialDriverPackage_Click(object sender, RoutedEventArgs e)
     {
@@ -21,7 +21,7 @@ public partial class MainWindow
 
         if (!IsCandidateOpenable(candidate))
         {
-            MessageBox.Show(this, "Источник результата не подтверждён как официальный сайт производителя или устройство не сопоставлено. Загрузка запрещена.",
+            MessageBox.Show(this, "Страница источника не входит в список подключённых каталогов или устройство не сопоставлено. Загрузка запрещена.",
                 "Проверка источника", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -29,7 +29,7 @@ public partial class MainWindow
         try
         {
             StatusText.Text = "Поиск прямых ссылок на пакеты производителя...";
-            var links = await _packageDownloader.FindPackageLinksAsync(candidate.SourceUrl);
+            var links = await _packageDownloader.FindPackageLinksAsync(candidate);
             if (links.Count == 0)
             {
                 MessageBox.Show(this,
@@ -44,17 +44,17 @@ public partial class MainWindow
 
             var dialog = new SaveFileDialog
             {
-                Title = "Сохранить оригинальный пакет драйвера",
+                Title = "Сохранить пакет драйвера из выбранного источника",
                 FileName = Path.GetFileName(selected.LocalPath),
-                Filter = "Пакеты драйверов (*.exe;*.msi;*.zip;*.cab;*.7z)|*.exe;*.msi;*.zip;*.cab;*.7z|Все файлы (*.*)|*.*",
+                Filter = "Пакеты драйверов (*.exe;*.msi;*.zip;*.cab;*.7z;*.rar)|*.exe;*.msi;*.zip;*.cab;*.7z;*.rar|Все файлы (*.*)|*.*",
                 AddExtension = false,
                 OverwritePrompt = true
             };
             if (dialog.ShowDialog(this) != true) return;
 
-            StatusText.Text = "Загрузка оригинального пакета с сайта производителя...";
+            StatusText.Text = "Загрузка пакета из выбранного каталога или облачного хранилища...";
             var downloaded = await _packageDownloader.DownloadAsync(selected, dialog.FileName);
-            candidate.PackageUrl = selected.AbsoluteUri;
+            candidate.PackageUrl = downloaded.FinalUrl;
             candidate.PackageFileName = downloaded.FilePath;
             candidate.PackageSha256 = downloaded.Sha256;
             candidate.PackageStatus = "Загружен; подпись требует проверки";
@@ -62,10 +62,10 @@ public partial class MainWindow
 
             MessageBox.Show(this,
                 $"Пакет загружен.\nФайл: {downloaded.FilePath}\nРазмер: {downloaded.Length:N0} байт\nSHA-256: {downloaded.Sha256}\n\n" +
-                "Загрузка не означает подтверждение совместимости или подписи. Перед установкой проверьте INF/CAT и цифровую подпись.",
+                "Источник и загрузка не подтверждают совместимость или безопасность. Перед установкой распакуйте пакет и проверьте INF, Hardware ID, архитектуру и цифровую подпись CAT.",
                 "Загрузка завершена", MessageBoxButton.OK, MessageBoxImage.Information);
             StatusText.Text = "Пакет драйвера загружен; требуется проверка INF/CAT.";
-            AppendEvent("Загружен пакет драйвера: " + Path.GetFileName(downloaded.FilePath));
+            AppendEvent($"Загружен пакет драйвера из {new Uri(downloaded.FinalUrl).Host}: {Path.GetFileName(downloaded.FilePath)}");
         }
         catch (OperationCanceledException)
         {
