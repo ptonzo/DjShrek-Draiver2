@@ -744,16 +744,16 @@ public partial class MainWindow
             DriverUpdatesGrid.ItemsSource = _driverUpdates;
             var deviceCount = visibleResults.Select(x => x.DeviceName).Distinct(StringComparer.OrdinalIgnoreCase).Count();
             var ignoredCount = _driverIgnore.GetIgnored().Count;
-            UpdatesCountText.Text = $"Найдено страниц: {visibleResults.Length}; устройств с результатами: {deviceCount}; исключено: {ignoredCount}.";
+            UpdatesCountText.Text = $"Найдено страниц: {visibleResults.Count}; устройств с результатами: {deviceCount}; исключено: {ignoredCount}.";
             var exactCount = visibleResults.Count(x => x.CandidateScope == "DeviceExact");
             var compatibleCount = visibleResults.Count(x => x.CandidateScope == "DeviceCompatible");
             var modelPackCount = visibleResults.Count(x => x.CandidateScope == "ModelPack");
             var portalCount = visibleResults.Count(x => x.CandidateScope == "SupportPortal");
-            DriverUpdatesSummaryText.Text = visibleResults.Length == 0
+            DriverUpdatesSummaryText.Text = visibleResults.Count == 0
                 ? "В подключённых каталогах не найдены страницы по Hardware ID. Это не доказывает отсутствие обновлений."
                 : $"После объединения повторов: точные Hardware ID — {exactCount}; Compatible ID/поисковые результаты — {compatibleCount}; модельные OEM-пакеты — {modelPackCount}; порталы поддержки — {portalCount}. Ни одна запись не считается готовым обновлением до проверки INF/CAT, издателя, ОС и архитектуры.";
-            StatusText.Text = $"Поиск завершён. Уникальных кандидатов: {visibleResults.Length}.";
-            AppendEvent($"Поиск каталогов завершён: уникальных кандидатов {visibleResults.Length}; точных совпадений {exactCount}; модельных пакетов {modelPackCount}; исключено устройств {_driverIgnore.GetIgnored().Count}.");
+            StatusText.Text = $"Поиск завершён. Уникальных кандидатов: {visibleResults.Count}.";
+            AppendEvent($"Поиск каталогов завершён: уникальных кандидатов {visibleResults.Count}; точных совпадений {exactCount}; модельных пакетов {modelPackCount}; исключено устройств {_driverIgnore.GetIgnored().Count}.");
         }
         catch (OperationCanceledException)
         {
