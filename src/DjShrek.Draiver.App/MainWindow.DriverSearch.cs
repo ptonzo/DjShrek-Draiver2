@@ -673,45 +673,32 @@ public partial class MainWindow
                 if (msiManufacturer.Contains("MSI", StringComparison.OrdinalIgnoreCase) &&
                     !string.IsNullOrWhiteSpace(msiModel))
                 {
-                    var msiPackages = await new MsiDriverCatalogService()
-                        .GetMotherboardDriversAsync(msiModel, Environment.OSVersion.Version.Build >= 22000,
-                            _driverSearchCts.Token);
-                    foreach (var pack in msiPackages)
+                    var supportUri = new Uri("https://www.msi.com/support/download");
+                    results.Add(new DriverUpdateCandidate
                     {
-                        results.Add(new DriverUpdateCandidate
-                        {
-                            UpdateId = pack.DownloadId,
-                            Title = "Драйвер MSI: " + pack.Name,
-                            Manufacturer = "MSI",
-                            Model = pack.Model,
-                            Provider = "MSI Support API",
-                            DeviceClass = "Motherboard Driver",
-                            MatchType = "OEM motherboard model",
-                            DeviceName = pack.Model,
-                            CurrentVersion = "Версия установленного драйвера сопоставляется отдельно",
-                            Compatibility = "Позиция каталога модели; соответствие отдельному Hardware ID ещё не подтверждено",
-                            AvailableVersion = pack.Version,
-                            VersionComparison = "Версия из каталога MSI; требуется анализ INF",
-                            DriverVersionDate = pack.ReleaseDate,
-                            PublishedDate = pack.ReleaseDate,
-                            Description = pack.Description,
-                            Evidence = "MSI product support panel API; модель из SMBIOS",
-                            SourceType = "OfficialManufacturer",
-                            SourceTrust = "OfficialDomain_UnverifiedPackage",
-                            SourceUrl = pack.CatalogUri.AbsoluteUri,
-                            PackageUrl = pack.PackageUri.AbsoluteUri,
-                            PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
-                            PackageStatus = string.IsNullOrWhiteSpace(pack.Sha256)
-                                ? "Пакет не загружен"
-                                : "Пакет не загружен; SHA-256 опубликован MSI: " + pack.Sha256
-                        });
-                    }
+                        UpdateId = "msi-support:" + Uri.EscapeDataString(msiModel),
+                        Title = "MSI Support — " + msiModel,
+                        Manufacturer = "MSI",
+                        Model = msiModel,
+                        Provider = "MSI Support portal",
+                        DeviceClass = "OEM Motherboard",
+                        MatchType = "OEM motherboard model",
+                        DeviceName = msiModel,
+                        Compatibility = "Модель платы определена по SMBIOS; список пакетов через документированный машинный API не получен",
+                        AvailableVersion = "Не получена",
+                        VersionComparison = "Сравнение невозможно: подтверждённый машинно-читаемый каталог MSI не подключён",
+                        Description = "Официальная страница выбора модели и загрузки драйверов MSI. Конкретный пакет не найден.",
+                        Evidence = "SMBIOS BaseBoardManufacturer/BaseBoardProduct; только переход на официальный портал",
+                        SourceType = "OfficialManufacturer",
+                        SourceTrust = "OfficialSupportPortal",
+                        SourceUrl = supportUri.AbsoluteUri,
+                        PackageStatus = "Выберите точную модель на сайте MSI; пакет не загружен"
+                    });
                 }
             }
-            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
-                AppendEvent("Каталог MSI пропущен: " + ex.GetType().Name);
+                AppendEvent("Идентификация модели MSI пропущена: " + ex.GetType().Name);
             }
 
             var visibleResults = results.Where(x =>
