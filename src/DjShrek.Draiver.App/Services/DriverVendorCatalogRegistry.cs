@@ -50,7 +50,9 @@ public sealed class DriverVendorCatalogRegistry
         Entry("gigabyte", "GIGABYTE", "gigabyte.com", "https://www.gigabyte.com/Support",
             [], ["oem"]),
         Entry("microsoft", "Microsoft", "microsoft.com", "https://www.microsoft.com/en-us/download",
-            ["045E"], ["oem", "peripheral"])
+            ["045E"], ["oem", "peripheral"]),
+        Entry("logitech", "Logitech", "logitech.com", "https://support.logi.com/",
+            ["046D"], ["peripheral", "mouse", "keyboard", "webcam", "audio"])
     ];
 
     private static readonly IReadOnlyDictionary<string, DriverVendorCatalogEntry> ByVendorId =
