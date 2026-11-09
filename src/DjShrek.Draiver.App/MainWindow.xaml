@@ -369,6 +369,10 @@
                                                 <Button x:Name="InstallVerifiedDriverButton"
                                                         Content="Установить проверенное обновление" IsEnabled="False"
                                                         Click="InstallVerifiedDriver_Click" Margin="8,0,0,0"/>
+                                                <Button x:Name="InstallSelectedVerifiedDriversButton"
+                                                        Content="Установить выбранные проверенные" IsEnabled="True"
+                                                        Click="InstallSelectedVerifiedDrivers_Click" Margin="8,0,0,0"/>
+                                                <Button Content="Выбрать все" Click="SelectAllDriverUpdates_Click" Margin="8,0,0,0"/>
                                                 <Button Content="История" Click="DriverHistory_Click" Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </DockPanel>
