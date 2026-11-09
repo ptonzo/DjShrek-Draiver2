@@ -36,7 +36,9 @@ public sealed class InternetDriverCatalogService
         "download.realtek.com", "microsoft.com", "surface.com", "logitech.com",
         "chicony.com", "steelseries.com", "razer.com", "corsair.com", "apple.com",
         "google.com", "yubico.com", "steampowered.com", "nintendo.com",
-        "playstation.com", "pixart.com"
+        "playstation.com", "pixart.com", "logi.com", "samsung.com", "canon.com",
+        "epson.com", "brother.com", "huawei.com", "zte.com.cn", "mi.com",
+        "ftdichip.com", "silabs.com", "prolific.com.tw", "wch-ic.com", "arduino.cc"
     };
 
     static InternetDriverCatalogService()
