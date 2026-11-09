@@ -133,6 +133,8 @@ public sealed class CatalogDriverPackageDownloader
     public static bool IsAllowedCatalogPage(string? value)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return false;
+        // Google/Dropbox/OneDrive/etc. are download destinations, not catalog page origins.
+        if (IsKnownCloudHost(uri.Host)) return false;
         return InternetDriverCatalogService.IsOfficialVendorUrl(value) ||
                InternetDriverCatalogService.IsIndependentCatalogUrl(value);
     }
