@@ -22,6 +22,7 @@ public sealed class DriverUpdateCandidate
     public string CurrentVersion { get; init; } = "Не сопоставлена";
     public string Compatibility { get; init; } = "Совместимость не проверена";
     public string AvailableVersion { get; init; } = "Не указана в каталоге";
+    public string VersionComparison { get; init; } = "Версия не проверена";
     public string DriverVersionDate { get; init; } = "";
     public string Description { get; init; } = "";
     public string SearchQuery { get; init; } = "";
