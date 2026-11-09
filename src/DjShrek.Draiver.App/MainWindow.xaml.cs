@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using DjShrek.Draiver.App.Models;
@@ -494,7 +495,11 @@ public partial class MainWindow : Window
     private void SetScanProgress(int percentage, string status)
     {
         percentage = Math.Clamp(percentage, 0, 100);
-        ScanPercentText.Text = $"{percentage}%";
+        if (StartScanButton.Template.FindName("ScanProgressArc", StartScanButton) is not Path arc ||
+            StartScanButton.Template.FindName("ScanPercentText", StartScanButton) is not TextBlock percentText)
+            return;
+
+        percentText.Text = $"{percentage}%";
         StartupScanPercentCaption.Text = $"{percentage}% · {(percentage == 100 ? "ГОТОВО" : "СКАНИРОВАНИЕ")}";
         StartupScanStatusText.Text = status;
 
@@ -514,7 +519,7 @@ public partial class MainWindow : Window
             }
             geometry.Freeze();
         }
-        ScanProgressArc.Data = geometry;
+        arc.Data = geometry;
     }
 
     private void ApplyDevices(IReadOnlyList<DeviceInfo> devices)
