@@ -46,7 +46,7 @@ public sealed class InternetDriverCatalogService
         "google.com", "yubico.com", "steampowered.com", "nintendo.com",
         "playstation.com", "pixart.com", "logi.com", "samsung.com", "canon.com",
         "epson.com", "brother.com", "huawei.com", "zte.com.cn", "mi.com",
-        "ftdichip.com", "silabs.com", "prolific.com.tw", "wch-ic.com", "arduino.cc"
+        "ftdichip.com", "silabs.com", "prolific.com.tw", "wch-ic.com", "arduino.cc", "marvell.com", "redhat.com"
     };
 
     static InternetDriverCatalogService()
