@@ -140,7 +140,8 @@ public sealed class InternetDriverCatalogService
                             DeviceName = device.Name,
                             CurrentVersion = device.DriverVersion,
                             Compatibility = DriverUpdateCandidate.HardwareIdSearchNotice,
-                            AvailableVersion = "Не подтверждена — проверьте на сайте производителя",
+                            AvailableVersion = "Не указана в поисковом результате",
+                            VersionComparison = "Версия пакета в поисковом результате не указана — сравнение невозможно.",
                             Description = description,
                             SearchQuery = query,
                             PublishedDate = published,
@@ -311,9 +312,10 @@ public sealed class InternetDriverCatalogService
     private static IReadOnlyList<DriverUpdateCandidate> Rank(List<DriverUpdateCandidate> items) =>
         items.OrderBy(x => x.DeviceName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(x => x.MatchType == "Hardware ID" ? 0 : 1)
+            .ThenBy(x => x.SourceType == "OfficialManufacturer" ? 0 : 1)
+            .ThenByDescending(x => x.PublishedDate, StringComparer.Ordinal)
             .ThenByDescending(x => IdSpecificity(x.HardwareId))
             .ThenBy(x => x.Provider, StringComparer.OrdinalIgnoreCase)
-            .ThenByDescending(x => x.PublishedDate, StringComparer.Ordinal)
             .ThenBy(x => x.Title, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 }
