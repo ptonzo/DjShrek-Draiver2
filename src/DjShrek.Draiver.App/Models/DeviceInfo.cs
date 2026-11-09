@@ -6,6 +6,7 @@ public sealed class DeviceInfo
  public string Class { get; set; } = "";
  public string Status { get; set; } = "";
  public string Problem { get; set; } = "";
+ public string ProblemDescription { get; set; } = "";
  public string DriverProvider { get; set; } = "";
  public string DriverVersion { get; set; } = "";
  public string DriverDate { get; set; } = "";
