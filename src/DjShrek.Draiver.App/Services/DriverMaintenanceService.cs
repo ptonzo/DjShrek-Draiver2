@@ -99,8 +99,11 @@ public sealed class DriverMaintenanceService
         var root = Path.GetFullPath(source);
         if (!Directory.Exists(root)) throw new ArgumentException("Папка резервной копии не существует.");
         // New backups are verified byte-for-byte before any package reaches Driver Store.
+        // Enumerate without following links even for legacy backups that have no manifest.
+        var safeFiles = EnumerateFilesWithoutReparsePoints(root).ToArray();
         var integrityResult = new DriverBackupManifestService().VerifyIfPresent(root);
-        var infFiles = Directory.EnumerateFiles(root, "*.inf", SearchOption.AllDirectories)
+        var infFiles = safeFiles
+            .Where(path => Path.GetExtension(path).Equals(".inf", StringComparison.OrdinalIgnoreCase))
             .Take(MaxRestorePackages + 1).ToArray();
         if (infFiles.Length == 0) throw new ArgumentException("В выбранной папке не найдены INF-пакеты.");
         if (infFiles.Length > MaxRestorePackages)
@@ -143,6 +146,26 @@ public sealed class DriverMaintenanceService
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(error)
                 ? $"pnputil завершился с кодом {process.ExitCode}." : error);
         return string.IsNullOrWhiteSpace(output) ? "Windows не вернула список пакетов драйверов." : output;
+    }
+
+    private static IEnumerable<string> EnumerateFilesWithoutReparsePoints(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Резервная копия содержит reparse point; восстановление заблокировано.");
+                if ((attributes & FileAttributes.Directory) != 0)
+                    pending.Push(entry);
+                else
+                    yield return entry;
+            }
+        }
     }
 
     [DllImport("kernel32.dll")]
