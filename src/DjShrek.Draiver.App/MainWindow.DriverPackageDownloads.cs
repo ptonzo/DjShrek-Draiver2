@@ -338,27 +338,69 @@ public partial class MainWindow
 
             StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
             var result = await _maintenance.InstallInfAsync(inspection.InfPath);
+
+            var historyStatus = "SubmittedToWindows";
+            var historyMessage = "pnputil завершился без ошибки; фактическая версия драйвера ещё не подтверждена.";
+            var packageStatus = "Передан Windows; версия пока не подтверждена";
+            try
+            {
+                StatusText.Text = "Повторное сканирование устройства для проверки установленной версии...";
+                var refreshedDevices = await _inventory.ScanAsync();
+                ApplyDevices(refreshedDevices);
+                var refreshedDevice = DriverCompatibilityMatcher.FindExactMatch(refreshedDevices, candidate.HardwareId);
+                if (refreshedDevice is not null)
+                {
+                    var installedComparison = DriverVersionComparisonService.Compare(
+                        refreshedDevice.DriverVersion, inspection.DriverVersion);
+                    if (installedComparison.Relation is DriverVersionRelation.Same or DriverVersionRelation.Newer)
+                    {
+                        historyStatus = "InstalledAndVerified";
+                        historyMessage = $"Повторное сканирование подтвердило установленную версию {refreshedDevice.DriverVersion}.";
+                        packageStatus = "Установлен; версия подтверждена повторным сканированием";
+                    }
+                    else
+                    {
+                        historyMessage = $"Пакет передан Windows, но повторное сканирование показало версию {refreshedDevice.DriverVersion}. {installedComparison.Message}";
+                        packageStatus = "Передан Windows; фактическая версия пока не совпадает";
+                    }
+                }
+                else
+                {
+                    historyMessage = "Пакет передан Windows, но устройство не удалось повторно сопоставить по точному Hardware ID.";
+                    packageStatus = "Передан Windows; устройство не сопоставлено после операции";
+                }
+            }
+            catch (Exception verificationError)
+            {
+                historyMessage = "Пакет передан Windows, но повторное сканирование не удалось: " + verificationError.Message;
+                packageStatus = "Передан Windows; проверка версии не выполнена";
+                AppendEvent("Не удалось подтвердить установленную версию драйвера: " + verificationError.Message);
+            }
+
             try
             {
                 _driverHistory.Append(new DriverUpdateHistoryEntry(
                     DateTime.UtcNow, device.Name, candidate.HardwareId, device.DriverVersion,
                     inspection.DriverVersion, candidate.Provider, candidate.PackageSha256,
-                    inspection.InfPath, backupPath, "SubmittedToWindows",
-                    "pnputil завершился без ошибки; фактическая версия драйвера после установки ещё не подтверждена."));
+                    inspection.InfPath, backupPath, historyStatus, historyMessage));
             }
             catch (Exception historyError)
             {
                 AppendEvent("Не удалось записать историю обновления: " + historyError.Message);
             }
-            candidate.PackageStatus = "Передан Windows; проверьте версию и состояние устройства";
+
+            candidate.PackageStatus = packageStatus;
             candidate.VerifiedInfPath = "";
             InstallVerifiedDriverButton.IsEnabled = false;
             DriverUpdatesGrid.Items.Refresh();
-            AppendEvent($"Пакет {inspection.Provider} {inspection.DriverVersion} передан Windows для {device.Name}.");
-            StatusText.Text = "Команда установки завершилась. Проверьте фактическую версию драйвера и состояние устройства.";
-            MessageBox.Show(this, backupInfo + Environment.NewLine + Environment.NewLine + result,
+            AppendEvent($"Обработка драйвера {inspection.Provider} {inspection.DriverVersion} для {device.Name}: {historyStatus}.");
+            StatusText.Text = historyStatus == "InstalledAndVerified"
+                ? "Установка завершена; новая версия подтверждена повторным сканированием."
+                : "Команда установки завершилась, но фактическая версия пока не подтверждена.";
+            MessageBox.Show(this, backupInfo + Environment.NewLine + Environment.NewLine + result +
+                Environment.NewLine + Environment.NewLine + historyMessage,
                 "Результат передачи драйвера Windows", MessageBoxButton.OK, MessageBoxImage.Information);
-            return true;
+            return historyStatus == "InstalledAndVerified";
         }
         catch (System.ComponentModel.Win32Exception)
         {
