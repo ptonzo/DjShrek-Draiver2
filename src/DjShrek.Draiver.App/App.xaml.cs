@@ -140,16 +140,16 @@ public partial class App : Application
                 throw new InvalidOperationException("Driver.ru search result parsing failed or promoted an unverified package.");
             checks.Add("PASS: direct Driver.ru route and Hardware ID result parser extract version/date without trusting the package.");
             var vendorDevice = new DeviceInfo { Manufacturer = "HP" };
-            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "USB\VID_1234&PID_5678") != "hp.com")
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, @"USB\VID_1234&PID_5678") != "hp.com")
                 throw new InvalidOperationException("Short OEM name HP was not mapped to its official domain.");
             vendorDevice = new DeviceInfo { Manufacturer = "Micro-Star International" };
-            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\VEN_1234&DEV_5678") != "msi.com")
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, @"PCI\VEN_1234&DEV_5678") != "msi.com")
                 throw new InvalidOperationException("Micro-Star manufacturer name was not mapped to MSI.");
             vendorDevice = new DeviceInfo { Manufacturer = "Desktop Chipset HPQ-123" };
-            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\VEN_1234&DEV_5678") is not null)
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, @"PCI\VEN_1234&DEV_5678") is not null)
                 throw new InvalidOperationException("Incidental HP substring incorrectly selected HP support.");
             vendorDevice = new DeviceInfo { Manufacturer = "Unknown" };
-            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, "PCI\VEN_10DE&DEV_1234") != "nvidia.com")
+            if (InternetDriverCatalogService.GetVendorDomain(vendorDevice, @"PCI\VEN_10DE&DEV_1234") != "nvidia.com")
                 throw new InvalidOperationException("PCI vendor ID did not take priority for NVIDIA.");
             checks.Add("PASS: OEM/component vendor routing handles HP/MSI names, rejects incidental substrings, and prioritizes PCI vendor IDs.");
 
