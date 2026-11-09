@@ -442,7 +442,7 @@ public partial class MainWindow
 
     private async Task ExtractAndInspectDownloadedPackageAsync(DriverUpdateCandidate candidate, string packagePath)
     {
-        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId);
+        var device = DriverCompatibilityMatcher.FindExactMatch(_devices, candidate.HardwareId, candidate.InstanceId);
         if (device is null)
         {
             MessageBox.Show(this,
