@@ -11,6 +11,7 @@ public sealed class DriverUpdateCandidate
     public string Provider { get; init; } = "";
     public string DeviceClass { get; init; } = "";
     public string HardwareId { get; init; } = "";
+    public string InstanceId { get; init; } = "";
     public string BusType { get; init; } = "";
     public string VendorId { get; init; } = "";
     public string DeviceId { get; init; } = "";
