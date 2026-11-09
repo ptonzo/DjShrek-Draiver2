@@ -401,6 +401,45 @@ public partial class MainWindow
                 AppendEvent("Каталог Dell пропущен: " + ex.GetType().Name);
             }
 
+            try
+            {
+                var hpPacks = await new HpDriverPackCatalogService()
+                    .FindCurrentModelPacksAsync(_driverSearchCts.Token);
+                foreach (var pack in hpPacks)
+                {
+                    results.Add(new DriverUpdateCandidate
+                    {
+                        UpdateId = pack.PackageUri.AbsoluteUri,
+                        Title = "OEM-пакет HP: " + pack.Model,
+                        Manufacturer = "HP",
+                        Model = pack.Model,
+                        Provider = "HP Client Driver Pack Catalog",
+                        DeviceClass = "OEM Driver Pack",
+                        MatchType = "OEM SMBIOS SystemSKU",
+                        DeviceName = pack.Model,
+                        CurrentVersion = "Пакетная версия не сравнивается с версией отдельного устройства",
+                        Compatibility = "Совпадение SMBIOS SystemSKU; совместимость каждого INF не проверена",
+                        AvailableVersion = pack.PackageVersion,
+                        VersionComparison = "Пакет модели; версия отдельного драйвера определяется после анализа INF",
+                        DriverVersionDate = pack.ReleaseDate,
+                        PublishedDate = pack.ReleaseDate,
+                        Description = pack.OperatingSystem + "; " + pack.CompatibilityEvidence,
+                        Evidence = pack.CompatibilityEvidence,
+                        SourceType = "OfficialManufacturer",
+                        SourceTrust = "OfficialDomain_UnverifiedPackage",
+                        SourceUrl = pack.CatalogSource,
+                        PackageUrl = pack.PackageUri.AbsoluteUri,
+                        PackageFileName = Path.GetFileName(pack.PackageUri.AbsolutePath),
+                        PackageStatus = "Пакет не загружен"
+                    });
+                }
+            }
+            catch (OperationCanceledException) when (_driverSearchCts.Token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                AppendEvent("Каталог HP пропущен: " + ex.GetType().Name);
+            }
+
             var visibleResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             foreach (var item in visibleResults)
