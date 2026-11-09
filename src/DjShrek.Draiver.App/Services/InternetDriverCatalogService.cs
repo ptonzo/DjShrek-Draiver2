@@ -150,6 +150,23 @@ public sealed class InternetDriverCatalogService
 
     internal static string? GetVendorDomain(DeviceInfo device, string hardwareId)
     {
+        var identity = DeviceHardwareIdParser.Parse(hardwareId);
+        var vendorDomains = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["10DE"] = "nvidia.com", ["1002"] = "amd.com", ["1022"] = "amd.com",
+            ["8086"] = "intel.com", ["8087"] = "intel.com", ["10EC"] = "realtek.com",
+            ["0BDA"] = "realtek.com", ["14E4"] = "broadcom.com", ["168C"] = "qualcomm.com",
+            ["0CF3"] = "qualcomm.com", ["17CB"] = "qualcomm.com", ["14C3"] = "mediatek.com",
+            ["0E8D"] = "mediatek.com", ["046D"] = "logitech.com", ["045E"] = "microsoft.com",
+            ["0B05"] = "asus.com", ["1043"] = "asus.com", ["17AA"] = "lenovo.com",
+            ["103C"] = "hp.com", ["04F2"] = "chicony.com", ["1038"] = "steelseries.com",
+            ["1532"] = "razer.com", ["1B1C"] = "corsair.com", ["05AC"] = "apple.com",
+            ["18D1"] = "google.com", ["1050"] = "yubico.com", ["28DE"] = "steampowered.com",
+            ["057E"] = "nintendo.com", ["054C"] = "playstation.com", ["093A"] = "pixart.com"
+        };
+        if (identity is not null && vendorDomains.TryGetValue(identity.VendorId, out var idDomain))
+            return idDomain;
+
         var text = NormalizeVendorText(device.Manufacturer + " " + device.DriverProvider);
         bool HasToken(string token) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Contains(token, StringComparer.Ordinal);
