@@ -77,7 +77,6 @@ public sealed class DellDriverPackCatalogService
             { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
             start.ArgumentList.Add(cabPath);
             start.ArgumentList.Add(xmlPath);
-            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
             using (var process = Process.Start(start) ?? throw new InvalidOperationException("Не удалось распаковать CAB Dell."))
             {
                 await process.WaitForExitAsync(cancellationToken);
