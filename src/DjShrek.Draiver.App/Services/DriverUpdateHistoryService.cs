@@ -13,7 +13,8 @@ public sealed record DriverUpdateHistoryEntry(
     string InfPath,
     string BackupPath,
     string Status,
-    string Message);
+    string Message,
+    string InstanceId = "");
 
 /// <summary>
 /// Local, bounded history of driver update attempts. It records command submission
