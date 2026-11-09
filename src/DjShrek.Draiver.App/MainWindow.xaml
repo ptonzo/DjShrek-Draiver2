@@ -393,6 +393,12 @@
                                                 <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
                                                 <DataGridTextColumn Header="Тип источника" Binding="{Binding SourceType}" Width="1.2*"/>
                                                 <DataGridTextColumn Header="Оценка источника" Binding="{Binding SourceTrust}" Width="1.6*"/>
+                                                <DataGridTextColumn Header="Область совпадения" Binding="{Binding CandidateScope}" Width="1.2*"/>
+                                                <DataGridTextColumn Header="Уровень доказательств" Binding="{Binding EvidenceLevel}" Width="2*"/>
+                                                <DataGridTextColumn Header="Целевая ОС" Binding="{Binding OperatingSystemTarget}" Width="*"/>
+                                                <DataGridTextColumn Header="Архитектура" Binding="{Binding ArchitectureTarget}" Width="*"/>
+                                                <DataGridTextColumn Header="Проверка издателя" Binding="{Binding PublisherVerificationStatus}" Width="1.5*"/>
+                                                <DataGridTextColumn Header="Получение пакета" Binding="{Binding PackageAcquisitionStatus}" Width="1.5*"/>
                                                 <DataGridTextColumn Header="Класс" Binding="{Binding DeviceClass}" Width="*"/>
                                                 <DataGridTextColumn Header="Дата версии" Binding="{Binding DriverVersionDate}" Width="*"/>
                                                 <DataGridTextColumn Header="Шина" Binding="{Binding BusType}" Width="*"/>
