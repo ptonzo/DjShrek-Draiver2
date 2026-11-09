@@ -9,6 +9,7 @@ namespace DjShrek.Draiver.App;
 public partial class MainWindow
 {
     private readonly CatalogDriverPackageDownloader _packageDownloader = new();
+    private readonly DriverUpdateHistoryService _driverHistory = new();
 
     private async void DownloadOfficialDriverPackage_Click(object sender, RoutedEventArgs e)
     {
@@ -144,13 +145,14 @@ public partial class MainWindow
 
             StatusText.Text = "Резервное копирование текущего драйвера и создание точки восстановления...";
             string backupInfo;
+            string backupPath = "";
             if (System.Text.RegularExpressions.Regex.IsMatch(device.InfName ?? "", @"^oem[0-9]+\.inf$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
-                var backupFolder = Path.Combine(
+                backupPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DjShrek-Draiver2", "DriverBackups",
                     DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"));
-                backupInfo = await _maintenance.ExportDriverPackageAsync(device.InfName, backupFolder);
+                backupInfo = await _maintenance.ExportDriverPackageAsync(device.InfName, backupPath);
             }
             else
             {
@@ -159,6 +161,18 @@ public partial class MainWindow
 
             StatusText.Text = "Создание точки восстановления и передача проверенного INF в Windows...";
             var result = await _maintenance.InstallInfAsync(inspection.InfPath);
+            try
+            {
+                _driverHistory.Append(new DriverUpdateHistoryEntry(
+                    DateTime.UtcNow, device.Name, candidate.HardwareId, device.DriverVersion,
+                    inspection.DriverVersion, candidate.Provider, candidate.PackageSha256,
+                    inspection.InfPath, backupPath, "SubmittedToWindows",
+                    "pnputil завершился без ошибки; фактическая версия драйвера после установки ещё не подтверждена."));
+            }
+            catch (Exception historyError)
+            {
+                AppendEvent("Не удалось записать историю обновления: " + historyError.Message);
+            }
             candidate.PackageStatus = "Передан Windows; проверьте версию и состояние устройства";
             candidate.VerifiedInfPath = "";
             InstallVerifiedDriverButton.IsEnabled = false;
