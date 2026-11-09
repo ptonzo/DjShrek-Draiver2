@@ -312,6 +312,9 @@ public partial class MainWindow
             {
                 candidate.PackageStatus = "Повторная проверка не пройдена; установка заблокирована";
                 candidate.VerifiedInfPath = "";
+                candidate.VerifiedInfVersion = "";
+                candidate.VerifiedPackageRoot = "";
+                candidate.VerifiedPackageManifest = null;
                 InstallVerifiedDriverButton.IsEnabled = false;
                 DriverUpdatesGrid.Items.Refresh();
                 MessageBox.Show(this,
@@ -475,6 +478,9 @@ public partial class MainWindow
 
             candidate.PackageStatus = packageStatus;
             candidate.VerifiedInfPath = "";
+            candidate.VerifiedInfVersion = "";
+            candidate.VerifiedPackageRoot = "";
+            candidate.VerifiedPackageManifest = null;
             InstallVerifiedDriverButton.IsEnabled = false;
             DriverUpdatesGrid.Items.Refresh();
             AppendEvent($"Обработка драйвера {inspection.Provider} {inspection.DriverVersion} для {device.Name}: {historyStatus}.");
