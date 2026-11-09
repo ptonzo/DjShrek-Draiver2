@@ -107,7 +107,7 @@ public sealed class DriverInstallExecutionService
             var stderr = await ReadSafelyAsync(stderrTask).ConfigureAwait(false);
             var wasCancelled = cancellationToken.IsCancellationRequested;
             return new DriverInstallExecutionResult(
-                true, null, false, !wasCancelled, wasCancelled,
+                true, null, !wasCancelled, wasCancelled, wasCancelled,
                 stdout, stderr,
                 wasCancelled ? "Cancelled" : "TimedOut",
                 wasCancelled
