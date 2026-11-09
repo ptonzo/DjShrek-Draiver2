@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
@@ -187,14 +186,10 @@ public sealed class IntelDsaCatalogService
                 await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
             }
             var bytes = output.ToArray();
+            // Intel's X-DSA-Hash header format/algorithm is not established here.
+            // Preserve it as opaque feed metadata; never label it a verified digest.
             var expectedHash = response.Headers.TryGetValues("X-DSA-Hash", out var hashes)
-                ? hashes.FirstOrDefault() : null;
-            if (!string.IsNullOrWhiteSpace(expectedHash))
-            {
-                var actual = Convert.ToHexString(SHA1.HashData(bytes));
-                if (!actual.Equals(expectedHash.Trim(), StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Intel DSA feed SHA-1 does not match its X-DSA-Hash header.");
-            }
+                ? hashes.FirstOrDefault()?.Trim() : null;
             var version = response.Headers.TryGetValues("X-DSA-Version", out var versions)
                 ? versions.FirstOrDefault() ?? "" : "";
             return (bytes, expectedHash ?? "", version);
