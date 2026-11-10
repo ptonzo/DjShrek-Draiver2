@@ -177,6 +177,7 @@ public sealed class DriverMaintenanceService
         if (!File.Exists(fullInfPath) ||
             !Path.GetExtension(fullInfPath).Equals(".inf", StringComparison.OrdinalIgnoreCase))
             throw new FileNotFoundException("INF-файл не найден.", fullInfPath);
+        RejectPackageReparsePoints(fullInfPath, "INF");
 
         var directory = Path.GetDirectoryName(fullInfPath)!;
         var declarations = ReadCatalogDeclarations(fullInfPath);
@@ -216,6 +217,7 @@ public sealed class DriverMaintenanceService
                 relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
                 throw new InvalidDataException("INF ссылается на каталог за пределами своей папки.");
 
+            RejectPackageReparsePoints(catalog, "CAT");
             catalogs.Add(catalog);
         }
 
@@ -230,6 +232,28 @@ public sealed class DriverMaintenanceService
             if (!string.Equals(status, "Valid", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException(
                     $"Подпись каталога '{Path.GetFileName(catalog)}' не подтверждена (статус: {status}). Установка заблокирована.");
+        }
+    }
+
+    private static void RejectPackageReparsePoints(string filePath, string description)
+    {
+        var fullPath = Path.GetFullPath(filePath);
+        var root = Path.GetPathRoot(fullPath);
+        if (string.IsNullOrWhiteSpace(root))
+            throw new InvalidDataException("Не удалось определить корень пути пакета.");
+
+        var current = root;
+        var relative = Path.GetRelativePath(root, fullPath);
+        foreach (var component in relative.Split(
+                     new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                     StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, component);
+            if (!File.Exists(current) && !Directory.Exists(current))
+                break;
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException(description +
+                    " или один из родительских каталогов является reparse point; установка остановлена.");
         }
     }
 
