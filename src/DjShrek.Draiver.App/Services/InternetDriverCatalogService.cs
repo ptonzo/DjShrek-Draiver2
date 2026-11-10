@@ -39,7 +39,7 @@ public sealed class InternetDriverCatalogService
                 .Concat(device.CompatibleIds)
                 .Where(IsHardwareId)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(3);
+                .Take(2);
 
             foreach (var id in ids)
             {
