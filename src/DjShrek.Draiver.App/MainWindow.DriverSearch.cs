@@ -348,6 +348,7 @@ public partial class MainWindow
                         {
                             UpdateId = pack.PackageUri.AbsoluteUri,
                             CatalogRecordId = pack.MachineType,
+                            CatalogReleaseVersion = pack.PackageVersion,
                             CatalogReleaseDate = pack.ReleaseDate,
                             OperatingSystemTarget = pack.OperatingSystem,
                             Title = "OEM-пакет Lenovo: " + pack.Model,
