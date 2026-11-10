@@ -66,7 +66,7 @@ public sealed class DriverCandidateProvenanceProjectionService
         // Apply is called during search, ranking and UI refresh. Replace the
         // previously projected provenance tail instead of appending duplicate evidence.
         var evidenceBase = candidate.Evidence ?? "";
-        var previousProjection = evidenceBase.IndexOf(" Источник: ", StringComparison.Ordinal);
+        var previousProjection = evidenceBase.IndexOf("Источник: ", StringComparison.Ordinal);
         if (previousProjection >= 0)
             evidenceBase = evidenceBase[..previousProjection];
 
