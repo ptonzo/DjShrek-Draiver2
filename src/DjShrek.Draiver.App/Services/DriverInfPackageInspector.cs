@@ -249,26 +249,82 @@ public sealed class DriverInfPackageInspector
         return (parts[0], parts[1]);
     }
 
-    private static string? ResolveCatalog(Dictionary<string, string> version, Dictionary<string, Dictionary<string, string>> sections, List<string> warnings)
+    private static string? ResolveCatalog(
+        Dictionary<string, string> version,
+        Dictionary<string, Dictionary<string, string>> sections,
+        List<string> warnings)
     {
-        var entries = version.Where(x => CatalogRegex.IsMatch(x.Key)).ToArray();
+        var entries = version
+            .Where(x => CatalogRegex.IsMatch(x.Key))
+            .Select(x => (Key: x.Key, Value: x.Value?.Trim().Trim('"') ?? "",
+                Decoration: CatalogRegex.Match(x.Key).Groups[1].Value))
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .ToArray();
         if (entries.Length == 0) return null;
-        var arch = RuntimeInformation.OSArchitecture switch
+
+        var architecture = RuntimeInformation.OSArchitecture switch
         {
             Architecture.Arm64 => "NTarm64",
             Architecture.X64 => "NTamd64",
-            _ => "NTx86"
+            Architecture.X86 => "NTx86",
+            _ => throw new PlatformNotSupportedException(
+                $"Архитектура {RuntimeInformation.OSArchitecture} не поддерживается выбором CAT.")
         };
-        var selected = entries.Where(x => x.Key.StartsWith("CatalogFile." + arch, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(x => x.Key.Length).FirstOrDefault();
-        selected = selected.Key is not null ? selected : entries.FirstOrDefault(x => !x.Key.Contains('.', StringComparison.Ordinal));
-        var name = selected.Value?.Trim().Trim('"');
-        if (string.IsNullOrWhiteSpace(name))
+
+        var candidates = entries
+            .Where(x => x.Decoration.Equals(architecture, StringComparison.OrdinalIgnoreCase) ||
+                        x.Decoration.StartsWith(architecture + ".", StringComparison.OrdinalIgnoreCase) ||
+                        x.Decoration.Length == 0)
+            .Select(x => new
+            {
+                x.Value,
+                x.Decoration,
+                IsGeneric = x.Decoration.Length == 0,
+                IsArchitectureOnly = x.Decoration.Equals(architecture, StringComparison.OrdinalIgnoreCase),
+                TargetVersion = ParseCatalogTargetVersion(x.Decoration, architecture)
+            })
+            .Where(x => x.IsGeneric || x.IsArchitectureOnly || x.TargetVersion is not null)
+            .ToArray();
+
+        if (candidates.Length == 0)
         {
-            warnings.Add("CatalogFile не содержит имени CAT-файла.");
+            warnings.Add("В INF нет CatalogFile для архитектуры этой Windows.");
             return null;
         }
-        return name;
+
+        var currentVersion = Environment.OSVersion.Version;
+        var applicableDecorated = candidates
+            .Where(x => x.TargetVersion is not null && x.TargetVersion <= currentVersion)
+            .OrderByDescending(x => x.TargetVersion)
+            .ToArray();
+
+        if (applicableDecorated.Length > 0)
+            return applicableDecorated[0].Value;
+
+        var architectureOnly = candidates.FirstOrDefault(x => x.IsArchitectureOnly);
+        if (architectureOnly is not null) return architectureOnly.Value;
+
+        var generic = candidates.FirstOrDefault(x => x.IsGeneric);
+        if (generic is not null) return generic.Value;
+
+        warnings.Add("Найден только CatalogFile с минимальной версией Windows выше текущей; CAT не выбран.");
+        return null;
+    }
+
+    private static Version? ParseCatalogTargetVersion(string decoration, string architecture)
+    {
+        if (!decoration.StartsWith(architecture + ".", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var suffix = decoration[(architecture.Length + 1)..];
+        if (suffix.Length == 0) return null;
+
+        // INF target decorations can include a minimum OS version. Only numeric
+        // NT version tuples are interpreted; unknown suffixes are not guessed.
+        var parts = suffix.Split('.');
+        if (parts.Length < 2 || parts.Length > 4 ||
+            parts.Any(part => !int.TryParse(part, out _)))
+            return null;
+        return Version.TryParse(string.Join(".", parts), out var parsed) ? parsed : null;
     }
 
     private static IReadOnlyList<string> GetSupportedArchitectures(Dictionary<string, Dictionary<string, string>> sections)
