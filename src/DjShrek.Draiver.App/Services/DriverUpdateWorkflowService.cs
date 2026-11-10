@@ -108,6 +108,16 @@ public sealed class DriverUpdateWorkflowService
         CancellationToken token = default) =>
         new DriverBackupRestoreService(_catalog).GetHistoryAsync(token);
 
+    public Task<DriverActivationReconciliation> ReconcileActivationAsync(
+        string instanceId, string expectedProvider, string expectedVersion, string expectedInfName,
+        IReadOnlyCollection<DeviceInfo> currentDevices, CancellationToken token = default) =>
+        new DriverActivationReconciliationService().ReconcileAsync(
+            instanceId, expectedProvider, expectedVersion, expectedInfName, currentDevices, token);
+
+    public Task<IReadOnlyList<DriverActivationReconciliation>> GetActivationHistoryAsync(
+        CancellationToken token = default) =>
+        new DriverActivationReconciliationService().GetHistoryAsync(token);
+
     public Task SetCandidateStateAsync(string recordId, DriverCandidateState state,
         IEnumerable<string>? reasons = null, CancellationToken token = default) =>
         _catalog.SetStateAsync(recordId, state, reasons, token);
