@@ -99,9 +99,14 @@ public sealed class IntelDsaCatalogService
                     {
                         Element = x,
                         Url = TryGetString(x, "Url", out var url) ? url : "",
-                        OperatingSystem = ReadFirstString(x, "OperatingSystem", "OS", "OsName", "Platform")
+                        OperatingSystem = ReadFirstString(x, "OperatingSystem", "OS", "OsName", "Platform"),
+                        Architecture = ReadFirstString(x, "Architecture", "Arch", "PlatformArchitecture", "OperatingSystemArchitecture")
                     })
-                    .Where(x => IsAllowedPackageUrl(x.Url) && IsCompatibleWindowsGeneration(x.OperatingSystem, windowsBuild))
+                    .Where(x => IsAllowedPackageUrl(x.Url) &&
+                                IsCompatibleWindowsGeneration(x.OperatingSystem, windowsBuild) &&
+                                IsCompatibleArchitecture(x.Architecture))
+                    .OrderByDescending(x => OperatingSystemSpecificity(x.OperatingSystem, windowsBuild))
+                    .ThenByDescending(x => ArchitectureSpecificity(x.Architecture))
                     .FirstOrDefault();
                 if (file is null) continue;
 
@@ -121,6 +126,7 @@ public sealed class IntelDsaCatalogService
                         CatalogReleaseVersion = feedVersion,
                         CatalogReleaseDate = releaseDate,
                         OperatingSystemTarget = file.OperatingSystem,
+                        ArchitectureTarget = file.Architecture,
                         Title = configName + " — " + category,
                         Manufacturer = device.Manufacturer,
                         Model = device.Name,
@@ -243,6 +249,50 @@ public sealed class IntelDsaCatalogService
             if (TryGetString(element, name, out var value))
                 return value;
         return "";
+    }
+
+    private static int OperatingSystemSpecificity(string operatingSystem, int windowsBuild)
+    {
+        if (string.IsNullOrWhiteSpace(operatingSystem)) return 0;
+        var has10 = operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+                    operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase);
+        var has11 = operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
+                    operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
+        if (has10 && has11) return 1;
+        if ((windowsBuild >= 22000 && has11) || (windowsBuild < 22000 && has10)) return 2;
+        return 0;
+    }
+
+    private static bool IsCompatibleArchitecture(string architecture)
+    {
+        if (string.IsNullOrWhiteSpace(architecture)) return true;
+        var target = NormalizeArchitecture(architecture);
+        var current = NormalizeArchitecture(System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString());
+        return target.Length == 0 || target.Equals("all", StringComparison.OrdinalIgnoreCase) ||
+               target.Equals("universal", StringComparison.OrdinalIgnoreCase) ||
+               target.Equals(current, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int ArchitectureSpecificity(string architecture)
+    {
+        if (string.IsNullOrWhiteSpace(architecture)) return 0;
+        return NormalizeArchitecture(architecture).Length > 0 ? 2 : 0;
+    }
+
+    private static string NormalizeArchitecture(string architecture)
+    {
+        var value = architecture.Trim().ToLowerInvariant()
+            .Replace("_", "").Replace("-", "").Replace(" ", "");
+        return value switch
+        {
+            "amd64" or "x8664" or "x64" or "ntamd64" => "x64",
+            "x86" or "i386" or "i486" or "i586" or "i686" or "ntx86" => "x86",
+            "arm" or "arm32" or "ntarm" => "ARM",
+            "arm64" or "aarch64" or "ntarm64" => "ARM64",
+            "all" or "any" => "all",
+            "universal" => "universal",
+            _ => ""
+        };
     }
 
     private static bool IsCompatibleWindowsGeneration(string operatingSystem, int windowsBuild)
