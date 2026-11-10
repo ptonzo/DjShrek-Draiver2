@@ -45,8 +45,10 @@ if ($LASTEXITCODE -ne 0) { throw "Could not switch to $branch." }
 
 $project = ".\src\DjShrek.Draiver.App\DjShrek.Draiver.App.csproj"
 $lastBuildLog = Join-Path $env:TEMP "DjShrek-Draiver-local-agent-build.log"
+$lastCyclePassed = $false
 
 for ($i = 1; $i -le $Iterations; $i++) {
+    $lastCyclePassed = $false
     Write-Host ""
     Write-Host "===== Local AI development cycle $i / $Iterations =====" -ForegroundColor Cyan
 
@@ -84,7 +86,12 @@ $previousFailure
     dotnet run --project $project -c Release --no-build -- --self-test 2>&1 | Tee-Object -FilePath $lastBuildLog
     if ($LASTEXITCODE -ne 0) { Write-Warning "Self-test failed; next cycle will receive the log."; continue }
 
+    $lastCyclePassed = $true
     Write-Host "Build and self-test passed for cycle $i." -ForegroundColor Green
+}
+
+if (-not $lastCyclePassed) {
+    throw "The last development cycle did not pass Release build and self-test. Changes were left in the local branch and were NOT pushed."
 }
 
 $changes = git status --porcelain
