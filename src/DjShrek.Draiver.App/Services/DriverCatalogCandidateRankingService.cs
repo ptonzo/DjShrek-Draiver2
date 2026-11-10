@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Globalization;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
@@ -21,7 +22,7 @@ public sealed class DriverCatalogCandidateRankingService
             .GroupBy(BuildIdentityKey, StringComparer.OrdinalIgnoreCase)
             .Select(group => group
                 .OrderByDescending(Score)
-                .ThenByDescending(x => x.PublishedDate, StringComparer.Ordinal)
+                .ThenByDescending(x => ParsePublishedDate(x.PublishedDate))
                 .ThenBy(x => x.Title, StringComparer.OrdinalIgnoreCase)
                 .First())
             .OrderByDescending(Score)
@@ -96,6 +97,14 @@ public sealed class DriverCatalogCandidateRankingService
             ? NormalizeUri(candidate.PackageUrl)
             : NormalizeUri(candidate.SourceUrl);
         return scope + "|" + device + "|" + artifact;
+    }
+
+    private static DateTimeOffset ParsePublishedDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return DateTimeOffset.MinValue;
+        return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed : DateTimeOffset.MinValue;
     }
 
     private static int Score(DriverUpdateCandidate candidate)
