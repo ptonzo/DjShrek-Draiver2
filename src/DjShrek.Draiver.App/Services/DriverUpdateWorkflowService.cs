@@ -100,6 +100,14 @@ public sealed class DriverUpdateWorkflowService
     public Task<IReadOnlyList<string>> VerifyBackupAsync(string backupDirectory,
         CancellationToken token = default) => _catalog.VerifyBackupAsync(backupDirectory, token);
 
+    public Task<DriverBackupRestoreResult> RestoreBackupAsync(DriverBackupRecord backup,
+        bool userConfirmed, CancellationToken token = default) =>
+        new DriverBackupRestoreService(_catalog).RestoreAsync(backup, userConfirmed, token);
+
+    public Task<IReadOnlyList<DriverBackupRestoreResult>> GetBackupRestoreHistoryAsync(
+        CancellationToken token = default) =>
+        new DriverBackupRestoreService(_catalog).GetHistoryAsync(token);
+
     public Task SetCandidateStateAsync(string recordId, DriverCandidateState state,
         IEnumerable<string>? reasons = null, CancellationToken token = default) =>
         _catalog.SetStateAsync(recordId, state, reasons, token);
