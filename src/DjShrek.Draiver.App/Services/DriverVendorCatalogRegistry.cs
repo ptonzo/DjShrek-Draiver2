@@ -268,7 +268,7 @@ public sealed class DriverVendorCatalogRegistry
         var builtIn = Resolve(hardwareId, manufacturer, driverProvider);
         if (builtIn is not null)
             return availableEntries.FirstOrDefault(entry =>
-                entry.Id.Equals(builtIn.Id, StringComparison.OrdinalIgnoreCase)) ?? builtIn;
+                entry.Id.Equals(builtIn.Id, StringComparison.OrdinalIgnoreCase));
 
         var normalized = Normalize((manufacturer ?? string.Empty) + " " + (driverProvider ?? string.Empty));
         if (normalized.Length == 0) return null;
