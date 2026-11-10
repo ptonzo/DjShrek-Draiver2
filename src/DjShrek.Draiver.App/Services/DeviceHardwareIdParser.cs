@@ -34,7 +34,14 @@ public static class DeviceHardwareIdParser
             ["04B8"] = "Epson", ["04F9"] = "Brother", ["12D1"] = "Huawei",
             ["19D2"] = "ZTE", ["2717"] = "Xiaomi", ["0403"] = "FTDI",
             ["10C4"] = "Silicon Labs", ["067B"] = "Prolific", ["1A86"] = "WCH",
-            ["2341"] = "Arduino", ["0955"] = "NVIDIA"
+            ["2341"] = "Arduino", ["0955"] = "NVIDIA", ["1B21"] = "ASMedia",
+            ["197B"] = "JMicron", ["1106"] = "VIA Technologies", ["1039"] = "SiS",
+            ["1102"] = "Creative", ["1013"] = "Cirrus Logic", ["06CB"] = "Synaptics",
+            ["04F3"] = "ELAN", ["27C6"] = "Goodix", ["303A"] = "Espressif",
+            ["1915"] = "Nordic Semiconductor", ["1987"] = "Phison",
+            ["090C"] = "Silicon Motion", ["0951"] = "Kingston",
+            ["1058"] = "Western Digital", ["0BC2"] = "Seagate",
+            ["04B4"] = "Cypress", ["0483"] = "STMicroelectronics", ["1FC9"] = "NXP"
         };
 
     public static DeviceHardwareIdentity? Parse(string? hardwareId)
