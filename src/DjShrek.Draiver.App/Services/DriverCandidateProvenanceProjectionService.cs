@@ -63,14 +63,23 @@ public sealed class DriverCandidateProvenanceProjectionService
             candidate.PublisherVerificationStatus = "Прямая ссылка на пакет отсутствует";
         }
 
-        candidate.Evidence = string.Join(" ", new[]
+        // Apply is called during search, ranking and UI refresh. Replace the
+        // previously projected provenance tail instead of appending duplicate evidence.
+        var evidenceBase = candidate.Evidence ?? "";
+        var previousProjection = evidenceBase.IndexOf(" Источник: ", StringComparison.Ordinal);
+        if (previousProjection >= 0)
+            evidenceBase = evidenceBase[..previousProjection];
+
+        var provenanceEvidence = string.Join(" ", new[]
         {
-            candidate.Evidence,
             "Источник: " + sourceAssessment.Category + " (" + sourceAssessment.Host + ").",
             sourceAssessment.Explanation,
             candidate.PackageSourceHost.Length == 0
                 ? "Домен файла пакета не определён."
                 : "Домен файла пакета: " + candidate.PackageSourceCategory + " (" + candidate.PackageSourceHost + ")."
         }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        candidate.Evidence = string.IsNullOrWhiteSpace(evidenceBase)
+            ? provenanceEvidence
+            : evidenceBase.TrimEnd() + " " + provenanceEvidence;
     }
 }
