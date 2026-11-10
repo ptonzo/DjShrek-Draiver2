@@ -248,6 +248,25 @@
                                 <Button Content="Загрузить официальный пакет" Click="DownloadOfficialPackage_Click"/>
                             </WrapPanel>
                         </DockPanel>
+                        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="14" Margin="0,0,0,12" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel>
+                                <DockPanel>
+                                    <TextBlock Text="АНАЛИЗ СОСТОЯНИЯ ДРАЙВЕРОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Button Content="Обновить анализ" Click="RefreshDriverHealth_Click" DockPanel.Dock="Right"/>
+                                </DockPanel>
+                                <TextBlock x:Name="DriverHealthSummaryText" Text="Сканируйте устройства для формирования отчёта." Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" Margin="0,8,0,4"/>
+                                <TextBlock x:Name="DriverHealthChangesText" Text="История изменений появится после первого анализа." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,9"/>
+                                <DataGrid x:Name="DriverHealthGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" MinHeight="100" MaxHeight="220">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="2*"/>
+                                        <DataGridTextColumn Header="Приоритет" Binding="{Binding Severity}" Width="*"/>
+                                        <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="*"/>
+                                        <DataGridTextColumn Header="Описание" Binding="{Binding Description}" Width="3*"/>
+                                        <DataGridTextColumn Header="Рекомендация" Binding="{Binding Recommendation}" Width="3*"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Border>
                         <DataGrid x:Name="DevicesGrid" Grid.Row="1" AutoGenerateColumns="False"
                                   IsReadOnly="True" SelectionMode="Single" CanUserSortColumns="True">
                             <DataGrid.Columns>
