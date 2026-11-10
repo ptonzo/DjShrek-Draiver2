@@ -295,6 +295,7 @@
                                     <StackPanel>
                                         <TextBlock Text="ОФИЦИАЛЬНЫЕ ИНСТРУМЕНТЫ ПРОИЗВОДИТЕЛЕЙ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock x:Name="OemDetectText" Text="Определение производителя компьютера..." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,10"/>
+                                        <TextBlock x:Name="OemIdentityText" Text="Получение расширенных идентификаторов модели..." Foreground="{DynamicResource AccentSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                         <WrapPanel>
                                             <Button Content="Открыть сайт производителя" Click="OpenDetectedOem_Click"/>
                                             <Button Content="Все каталоги" Click="OpenOemCatalog_Click"/>
