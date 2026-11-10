@@ -81,11 +81,12 @@ public sealed class DriverPackageMetadataService
         }
 
         var (minBuild, maxBuild) = ReadWindowsDecorations(sections.Keys);
+        var architecture = ResolveArchitecture(sections.Keys);
         return new DriverPackageMetadata(
             fullPath, provider, className, version, date, catalog,
             hardware.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray(),
             compatible.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray(),
-            RuntimeInformation.OSArchitecture.ToString(), minBuild, maxBuild);
+            architecture, minBuild, maxBuild);
     }
 
     public DriverPackageMatch Match(DriverPackageMetadata package, DeviceInfo device)
@@ -191,6 +192,22 @@ public sealed class DriverPackageMetadataService
             .SelectMany(m => new[] { ParseBuild(m.Groups[1].Value), ParseBuild(m.Groups[2].Value) })
             .Where(x => x > 0).ToArray();
         return builds.Length == 0 ? (0, int.MaxValue) : (builds.Min(), int.MaxValue);
+    }
+
+    private static string ResolveArchitecture(IEnumerable<string> sections)
+    {
+        var names = sections.ToArray();
+        var hasAmd64 = names.Any(x => x.Contains("NTamd64", StringComparison.OrdinalIgnoreCase));
+        var hasArm64 = names.Any(x => x.Contains("NTarm64", StringComparison.OrdinalIgnoreCase));
+        var hasX86 = names.Any(x => x.Contains("NTx86", StringComparison.OrdinalIgnoreCase));
+        if (!hasAmd64 && !hasArm64 && !hasX86) return RuntimeInformation.OSArchitecture.ToString();
+        return RuntimeInformation.OSArchitecture switch
+        {
+            Architecture.X64 when hasAmd64 => "X64",
+            Architecture.Arm64 when hasArm64 => "Arm64",
+            Architecture.X86 when hasX86 => "X86",
+            _ => "Unsupported"
+        };
     }
 
     private static int ParseBuild(string value) => int.TryParse(value, out var build) ? build : 0;
