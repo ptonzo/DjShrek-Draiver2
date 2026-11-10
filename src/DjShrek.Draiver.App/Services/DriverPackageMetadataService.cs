@@ -25,6 +25,7 @@ public sealed record DriverPackageMatch(
     bool ArchitectureMatch,
     bool WindowsBuildMatch,
     bool SignatureValid,
+    string VersionAssessment,
     string Verdict,
     IReadOnlyList<string> Reasons);
 
@@ -117,12 +118,16 @@ public sealed class DriverPackageMetadataService
         if (!buildMatch) reasons.Add($"Сборка Windows {build} вне диапазона {package.MinWindowsBuild}–{package.MaxWindowsBuild}.");
         if (string.IsNullOrWhiteSpace(package.CatalogFile)) reasons.Add("В INF не указан CatalogFile.");
         if (!signatureValid) reasons.Add("Подпись CAT не подтверждена: " + signatureError);
+        var versionAssessment = CompareVersions(device.DriverVersion, package.DriverVersion);
+        if (versionAssessment.StartsWith("Версия кандидата ниже", StringComparison.Ordinal))
+            reasons.Add(versionAssessment);
         var verdict = hardwareMatch && archMatch && buildMatch &&
-                      !string.IsNullOrWhiteSpace(package.CatalogFile) && signatureValid
-            ? "Совпадение по ID/ОС/архитектуре; CAT имеет действительную подпись"
-            : "Пакет не прошёл одну или несколько проверок";
+                      !string.IsNullOrWhiteSpace(package.CatalogFile) && signatureValid &&
+                      !versionAssessment.StartsWith("Версия кандидата ниже", StringComparison.Ordinal)
+            ? "Кандидат прошёл проверки совместимости и подписи"
+            : "Пакет требует внимания: см. причины";
         return new DriverPackageMatch(package, device, hardwareMatch, archMatch, buildMatch,
-            signatureValid, verdict, reasons);
+            signatureValid, versionAssessment, verdict, reasons);
     }
 
     public IReadOnlyList<DriverPackageMatch> MatchFolder(string folder, IEnumerable<DeviceInfo> devices)
@@ -145,6 +150,17 @@ public sealed class DriverPackageMetadataService
         return results.OrderByDescending(x => x.HardwareIdMatch && x.ArchitectureMatch && x.WindowsBuildMatch)
             .ThenBy(x => x.Device.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static string CompareVersions(string installed, string candidate)
+    {
+        if (string.IsNullOrWhiteSpace(installed)) return "Текущая версия драйвера не определена.";
+        if (!Version.TryParse(installed, out var current) || !Version.TryParse(candidate, out var next))
+            return "Сравнение версий недоступно: формат версии не распознан.";
+        var comparison = next.CompareTo(current);
+        return comparison > 0 ? $"Доступна более новая версия: {installed} → {candidate}."
+            : comparison < 0 ? $"Версия кандидата ниже установленной: {installed} → {candidate}."
+            : $"Версия совпадает: {installed}.";
     }
 
     private static bool TryValidateSignature(string infPath, out string error)
