@@ -42,7 +42,7 @@ public sealed class DriverInfEvidenceProjectionService
             : "Preflight не пройден: " + string.Join(" ", inspection.Warnings);
         candidate.PackageSha256 = inspection.InfSha256;
         var evidenceBase = candidate.Evidence ?? "";
-        var previousInfProjection = evidenceBase.IndexOf(" INF: ", StringComparison.Ordinal);
+        var previousInfProjection = evidenceBase.IndexOf("INF: ", StringComparison.Ordinal);
         if (previousInfProjection >= 0)
             evidenceBase = evidenceBase[..previousInfProjection];
 
