@@ -13,6 +13,8 @@ public sealed class DriverStorePackage
     public bool IsInbox { get; set; }
     public bool IsThirdParty { get; set; }
     public bool IsUsedByPresentDevice { get; set; }
+    public string RetentionAssessment { get; set; } = "Не оценено";
+    public string RetentionGuidance { get; set; } = "";
     public List<string> DeviceNames { get; set; } = new();
     public List<string> DeviceInstanceIds { get; set; } = new();
     public DateTime CapturedUtc { get; set; } = DateTime.UtcNow;
