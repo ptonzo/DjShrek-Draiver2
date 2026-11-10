@@ -322,6 +322,21 @@
                                                 <DataGridTextColumn Header="Состояние" Binding="{Binding State}" Width="*"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
+                                        <TextBlock Text="ЖУРНАЛ УСТАНОВОК ДРАЙВЕРОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,15,0,7"/>
+                                        <TextBlock Text="Сохраняется история передачи пакетов Windows: устройство, версии, INF, результат команды и статус перезагрузки. Успешная команда pnputil сама по себе не подтверждает фактическую активацию драйвера."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <DataGrid x:Name="InstallationHistoryGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                                  IsReadOnly="True" SelectionMode="Single" MinHeight="120" MaxHeight="260">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Время UTC" Binding="{Binding TimestampUtc}" Width="*"/>
+                                                <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="2*"/>
+                                                <DataGridTextColumn Header="Старая версия" Binding="{Binding PreviousVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Запрошенная версия" Binding="{Binding RequestedVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Результат" Binding="{Binding Outcome}" Width="2*"/>
+                                                <DataGridTextColumn Header="Перезагрузка" Binding="{Binding RebootStatus}" Width="*"/>
+                                                <DataGridTextColumn Header="INF" Binding="{Binding InfPath}" Width="2*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
                                     </StackPanel>
                                 </Border>
 
