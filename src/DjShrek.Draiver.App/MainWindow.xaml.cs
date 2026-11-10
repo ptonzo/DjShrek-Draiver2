@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly InternetDriverCatalogService _internetCatalog = new();
     private readonly DriverPackageMetadataService _packageMetadata = new();
     private readonly DriverPackageHashService _packageHash = new();
+    private readonly DriverPackageDownloadService _packageDownloader = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -566,6 +567,39 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Контроль целостности", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void DownloadOfficialPackage_Click(object sender, RoutedEventArgs e)
+    {
+        var url = Microsoft.VisualBasic.Interaction.InputBox(
+            "Вставьте прямую HTTPS-ссылку на файл драйвера с официального домена производителя.\n" +
+            "Страницы поиска и сторонние файлообменники не принимаются.",
+            "Загрузка официального пакета драйвера", "");
+        if (string.IsNullOrWhiteSpace(url)) return;
+
+        var folder = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Выберите папку для сохранения драйверного пакета",
+            Multiselect = false
+        };
+        if (folder.ShowDialog(this) != true) return;
+
+        try
+        {
+            UpdatesCountText.Text = "Загрузка пакета с проверкой домена и размера...";
+            var result = await _packageDownloader.DownloadAsync(url.Trim(), folder.FolderName);
+            UpdatesCountText.Text = $"Загружен файл: {Path.GetFileName(result.FilePath)}";
+            AppendEvent($"Пакет загружен с {result.SourceHost}; {result.SizeBytes} байт; SHA-256 {result.Sha256}.");
+            MessageBox.Show(
+                $"Файл: {result.FilePath}\nРазмер: {result.SizeBytes} байт\nSHA-256: {result.Sha256}\n\n" +
+                "Файл сохранён, но не установлен. Перед установкой выполните сопоставление INF и проверку подписи CAT.",
+                "Загрузка драйвера завершена", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            UpdatesCountText.Text = "Загрузка пакета не выполнена.";
+            MessageBox.Show(ex.Message, "Загрузка драйвера", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
