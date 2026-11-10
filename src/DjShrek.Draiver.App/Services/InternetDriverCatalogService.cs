@@ -4,16 +4,21 @@ using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
 
+public sealed record InternetDriverSearchResult(
+    string DeviceName, string Manufacturer, string DriverProvider,
+    string HardwareId, string Title, string Description, string Url,
+    string MatchNote);
+
 /// <summary>
-/// Searches the public web for vendor-published driver pages using device Hardware IDs.
-/// This service does not query Windows Update Agent and never installs a downloaded package.
+/// Discovers driver pages on manufacturer domains using actual PnP hardware identifiers.
+/// Search results are links for manual review, not verified installable packages.
 /// </summary>
 public sealed class InternetDriverCatalogService
 {
-    private static readonly HttpClient Client = new(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All })
+    private static readonly HttpClient Client = new(new HttpClientHandler
     {
-        Timeout = TimeSpan.FromSeconds(18)
-    };
+        AutomaticDecompression = DecompressionMethods.All
+    }) { Timeout = TimeSpan.FromSeconds(18) };
 
     private static readonly string[] OfficialDomains =
     {
@@ -22,18 +27,23 @@ public sealed class InternetDriverCatalogService
         "realtek.com", "qualcomm.com", "mediatek.com", "broadcom.com"
     };
 
-    public async Task<IReadOnlyList<DriverUpdateCandidate>> SearchAsync(
+    public async Task<IReadOnlyList<InternetDriverSearchResult>> SearchAsync(
         IEnumerable<DeviceInfo> devices, CancellationToken cancellationToken = default)
     {
-        Client.DefaultRequestHeaders.UserAgent.ParseAdd("DjShrek-Draiver/1.8 (+driver-catalog-search)");
-        var output = new List<DriverUpdateCandidate>();
+        var output = new List<InternetDriverSearchResult>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var device in devices)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var ids = GetIds(device).Take(2).ToArray();
+            var ids = device.HardwareIds
+                .Concat(device.CompatibleIds)
+                .Where(IsHardwareId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3);
+
             foreach (var id in ids)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var query = Uri.EscapeDataString($"driver download \"{id}\" Windows 10 OR Windows 11");
                 var url = "https://www.bing.com/search?format=rss&q=" + query;
                 try
@@ -46,45 +56,37 @@ public sealed class InternetDriverCatalogService
                     {
                         var link = (string?)item.Element("link") ?? "";
                         if (!Uri.TryCreate(link, UriKind.Absolute, out var uri) ||
-                            uri.Scheme != Uri.UriSchemeHttps || !IsOfficial(uri.Host) || !seen.Add(uri.AbsoluteUri))
+                            uri.Scheme != Uri.UriSchemeHttps || !IsOfficial(uri.Host) ||
+                            !seen.Add(device.InstanceId + "|" + uri.AbsoluteUri))
                             continue;
-                        var title = WebUtility.HtmlDecode((string?)item.Element("title") ?? "Страница драйвера производителя");
-                        var description = WebUtility.HtmlDecode((string?)item.Element("description") ?? "");
-                        output.Add(new DriverUpdateCandidate
-                        {
-                            UpdateId = uri.AbsoluteUri,
-                            Title = title,
-                            Manufacturer = device.Provider,
-                            Model = device.Name,
-                            Provider = uri.Host,
-                            DeviceClass = device.Class,
-                            HardwareId = id,
-                            DeviceName = device.Name,
-                            CurrentVersion = device.DriverVersion,
-                            Compatibility = "Совпадение Hardware ID в поисковом запросе; пакет требует проверки",
-                            AvailableVersion = "Проверьте версию на сайте производителя",
-                            Description = description,
-                            SourceUrl = uri.AbsoluteUri
-                        });
+
+                        output.Add(new InternetDriverSearchResult(
+                            device.Name, device.Manufacturer, device.DriverProvider, id,
+                            WebUtility.HtmlDecode((string?)item.Element("title") ?? "Страница производителя"),
+                            WebUtility.HtmlDecode((string?)item.Element("description") ?? ""),
+                            uri.AbsoluteUri,
+                            "Найдено по Hardware ID; точная совместимость и версия требуют подтверждения на сайте производителя."));
                     }
                 }
                 catch (OperationCanceledException) { throw; }
-                catch { /* A failed vendor/web query must not stop searches for other devices. */ }
+                catch (HttpRequestException) { }
+                catch (System.Xml.XmlException) { }
             }
         }
-        return output.OrderBy(x => x.DeviceName).ThenBy(x => x.Provider).ToArray();
+        return output.OrderBy(x => x.DeviceName).ThenBy(x => x.Manufacturer).ToArray();
     }
 
-    private static IEnumerable<string> GetIds(DeviceInfo device)
-    {
-        var value = device.HardwareId ?? "";
-        return value.Split(new[] { ';', '\\r', '\\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(x => x.Length >= 8 && x.Contains('\\'));
-    }
+    private static bool IsHardwareId(string value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Length >= 8 &&
+        value.Contains('\\') && (value.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase) ||
+        value.StartsWith("USB\\", StringComparison.OrdinalIgnoreCase) ||
+        value.StartsWith("HDAUDIO\\", StringComparison.OrdinalIgnoreCase) ||
+        value.StartsWith("ACPI\\", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsOfficial(string host)
     {
         host = host.TrimEnd('.').ToLowerInvariant();
-        return OfficialDomains.Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
+        return OfficialDomains.Any(domain =>
+            host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
     }
 }
