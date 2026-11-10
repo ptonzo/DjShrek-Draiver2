@@ -1,3 +1,5 @@
+using DjShrek.Draiver.App.Models;
+
 namespace DjShrek.Draiver.App.Services;
 
 /// <summary>
@@ -8,7 +10,7 @@ public sealed class OemDriverCatalogAdapter
 {
     public IReadOnlyList<OemCatalogTarget> BuildTargets(
         OemDeviceIdentity identity,
-        IEnumerable<Models.DeviceInfo> devices)
+        IEnumerable<DeviceInfo> devices)
     {
         var targets = new List<OemCatalogTarget>();
         var model = First(identity.ProductNumber, identity.SearchModel, identity.Model, identity.ProductName);
