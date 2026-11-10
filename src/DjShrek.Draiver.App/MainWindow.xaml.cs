@@ -843,6 +843,15 @@ public partial class MainWindow : Window
                 return;
 
             var selected = results[number - 1];
+            var selectedDevice = eligible.FirstOrDefault(device =>
+                string.Equals(device.Name, selected.DeviceName, StringComparison.OrdinalIgnoreCase) ||
+                device.HardwareIds.Concat(device.CompatibleIds).Contains(selected.HardwareId, StringComparer.OrdinalIgnoreCase));
+            if (selectedDevice is null)
+            {
+                MessageBox.Show("Не удалось связать страницу каталога с устройством из текущей инвентаризации.",
+                    "Интернет-каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             Process.Start(new ProcessStartInfo(selected.Url) { UseShellExecute = true });
             UpdatesCountText.Text = $"Страница производителя открыта: {selected.DeviceName}. Поиск прямых ссылок на пакеты...";
             AppendEvent($"Открыта страница драйвера: {selected.DeviceName}; {selected.HardwareId}.");
@@ -863,6 +872,11 @@ public partial class MainWindow : Window
                 return;
             }
 
+            var catalogRecords = new List<DriverUpdateRecord>();
+            foreach (var item in candidates)
+                catalogRecords.Add(await _driverCatalog.UpsertCandidateAsync(selectedDevice, item.Provider,
+                    item.Title, item.Url, item.SourcePage));
+            await RefreshDriverCatalogAsync();
             var packageMenu = string.Join(Environment.NewLine, candidates.Select((item, index) =>
                 $"{index + 1}. {item.Title} [{item.FileType}] — {new Uri(item.Url).Host}"));
             var packageAnswer = Microsoft.VisualBasic.Interaction.InputBox(
@@ -874,9 +888,8 @@ public partial class MainWindow : Window
                 packageNumber < 1 || packageNumber > candidates.Count) return;
 
             var package = candidates[packageNumber - 1];
-            var targetDevice = _devices.FirstOrDefault(device =>
-                device.HardwareIds.Concat(device.CompatibleIds)
-                    .Contains(package.MatchHardwareId, StringComparer.OrdinalIgnoreCase));
+            var candidateRecord = catalogRecords[packageNumber - 1];
+            var targetDevice = selectedDevice;
             if (targetDevice is null)
             {
                 MessageBox.Show("Устройство, для которого выполнялся поиск, больше не присутствует в текущем списке.",
@@ -890,7 +903,10 @@ public partial class MainWindow : Window
             if (string.IsNullOrWhiteSpace(folder)) return;
 
             UpdatesCountText.Text = "Загрузка, SHA-256, подготовка пакета и анализ INF...";
+            await _driverCatalog.SetStateAsync(candidateRecord.Id, DriverCandidateState.Downloading);
             var intake = await _packageIntake.AcquireAndAnalyzeAsync(package, targetDevice, folder);
+            await _driverCatalog.UpdateStageAsync(candidateRecord.Id, intake);
+            await RefreshDriverCatalogAsync();
             var matchSummary = intake.Matches.Count == 0
                 ? "Совпадения INF: не обнаружены."
                 : string.Join(Environment.NewLine, intake.Matches.Take(12).Select(match =>
