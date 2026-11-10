@@ -63,15 +63,9 @@ public sealed class DriverSourceProvenanceService
                 host);
         }
 
-        if (string.Equals(declaredSourceType, "IndependentCatalog", StringComparison.OrdinalIgnoreCase))
-        {
-            return new DriverSourceAssessment(
-                DriverSourceCategory.IndependentCatalog,
-                "Independent",
-                "Независимый каталог. Не является официальным источником производителя.",
-                host);
-        }
-
+        // A declared source type is only a hint. A real manufacturer domain must
+        // retain its domain-based classification even when the catalog record itself
+        // originated from an independent index.
         var vendor = NormalizeManufacturer(manufacturer);
         if (vendor.Length > 0 &&
             VendorDomains.TryGetValue(vendor, out var domains) &&
@@ -90,6 +84,15 @@ public sealed class DriverSourceProvenanceService
                 DriverSourceCategory.OtherManufacturerDomain,
                 "Unverified",
                 "Домен принадлежит известному производителю, но не совпадает с производителем устройства.",
+                host);
+        }
+
+        if (string.Equals(declaredSourceType, "IndependentCatalog", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DriverSourceAssessment(
+                DriverSourceCategory.IndependentCatalog,
+                "Independent",
+                "Независимый каталог. Не является официальным источником производителя.",
                 host);
         }
 
