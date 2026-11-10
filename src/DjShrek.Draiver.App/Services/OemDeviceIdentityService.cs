@@ -18,8 +18,8 @@ $csp = Get-CimInstance Win32_ComputerSystemProduct
 $bb = Get-CimInstance Win32_BaseBoard
 $bios = Get-CimInstance Win32_BIOS
 $regPaths = @(
- 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS',
- 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\OEMInformation'
+ 'HKLM:\HARDWARE\DESCRIPTION\System\BIOS',
+ 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation'
 )
 $reg = @{}
 foreach ($path in $regPaths) {
@@ -64,14 +64,39 @@ foreach ($path in $regPaths) {
         using var document = System.Text.Json.JsonDocument.Parse(json);
         var root = document.RootElement;
         string Read(string name) => root.TryGetProperty(name, out var value) ? value.ToString().Trim() : "";
+        var registry = root.TryGetProperty("BiosRegistry", out var registryElement)
+            ? registryElement : default;
+        string ReadRegistry(params string[] names)
+        {
+            if (registry.ValueKind != System.Text.Json.JsonValueKind.Object) return "";
+            foreach (var name in names)
+            {
+                foreach (var property in registry.EnumerateObject())
+                {
+                    if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                        property.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        var value = property.Value.GetString()?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(value)) return value;
+                    }
+                }
+            }
+            return "";
+        }
+
+        var productNumber = First(Read("ProductNumber"),
+            ReadRegistry("ProductNumber", "SystemSKU", "SystemSku", "SKU", "System Product Name"));
+        var model = First(Read("Model"), Read("ProductName"),
+            ReadRegistry("SystemProductName", "SystemVersion", "Model", "SystemFamily"));
+        var systemSku = First(Read("SystemSku"), ReadRegistry("SystemSKU", "SystemSku", "SKU"));
         var identity = new OemDeviceIdentity
         {
             Manufacturer = Read("Manufacturer"),
-            Model = Read("Model"),
+            Model = model,
             SystemFamily = Read("SystemFamily"),
             ProductName = Read("ProductName"),
-            ProductNumber = Read("ProductNumber"),
-            SystemSku = Read("SystemSku"),
+            ProductNumber = productNumber,
+            SystemSku = systemSku,
             BoardManufacturer = Read("BoardManufacturer"),
             BoardProduct = Read("BoardProduct"),
             BiosManufacturer = Read("BiosManufacturer"),
@@ -83,6 +108,9 @@ foreach ($path in $regPaths) {
         return identity;
     }
 
+    private static string First(params string[] values) =>
+        values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim() ?? "";
+
     private static string ResolveVendor(params string[] values)
     {
         var all = string.Join(" ", values).ToLowerInvariant();
@@ -91,7 +119,8 @@ foreach ($path in $regPaths) {
         if (all.Contains("nvidia")) return "NVIDIA";
         if (all.Contains("asus")) return "ASUS";
         if (all.Contains("dell")) return "Dell";
-        if (all.Contains("hewlett") || all.Contains("hp")) return "HP";
+        if (all.Contains("hewlett") || all.Contains("hewlett-packard") ||
+            all.Contains("hp inc") || all.Contains("hp ") || all.StartsWith("hp")) return "HP";
         if (all.Contains("lenovo")) return "Lenovo";
         return values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim() ?? "Unknown";
     }
