@@ -7,13 +7,13 @@ namespace DjShrek.Draiver.App.Services;
 public static class DeviceHardwareIdParser
 {
     private static readonly Regex Pci = new(
-        @"^PCI\\VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})(?:&SUBSYS_([0-9A-F]{8}))?(?:&REV_([0-9A-F]{2}))?",
+        @"^PCI\\VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})(?:&SUBSYS_([0-9A-F]{8}))?(?:&REV_([0-9A-F]{2}))?(?:&[A-Z0-9_]+)*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex Usb = new(
-        @"^USB\\VID_([0-9A-F]{4})&PID_([0-9A-F]{4})",
+        @"^USB\\VID_([0-9A-F]{4})&PID_([0-9A-F]{4})(?:&[A-Z0-9_]+)*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex Hdaudio = new(
-        @"^HDAUDIO\\FUNC_([0-9A-F]{2})&VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})",
+        @"^HDAUDIO\\FUNC_([0-9A-F]{2})&VEN_([0-9A-F]{4})&DEV_([0-9A-F]{4})(?:&[A-Z0-9_]+)*$",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly IReadOnlyDictionary<string, string> Vendors =
