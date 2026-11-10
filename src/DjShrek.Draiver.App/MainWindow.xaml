@@ -294,6 +294,7 @@
                                             <Button Content="Обновить каталог" Click="RefreshDriverCatalog_Click"/>
                                             <Button Content="Удалить выбранную запись" Click="RemoveDriverCandidate_Click"/>
                                             <Button Content="Открыть манифест" Click="OpenDriverManifest_Click"/>
+                                            <Button Content="Установить выбранный драйвер" Click="InstallSelectedCandidate_Click"/>
                                             <Button Content="Резервные копии" Click="RefreshBackupCatalog_Click"/>
                                             <Button Content="Проверить копию" Click="VerifyBackupCatalog_Click"/>
                                         </WrapPanel>
