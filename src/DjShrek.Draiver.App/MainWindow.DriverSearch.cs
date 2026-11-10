@@ -539,7 +539,11 @@ public partial class MainWindow
                     {
                         results.Add(new DriverUpdateCandidate
                         {
-                            UpdateId = entry.DetailUri.AbsoluteUri,
+                            UpdateId = entry.DetailUri.AbsoluteUri + "|" + device.InstanceId,
+                            CatalogRecordId = entry.ProductName,
+                            CatalogReleaseVersion = entry.Version,
+                            OperatingSystemTarget = Environment.OSVersion.Version.Build >= 22000
+                                ? "Windows 11" : "Windows 10",
                             Title = "NVIDIA: " + entry.ProductName + " — " + entry.Version,
                             Manufacturer = "NVIDIA",
                             Model = entry.ProductName,
