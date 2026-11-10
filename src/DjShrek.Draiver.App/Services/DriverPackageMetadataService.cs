@@ -24,6 +24,7 @@ public sealed record DriverPackageMatch(
     bool HardwareIdMatch,
     bool ArchitectureMatch,
     bool WindowsBuildMatch,
+    bool SignatureValid,
     string Verdict,
     IReadOnlyList<string> Reasons);
 
@@ -91,6 +92,13 @@ public sealed class DriverPackageMetadataService
 
     public DriverPackageMatch Match(DriverPackageMetadata package, DeviceInfo device)
     {
+        var signatureValid = TryValidateSignature(package.InfPath, out var signatureError);
+        return Match(package, device, signatureValid, signatureError);
+    }
+
+    private static DriverPackageMatch Match(
+        DriverPackageMetadata package, DeviceInfo device, bool signatureValid, string signatureError)
+    {
         var ids = device.HardwareIds.Concat(device.CompatibleIds)
             .Where(x => !string.IsNullOrWhiteSpace(x)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var packageIds = package.HardwareIds.Concat(package.CompatibleIds)
@@ -108,10 +116,13 @@ public sealed class DriverPackageMetadataService
         if (!archMatch) reasons.Add($"Архитектура пакета {package.Architecture} не совпадает с {arch}.");
         if (!buildMatch) reasons.Add($"Сборка Windows {build} вне диапазона {package.MinWindowsBuild}–{package.MaxWindowsBuild}.");
         if (string.IsNullOrWhiteSpace(package.CatalogFile)) reasons.Add("В INF не указан CatalogFile.");
-        var verdict = hardwareMatch && archMatch && buildMatch && !string.IsNullOrWhiteSpace(package.CatalogFile)
-            ? "Совпадение по метаданным — требуется проверка подписи и версии"
-            : "Не подходит по метаданным";
-        return new DriverPackageMatch(package, device, hardwareMatch, archMatch, buildMatch, verdict, reasons);
+        if (!signatureValid) reasons.Add("Подпись CAT не подтверждена: " + signatureError);
+        var verdict = hardwareMatch && archMatch && buildMatch &&
+                      !string.IsNullOrWhiteSpace(package.CatalogFile) && signatureValid
+            ? "Совпадение по ID/ОС/архитектуре; CAT имеет действительную подпись"
+            : "Пакет не прошёл одну или несколько проверок";
+        return new DriverPackageMatch(package, device, hardwareMatch, archMatch, buildMatch,
+            signatureValid, verdict, reasons);
     }
 
     public IReadOnlyList<DriverPackageMatch> MatchFolder(string folder, IEnumerable<DeviceInfo> devices)
@@ -127,12 +138,28 @@ public sealed class DriverPackageMetadataService
             try { metadata = ReadInf(file); }
             catch (IOException) { continue; }
             catch (UnauthorizedAccessException) { continue; }
+            var signatureValid = TryValidateSignature(metadata.InfPath, out var signatureError);
             foreach (var device in devices)
-                results.Add(Match(metadata, device));
+                results.Add(Match(metadata, device, signatureValid, signatureError));
         }
         return results.OrderByDescending(x => x.HardwareIdMatch && x.ArchitectureMatch && x.WindowsBuildMatch)
             .ThenBy(x => x.Device.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static bool TryValidateSignature(string infPath, out string error)
+    {
+        try
+        {
+            DriverMaintenanceService.ValidateSignedInfPackage(infPath);
+            error = "";
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            error = ex.Message;
+            return false;
+        }
     }
 
     private static Dictionary<string, Dictionary<string, string>> ParseInf(IEnumerable<string> lines)
