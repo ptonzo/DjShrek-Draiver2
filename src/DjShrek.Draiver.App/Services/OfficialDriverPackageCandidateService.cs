@@ -20,12 +20,6 @@ public sealed class OfficialDriverPackageCandidateService
         AutomaticDecompression = DecompressionMethods.All
     }) { Timeout = TimeSpan.FromSeconds(25) };
 
-    private static readonly string[] Domains =
-    {
-        "intel.com", "nvidia.com", "amd.com", "dell.com", "hp.com", "lenovo.com",
-        "asus.com", "acer.com", "msi.com", "gigabyte.com", "realtek.com",
-        "qualcomm.com", "mediatek.com", "broadcom.com"
-    };
 
     private static readonly Regex AnchorRegex = new(
         @"<a\b[^>]*href\s*=\s*[""'](?<url>[^""']+)[""'][^>]*>(?<text>.*?)</a>",
@@ -57,7 +51,7 @@ public sealed class OfficialDriverPackageCandidateService
         {
             var raw = WebUtility.HtmlDecode(match.Groups["url"].Value.Trim());
             if (!Uri.TryCreate(page, raw, out var uri) || uri.Scheme != Uri.UriSchemeHttps ||
-                !IsOfficial(uri.Host) || !IsPackageUrl(uri) || !seen.Add(uri.AbsoluteUri))
+                !new OfficialDriverSourcePolicy().Assess(page.AbsoluteUri, uri.AbsoluteUri, source.Manufacturer).IsOfficial || !IsPackageUrl(uri) || !seen.Add(uri.AbsoluteUri))
                 continue;
 
             var title = WebUtility.HtmlDecode(TagRegex.Replace(match.Groups["text"].Value, " "));
@@ -90,9 +84,4 @@ public sealed class OfficialDriverPackageCandidateService
                 text.Contains("file", StringComparison.Ordinal));
     }
 
-    private static bool IsOfficial(string host)
-    {
-        host = host.TrimEnd('.').ToLowerInvariant();
-        return Domains.Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
-    }
-}
+}\n
