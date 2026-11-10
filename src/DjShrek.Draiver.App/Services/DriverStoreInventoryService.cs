@@ -41,12 +41,26 @@ public sealed class DriverStoreInventoryService
 
         foreach (var package in snapshot.Packages)
         {
-            if (!byInf.TryGetValue(NormalizeInf(package.PublishedInfName), out var matched)) continue;
-            package.IsUsedByPresentDevice = true;
-            package.DeviceNames = matched.Select(d => d.Name).Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            package.DeviceInstanceIds = matched.Select(d => d.InstanceId).Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (byInf.TryGetValue(NormalizeInf(package.PublishedInfName), out var matched))
+            {
+                package.IsUsedByPresentDevice = true;
+                package.DeviceNames = matched.Select(d => d.Name).Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                package.DeviceInstanceIds = matched.Select(d => d.InstanceId).Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                package.RetentionAssessment = "Используется";
+                package.RetentionGuidance = "Пакет связан с обнаруженным устройством. Сохраняйте его.";
+            }
+            else if (package.IsInbox)
+            {
+                package.RetentionAssessment = "Системный пакет";
+                package.RetentionGuidance = "Встроенный пакет Windows. Не удаляйте средствами очистки.";
+            }
+            else
+            {
+                package.RetentionAssessment = "Не найдено активное устройство";
+                package.RetentionGuidance = "Пакет не сопоставлен с текущим PnP-инвентарём. Это не доказывает, что он не нужен: оставьте резервную копию и проверьте отключённые устройства, точки восстановления и сценарии отката перед любым удалением.";
+            }
         }
 
         snapshot.CapturedUtc = DateTime.UtcNow;
