@@ -126,19 +126,24 @@ public sealed class DriverCandidateAssessmentService
     public static string AssessOperatingSystem(string target, string current)
     {
         if (string.IsNullOrWhiteSpace(target)) return "Не указана в метаданных";
-        var has10 = target.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-                    target.Contains("Win10", StringComparison.OrdinalIgnoreCase);
-        var has11 = target.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
-                    target.Contains("Win11", StringComparison.OrdinalIgnoreCase);
-        if (has10 && has11)
-            return "Указаны Windows 10 и 11; требуется проверка конкретной INF-декорации";
-        if (has10)
-            return current.Equals("Windows 10", StringComparison.OrdinalIgnoreCase)
-                ? "Соответствует Windows 10" : "Не соответствует: пакет для Windows 10";
-        if (has11)
-            return current.Equals("Windows 11", StringComparison.OrdinalIgnoreCase)
-                ? "Соответствует Windows 11" : "Не соответствует: пакет для Windows 11";
-        return "Неоднозначные метаданные ОС; требуется ручная проверка";
+        var generations = new[]
+        {
+            ("Windows 11", new[] { "Windows 11", "Win11" }),
+            ("Windows 10", new[] { "Windows 10", "Win10" }),
+            ("Windows 8.1", new[] { "Windows 8.1", "Win8.1" }),
+            ("Windows 8", new[] { "Windows 8", "Win8" }),
+            ("Windows 7", new[] { "Windows 7", "Win7" })
+        };
+        var matched = generations.Where(item => item.Item2.Any(alias =>
+            target.Contains(alias, StringComparison.OrdinalIgnoreCase))).Select(item => item.Item1).ToArray();
+        if (matched.Length == 0)
+            return "Неоднозначные или неподдерживаемые метаданные ОС; требуется ручная проверка";
+        if (matched.Length > 1)
+            return "Указано несколько поколений Windows (" + string.Join(", ", matched) +
+                   "); требуется проверка конкретной INF-декорации";
+        return current.Equals(matched[0], StringComparison.OrdinalIgnoreCase)
+            ? "Соответствует " + matched[0]
+            : "Не соответствует: пакет для " + matched[0];
     }
 
     public static string AssessArchitecture(string target, string current)
