@@ -732,6 +732,12 @@ public partial class MainWindow
                 AppendEvent("Идентификация модели MSI пропущена: " + ex.GetType().Name);
             }
 
+            // Fill gaps in OEM/component-vendor coverage with the matching official
+            // support portal. Existing vendor-hosted catalog/package results take
+            // precedence; a portal remains explicitly non-installable discovery.
+            results.AddRange(new DriverVendorPortalFallbackService()
+                .CreateMissingPortals(_devices, results));
+
             var notIgnoredResults = results.Where(x =>
                 string.IsNullOrWhiteSpace(x.HardwareId) || !_driverIgnore.IsIgnored(x.HardwareId)).ToArray();
             var provenanceProjection = new DriverCandidateProvenanceProjectionService();
