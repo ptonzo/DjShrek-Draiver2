@@ -799,7 +799,7 @@ public partial class MainWindow : Window
                     MinimumWindowsBuild = package.MinWindowsBuild > 0 ? package.MinWindowsBuild : null,
                     MaximumWindowsBuild = package.MaxWindowsBuild < int.MaxValue ? package.MaxWindowsBuild : null,
                     CatalogSignatureValid = match.SignatureValid,
-                    IsOfficialSource = false
+                    IsOfficialSource = new OfficialDriverSourcePolicy().Assess(record.SourcePage, record.PackageUrl, record.Provider).IsOfficial
                 };
                 var ranked = new DriverCandidateRankingService().Rank(device, new[] { candidate }, architecture, build).First();
                 rows.Add(new DriverCandidateRankingRow(ranked));
