@@ -19,7 +19,8 @@ public sealed class DriverUpdateCatalogService
         _root = Path.GetFullPath(root ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DjShrek-Draiver"));
         _catalogPath = Path.Combine(_root, "driver-update-catalog.json");
-        _backupRoot = Path.Combine(_root, "Backups");\n        _installationHistoryPath = Path.Combine(_root, "installation-history.json");
+        _backupRoot = Path.Combine(_root, "Backups");
+        _installationHistoryPath = Path.Combine(_root, "installation-history.json");
         Directory.CreateDirectory(_root);
         Directory.CreateDirectory(_backupRoot);
     }
