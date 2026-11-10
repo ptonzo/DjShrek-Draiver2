@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
 
 namespace DjShrek.Draiver.App.Services;
@@ -116,22 +117,34 @@ public sealed class DriverCatalogCandidateRankingService
 
     private static string InferOperatingSystem(string text)
     {
-        if (text.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("Win11", StringComparison.OrdinalIgnoreCase)) return "Windows 11";
-        if (text.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("Win10", StringComparison.OrdinalIgnoreCase)) return "Windows 10";
-        return "";
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var targets = new List<string>();
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\\s*11|Win11)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("Windows 11");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\\s*10|Win10)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("Windows 10");
+        return string.Join("; ", targets);
     }
 
     private static string InferArchitecture(string text)
     {
-        if (text.Contains("ARM64", StringComparison.OrdinalIgnoreCase)) return "ARM64";
-        if (text.Contains("x64", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("64-bit", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("64 bit", StringComparison.OrdinalIgnoreCase)) return "x64";
-        if (text.Contains("x86", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("32-bit", StringComparison.OrdinalIgnoreCase)) return "x86";
-        return "";
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var targets = new List<string>();
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:ARM64|AARCH64)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("ARM64");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:AMD64|X86[_-]?64|X64|64[- ]?BIT)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("x64");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:X86|I[3-6]86|32[- ]?BIT)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("x86");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:ARM|ARM32)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("ARM");
+        return string.Join("; ", targets.Distinct(StringComparer.OrdinalIgnoreCase));
     }
 
     private static string NormalizeUri(string value)
