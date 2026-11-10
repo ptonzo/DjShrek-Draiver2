@@ -147,7 +147,7 @@ public sealed class DriverCatalogCandidateRankingService
         if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:AMD64|X86[_-]?64|X64|64[- ]?BIT)(?![A-Za-z0-9])",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             targets.Add("x64");
-        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:X86|I[3-6]86|32[- ]?BIT)(?![A-Za-z0-9])",
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9_])(?:X86|I[3-6]86|32[- ]?BIT)(?![A-Za-z0-9_])",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             targets.Add("x86");
         if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:ARM|ARM32)(?![A-Za-z0-9])",
