@@ -125,6 +125,15 @@ public sealed class DriverCatalogCandidateRankingService
         if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*10|Win10)(?![A-Za-z0-9])",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             targets.Add("Windows 10");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*8\.1|Win8\.1)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("Windows 8.1");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*8|Win8)(?![A-Za-z0-9.])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("Windows 8");
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*7|Win7)(?![A-Za-z0-9])",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            targets.Add("Windows 7");
         return string.Join("; ", targets);
     }
 
