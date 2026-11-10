@@ -12,14 +12,14 @@ public sealed class DriverUpdateCatalogService
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _root;
     private readonly string _catalogPath;
-    private readonly string _backupRoot;
+    private readonly string _backupRoot;\n    private readonly string _installationHistoryPath;
 
     public DriverUpdateCatalogService(string? root = null)
     {
         _root = Path.GetFullPath(root ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DjShrek-Draiver"));
         _catalogPath = Path.Combine(_root, "driver-update-catalog.json");
-        _backupRoot = Path.Combine(_root, "Backups");
+        _backupRoot = Path.Combine(_root, "Backups");\n        _installationHistoryPath = Path.Combine(_root, "installation-history.json");
         Directory.CreateDirectory(_root);
         Directory.CreateDirectory(_backupRoot);
     }
@@ -118,6 +118,55 @@ public sealed class DriverUpdateCatalogService
             var catalog = await LoadCatalogAsync(token);
             catalog.Records.RemoveAll(x => x.Id == recordId);
             await SaveCatalogAsync(catalog, token);
+        }
+        finally { _gate.Release(); }
+    }
+
+
+    public async Task<IReadOnlyList<DriverInstallationRecord>> GetInstallationHistoryAsync(CancellationToken token = default)
+    {
+        await _gate.WaitAsync(token);
+        try
+        {
+            if (!File.Exists(_installationHistoryPath)) return Array.Empty<DriverInstallationRecord>();
+            try
+            {
+                return (JsonSerializer.Deserialize<List<DriverInstallationRecord>>(
+                    await File.ReadAllTextAsync(_installationHistoryPath, token), JsonOptions)
+                    ?? new List<DriverInstallationRecord>())
+                    .OrderByDescending(x => x.TimestampUtc).ToArray();
+            }
+            catch (JsonException)
+            {
+                throw new InvalidDataException("Журнал установок повреждён. Исходный файл сохранён; перезапись отменена.");
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task AddInstallationRecordAsync(DriverInstallationRecord record, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        await _gate.WaitAsync(token);
+        try
+        {
+            List<DriverInstallationRecord> history;
+            if (File.Exists(_installationHistoryPath))
+            {
+                try
+                {
+                    history = JsonSerializer.Deserialize<List<DriverInstallationRecord>>(
+                        await File.ReadAllTextAsync(_installationHistoryPath, token), JsonOptions) ?? new();
+                }
+                catch (JsonException)
+                {
+                    throw new InvalidDataException("Журнал установок повреждён. Новая запись не сохранена, исходный файл не изменён.");
+                }
+            }
+            else history = new();
+            history.Add(record);
+            if (history.Count > 2000) history = history.OrderByDescending(x => x.TimestampUtc).Take(2000).ToList();
+            await WriteAtomicAsync(_installationHistoryPath, JsonSerializer.Serialize(history, JsonOptions), token);
         }
         finally { _gate.Release(); }
     }
