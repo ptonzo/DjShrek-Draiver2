@@ -515,6 +515,7 @@ public partial class MainWindow : Window
                 $"Поставщик: {x.Package.Provider}; версия: {x.Package.DriverVersion}; дата: {x.Package.DriverDate:yyyy-MM-dd}\n" +
                 $"Hardware ID: {(x.HardwareIdMatch ? "СОВПАДАЕТ" : "нет точного совпадения")}\n" +
                 $"Архитектура: {(x.ArchitectureMatch ? "подходит" : "не подходит")}; Windows build: {(x.WindowsBuildMatch ? "подходит" : "не подходит")}\n" +
+                $"Подпись CAT: {(x.SignatureValid ? "действительна" : "НЕ ПОДТВЕРЖДЕНА")}\n" +
                 $"{x.Verdict}" + (x.Reasons.Count > 0 ? "\nПричины: " + string.Join("; ", x.Reasons) : "")));
             MessageBox.Show(report, "Сопоставление локальных пакетов драйверов (без установки)",
                 MessageBoxButton.OK, MessageBoxImage.Information);
