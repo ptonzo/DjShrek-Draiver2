@@ -66,10 +66,15 @@ public sealed class DriverCatalogCandidateRankingService
             ? (candidate.IsDownloaded ? "Загружен; требуется проверка состава и подписи" : "Ссылка получена; пакет не загружен")
             : "Прямая ссылка на пакет отсутствует";
 
+        // Catalog feeds frequently place platform labels in the title or file name,
+        // while leaving the free-form description empty. Collect only explicit tokens;
+        // absence remains unknown and never implies universal compatibility.
+        var metadataText = string.Join(" ", candidate.Title, candidate.Description,
+            candidate.PackageFileName, candidate.DeviceClass, candidate.Provider);
         if (string.IsNullOrWhiteSpace(candidate.OperatingSystemTarget))
-            candidate.OperatingSystemTarget = InferOperatingSystem(candidate.Description);
+            candidate.OperatingSystemTarget = InferOperatingSystem(metadataText);
         if (string.IsNullOrWhiteSpace(candidate.ArchitectureTarget))
-            candidate.ArchitectureTarget = InferArchitecture(candidate.Description);
+            candidate.ArchitectureTarget = InferArchitecture(metadataText);
     }
 
     private static string BuildIdentityKey(DriverUpdateCandidate candidate)
