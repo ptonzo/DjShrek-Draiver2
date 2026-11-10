@@ -27,6 +27,9 @@ public partial class MainWindow : Window
     private readonly DriverPackageDownloadService _packageDownloader = new();
     private readonly OfficialDriverPackageCandidateService _packageCandidates = new();
     private readonly DriverPackageIntakeService _packageIntake = new();
+    private readonly DriverUpdateCatalogService _driverCatalog = new();
+    private readonly ObservableCollection<DriverUpdateRecord> _driverCandidates = new();
+    private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -52,6 +55,8 @@ public partial class MainWindow : Window
         DevicesGrid.ItemsSource = _devices;
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
+        DriverCatalogGrid.ItemsSource = _driverCandidates;
+        DriverBackupGrid.ItemsSource = _driverBackups;
 
         var selectedTheme = ThemeManager.LoadPreference();
         ThemeSelector.SelectedValue = selectedTheme;
@@ -73,6 +78,8 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             DetectOem();
+            await RefreshDriverCatalogAsync();
+            await RefreshBackupCatalogAsync();
             await RefreshMetricsAsync();
             _monitorTimer.Tick += async (_, _) => await RefreshMetricsAsync();
             _monitorTimer.Start();
@@ -655,7 +662,9 @@ public partial class MainWindow : Window
                     "Подтверждение резервного копирования", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
             var result = _maintenance.ExportDrivers(dialog.FolderName);
-            StatusText.Text = result;
+            var backupRecord = _driverCatalog.RegisterBackupAsync(dialog.FolderName, Path.GetFileName(dialog.FolderName)).GetAwaiter().GetResult();
+            _ = RefreshBackupCatalogAsync();
+            StatusText.Text = result + Environment.NewLine + $"В каталоге резервных копий: {backupRecord.PackageCount} пакетов; SHA-256 записан в манифест.";
             AppendEvent("Создана резервная копия драйверов: " + dialog.FolderName);
             MessageBox.Show(result, "Резервное копирование", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -719,6 +728,76 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return;
         await LaunchDriverUpdatesAsync();
+    }
+
+    private async Task RefreshDriverCatalogAsync()
+    {
+        var records = await _driverCatalog.GetRecordsAsync();
+        _driverCandidates.Clear();
+        foreach (var record in records) _driverCandidates.Add(record);
+        DriverCatalogSummaryText.Text = $"В каталоге: {records.Count}; готовы к рассмотрению: {records.Count(x => x.IsActionable)}; требуют анализа/извлечения: {records.Count(x => x.State == nameof(DriverCandidateState.Staged))}.";
+    }
+
+    private async Task RefreshBackupCatalogAsync()
+    {
+        var records = await _driverCatalog.GetBackupsAsync();
+        _driverBackups.Clear();
+        foreach (var record in records.OrderByDescending(x => x.CreatedUtc)) _driverBackups.Add(record);
+    }
+
+    private async void RefreshDriverCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        try { await RefreshDriverCatalogAsync(); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог обновлений", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private async void RefreshBackupCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        try { await RefreshBackupCatalogAsync(); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Резервные копии", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private async void RemoveDriverCandidate_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverCatalogGrid.SelectedItem is not DriverUpdateRecord selected) return;
+        if (MessageBox.Show($"Удалить запись кандидата «{selected.PackageTitle}» из каталога? Файлы пакета и манифест не удаляются.",
+            "Каталог обновлений", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        try
+        {
+            await _driverCatalog.RemoveAsync(selected.Id);
+            await RefreshDriverCatalogAsync();
+            AppendEvent("Удалена запись кандидата из каталога: " + selected.PackageTitle);
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог обновлений", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private void OpenDriverManifest_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverCatalogGrid.SelectedItem is not DriverUpdateRecord selected) return;
+        var path = File.Exists(selected.ManifestPath) ? selected.ManifestPath :
+            File.Exists(Path.Combine(selected.StagingDirectory, "package-manifest.json"))
+                ? Path.Combine(selected.StagingDirectory, "package-manifest.json") : "";
+        if (path.Length == 0)
+        {
+            MessageBox.Show("Для выбранного кандидата манифест ещё не создан.", "Каталог обновлений", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+    }
+
+    private async void VerifyBackupCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverBackupGrid.SelectedItem is not DriverBackupRecord selected) return;
+        try
+        {
+            var issues = await _driverCatalog.VerifyBackupAsync(selected.DirectoryPath);
+            MessageBox.Show(issues.Count == 0
+                ? $"Проверка завершена. SHA-256 совпадает для всех {selected.PackageCount} пакетов."
+                : "Обнаружены проблемы:\n" + string.Join("\n", issues.Take(30)),
+                "Проверка резервной копии", MessageBoxButton.OK,
+                issues.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Проверка резервной копии", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private async void SearchInternetCatalog_Click(object sender, RoutedEventArgs e)
