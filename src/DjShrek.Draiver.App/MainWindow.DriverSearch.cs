@@ -581,10 +581,12 @@ public partial class MainWindow
                 {
                     results.Add(new DriverUpdateCandidate
                     {
-                        UpdateId = "acer-support:" + acerIdentity.Model,
+                        UpdateId = "acer-support:" + acerIdentity.Model + "|" + acerIdentity.ProductNumber,
+                        CatalogRecordId = acerIdentity.ProductNumber,
                         Title = "Поддержка Acer: " + acerIdentity.Model,
                         Manufacturer = "Acer",
-                        Model = acerIdentity.Model,
+                        Model = acerIdentity.Model + (string.IsNullOrWhiteSpace(acerIdentity.ProductNumber)
+                            ? "" : " (" + acerIdentity.ProductNumber + ")"),
                         Provider = "Acer Drivers and Manuals",
                         DeviceClass = "OEM Support",
                         MatchType = "OEM model identity",
@@ -593,7 +595,11 @@ public partial class MainWindow
                         Compatibility = "Официальная страница Acer; автоматический список пакетов для этой модели пока не получен",
                         AvailableVersion = "Требуется выбор модели на сайте Acer",
                         VersionComparison = "Версия драйвера не получена",
-                        Description = acerIdentity.IdentityEvidence + ". Acer требует идентификацию по серийному номеру, SNID или Product Number; приложение не отправляет серийный номер автоматически.",
+                        Description = acerIdentity.IdentityEvidence +
+                            (string.IsNullOrWhiteSpace(acerIdentity.ProductNumber)
+                                ? ". Product Number в SMBIOS не найден."
+                                : ". Product Number: " + acerIdentity.ProductNumber + ".") +
+                            " Acer может потребовать серийный номер/SNID или Product Number для выдачи модельных пакетов; приложение не отправляет серийный номер автоматически.",
                         Evidence = "SMBIOS SystemManufacturer/SystemProductName/SystemSKU/BaseBoardProduct",
                         SourceType = "OfficialManufacturer",
                         SourceTrust = "OfficialSupportPortal",
