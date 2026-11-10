@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Management;
 using System.Text.RegularExpressions;
 
 namespace DjShrek.Draiver.App.Services;
