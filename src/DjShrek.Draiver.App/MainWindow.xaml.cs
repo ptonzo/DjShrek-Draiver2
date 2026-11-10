@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly DriverUpdateCatalogService _driverCatalog = new();
     private readonly ObservableCollection<DriverUpdateRecord> _driverCandidates = new();
     private readonly ObservableCollection<DriverCandidateRankingRow> _candidateRankings = new();
+    private readonly ObservableCollection<DriverSourceComparisonRow> _sourceComparisons = new();
     private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();
     private readonly ObservableCollection<DriverInstallationRecord> _installationHistory = new();
     private OemDeviceIdentity? _oemIdentity;
@@ -62,6 +63,7 @@ public partial class MainWindow : Window
         JunkGrid.ItemsSource = _junkFiles;
         DriverCatalogGrid.ItemsSource = _driverCandidates;
         CandidateRankingGrid.ItemsSource = _candidateRankings;
+        SourceComparisonGrid.ItemsSource = _sourceComparisons;
         DriverBackupGrid.ItemsSource = _driverBackups;
         InstallationHistoryGrid.ItemsSource = _installationHistory;
 
@@ -898,6 +900,82 @@ public partial class MainWindow : Window
         {
             StructuredCatalogStatusText.Text = "Импорт не выполнен: " + ex.Message;
             AppendEvent("Ошибка импорта структурированного OEM-каталога: " + ex.Message);
+        }
+    }
+
+    private async void CompareDriverSources_Click(object sender, RoutedEventArgs e)
+    {
+        if (DevicesGrid.SelectedItem is not DeviceInfo device)
+        {
+            SourceComparisonSummaryText.Text = "Выберите устройство в таблице оборудования.";
+            return;
+        }
+
+        try
+        {
+            var records = (await _driverCatalog.GetRecordsAsync())
+                .Where(x => string.Equals(x.DeviceInstanceId, device.InstanceId, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            var entries = records.Select(record => new DriverCandidateSourceEntry
+            {
+                SourcePage = record.SourcePage,
+                PackageUrl = record.PackageUrl,
+                Sha256 = record.Sha256,
+                Candidate = new DriverCandidateForRanking
+                {
+                    Id = record.Id,
+                    Title = record.PackageTitle,
+                    Provider = record.Provider,
+                    Version = record.CandidateVersion,
+                    HardwareIds = record.HardwareIds,
+                    CompatibleIds = Array.Empty<string>(),
+                    Architecture = record.Architecture,
+                    CatalogSignatureValid = record.SignatureStatus.Contains("подтверждена", StringComparison.OrdinalIgnoreCase)
+                        ? true : record.SignatureStatus.Contains("недейств", StringComparison.OrdinalIgnoreCase) ? false : null,
+                    IsOfficialSource = false
+                }
+            }).ToArray();
+
+            var architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
+            var build = Environment.OSVersion.Version.Build;
+            var compared = new DriverCandidateSourceComparisonService()
+                .Compare(device, entries, architecture, build);
+            _sourceComparisons.Clear();
+            foreach (var item in compared) _sourceComparisons.Add(new DriverSourceComparisonRow(item));
+
+            var trusted = compared.Count(x => x.SourceTrust.Contains("официаль", StringComparison.OrdinalIgnoreCase));
+            var eligible = compared.Count(x => x.IsEligible);
+            SourceComparisonSummaryText.Text = compared.Length == 0
+                ? "Для выбранного устройства нет сохранённых кандидатов из разных источников."
+                : $"Сопоставлено групп пакетов: {compared.Length}; допущено по критериям: {eligible}; с подтверждённым официальным источником: {trusted}. Дубликаты объединены по SHA-256 или URL.";
+        }
+        catch (Exception ex)
+        {
+            SourceComparisonSummaryText.Text = "Сравнение не выполнено: " + ex.Message;
+        }
+    }
+
+    private sealed class DriverSourceComparisonRow
+    {
+        public string Title { get; }
+        public string Provider { get; }
+        public string Version { get; }
+        public int Score { get; }
+        public string SourceTrust { get; }
+        public bool IsEligible { get; }
+        public int DuplicateSourceCount { get; }
+        public string WarningsText { get; }
+
+        public DriverSourceComparisonRow(DriverCandidateSourceComparison item)
+        {
+            Title = item.Title;
+            Provider = item.Provider;
+            Version = item.Version;
+            Score = item.Score;
+            SourceTrust = item.SourceTrust;
+            IsEligible = item.IsEligible;
+            DuplicateSourceCount = item.DuplicateSourceCount;
+            WarningsText = string.Join(" • ", item.Warnings);
         }
     }
 
