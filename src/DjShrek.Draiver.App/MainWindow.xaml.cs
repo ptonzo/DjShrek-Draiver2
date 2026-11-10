@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
+using System.IO;\nusing System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     private readonly HardwareSensorService _sensors = new();
     private readonly GameOptimizationService _gameProfile = new();
     private readonly OemCatalogService _oemCatalog = new();
+    private readonly OemDeviceIdentityService _oemIdentityService = new();
+    private OemDeviceIdentity? _oemIdentity;
+    private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
     private readonly JunkCleanupService _junkService = new();
 
@@ -623,18 +626,51 @@ public partial class MainWindow : Window
         finally { _scanRunning = false; }
     }
 
-    private void DetectOem()
+    private async void DetectOem()
     {
-        _detectedOem = _oemCatalog.Detect(ComputerValue.Text ?? "");
-        OemDetectText.Text = _detectedOem is null
-            ? "Производитель компьютера не распознан автоматически. Выберите производителя вручную."
-            : $"Обнаружен производитель: {_detectedOem.Name}. Перед загрузкой проверьте точную модель устройства.";
+        if (_oemDetectRunning) return;
+        _oemDetectRunning = true;
+        OemDetectText.Text = "Получение модели, ProductNumber и BIOS-идентификаторов...";
+        try
+        {
+            _oemIdentity = await _oemIdentityService.GetIdentityAsync();
+            var identity = _oemIdentity;
+            _detectedOem = _oemCatalog.Detect(
+                string.Join(" ", identity.Manufacturer, identity.Model, identity.ProductName,
+                    identity.ProductNumber, identity.BoardManufacturer, identity.BoardProduct,
+                    identity.BiosManufacturer));
+            var vendor = string.IsNullOrWhiteSpace(identity.Vendor) ? "Не определён" : identity.Vendor;
+            var model = string.IsNullOrWhiteSpace(identity.Model) ? identity.ProductName : identity.Model;
+            var productNumber = string.IsNullOrWhiteSpace(identity.ProductNumber)
+                ? "не предоставлен BIOS/SMBIOS" : identity.ProductNumber;
+            OemDetectText.Text =
+                $"Производитель: {vendor}\nМодель: {model}\nProductNumber: {productNumber}\n" +
+                $"Плата: {identity.BoardManufacturer} {identity.BoardProduct}\nBIOS: {identity.BiosVersion}";
+            OemIdentityText.Text = string.IsNullOrWhiteSpace(identity.SearchModel)
+                ? "Идентификаторы модели отсутствуют. Используйте серийный номер/Service Tag на сайте производителя."
+                : "Ключ модели для каталога: " + identity.SearchModel;
+            AppendEvent($"OEM-идентификация завершена: {vendor}; модель {model}; ProductNumber {productNumber}.");
+        }
+        catch (Exception ex)
+        {
+            _detectedOem = _oemCatalog.Detect(ComputerValue.Text ?? "");
+            OemDetectText.Text = _detectedOem is null
+                ? "Не удалось получить OEM-данные. Выберите каталог производителя вручную."
+                : $"Производитель: {_detectedOem.Name}. Детальная модель недоступна.";
+            OemIdentityText.Text = "Расширенные BIOS-идентификаторы недоступны: " + ex.Message;
+        }
+        finally { _oemDetectRunning = false; }
     }
 
     private void OpenDetectedOem_Click(object sender, RoutedEventArgs e)
     {
         if (_detectedOem is null) { OpenOemCatalog_Click(sender, e); return; }
-        try { _oemCatalog.Open(_detectedOem); }
+        try
+        {
+            var url = _oemIdentity is not null && !string.IsNullOrWhiteSpace(_oemIdentity.OfficialSupportUrl)
+                ? _oemIdentity.OfficialSupportUrl : _detectedOem.Url;
+            Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
