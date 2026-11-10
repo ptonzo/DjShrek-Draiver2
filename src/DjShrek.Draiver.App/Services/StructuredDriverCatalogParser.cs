@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 using DjShrek.Draiver.App.Models;
@@ -11,6 +13,36 @@ namespace DjShrek.Draiver.App.Services;
 public sealed class StructuredDriverCatalogParser
 {
     private const int MaxPayloadCharacters = 8 * 1024 * 1024;
+    private static readonly HttpClient Client = new(new HttpClientHandler { AllowAutoRedirect = false, AutomaticDecompression = DecompressionMethods.All }) { Timeout = TimeSpan.FromSeconds(30) };
+
+    public async Task<IReadOnlyList<StructuredDriverCatalogEntry>> FetchAndParseAsync(
+        string catalogUrl, string vendor, CancellationToken cancellationToken = default)
+    {
+        if (!new OfficialDriverSourcePolicy().Assess(catalogUrl, catalogUrl, vendor).IsOfficial)
+            throw new InvalidDataException("URL каталога не относится к разрешённому официальному HTTPS-домену.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, catalogUrl);
+        request.Headers.Accept.ParseAdd("application/json, application/xml, text/xml, */*;q=0.5");
+        using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if ((int)response.StatusCode is >= 300 and < 400)
+            throw new InvalidDataException("OEM-каталог перенаправляет запрос. Автоматическое перенаправление запрещено.");
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > MaxPayloadCharacters)
+            throw new InvalidDataException("OEM-каталог превышает лимит 8 МБ.");
+
+        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var output = new MemoryStream();
+        var buffer = new byte[32 * 1024];
+        int read;
+        while ((read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+        {
+            if (output.Length + read > MaxPayloadCharacters)
+                throw new InvalidDataException("OEM-каталог превышает лимит 8 МБ.");
+            await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+        var payload = Encoding.UTF8.GetString(output.ToArray());
+        return Parse(payload, catalogUrl, vendor);
+    }
 
     public IReadOnlyList<StructuredDriverCatalogEntry> Parse(string payload, string sourceUrl, string vendor)
     {
