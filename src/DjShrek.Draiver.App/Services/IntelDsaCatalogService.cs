@@ -334,7 +334,7 @@ public sealed class IntelDsaCatalogService
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         var has11 = System.Text.RegularExpressions.Regex.IsMatch(value,
             @"(?<![A-Za-z0-9])(?:Windows\\s*11|Win11)(?![A-Za-z0-9])",
-            System.Text.RegularExpressions.Regex.RegexOptions.IgnoreCase);
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (!has10 && !has11) return false;
         if (has10 && has11) return true;
         return windowsBuild >= 22000 ? has11 : has10;
