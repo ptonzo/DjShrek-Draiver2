@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly OemCatalogService _oemCatalog = new();
     private readonly OemDeviceIdentityService _oemIdentityService = new();
     private readonly OemDriverCatalogAdapter _oemCatalogAdapter = new();
+    private readonly InternetDriverCatalogService _internetCatalog = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -593,6 +594,61 @@ public partial class MainWindow : Window
     {
         if (_scanRunning) return;
         await LaunchDriverUpdatesAsync();
+    }
+
+    private async void SearchInternetCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        if (_scanRunning) return;
+        if (_devices.Count == 0)
+        {
+            var scanned = await _inventory.ScanAsync();
+            ApplyDevices(scanned);
+        }
+
+        var eligible = _devices.Where(d => d.HardwareIds.Length > 0)
+            .OrderByDescending(IsProblemDevice)
+            .ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .ToArray();
+        if (eligible.Length == 0)
+        {
+            MessageBox.Show("Не найдены устройства с аппаратными идентификаторами для поиска.",
+                "Интернет-каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        _scanRunning = true;
+        try
+        {
+            UpdatesCountText.Text = $"Поиск официальных страниц драйверов для {eligible.Length} устройств...";
+            var results = await _internetCatalog.SearchAsync(eligible);
+            if (results.Count == 0)
+            {
+                UpdatesCountText.Text = "Официальные страницы по заданным Hardware ID не найдены.";
+                AppendEvent("Интернет-поиск драйверов: совпадений на сайтах производителей нет.");
+                return;
+            }
+
+            var menu = string.Join(Environment.NewLine, results.Take(30).Select((item, index) =>
+                $"{index + 1}. {item.DeviceName} — {item.Title} ({new Uri(item.Url).Host})"));
+            var answer = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Найдено страниц: {results.Count}. Выберите номер для открытия.\n" +
+                "Это результаты поиска, а не подтверждение совместимости пакета.\n\n" + menu,
+                "Результаты интернет-каталога", "1");
+            if (!int.TryParse(answer, out var number) || number < 1 || number > Math.Min(results.Count, 30))
+                return;
+
+            var selected = results[number - 1];
+            Process.Start(new ProcessStartInfo(selected.Url) { UseShellExecute = true });
+            UpdatesCountText.Text = $"Открыта страница производителя для устройства: {selected.DeviceName}.";
+            AppendEvent($"Открыта страница драйвера: {selected.DeviceName}; {selected.HardwareId}.");
+        }
+        catch (Exception ex)
+        {
+            UpdatesCountText.Text = "Интернет-поиск не завершён.";
+            MessageBox.Show(ex.Message, "Интернет-каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally { _scanRunning = false; }
     }
 
     private async Task LaunchDriverUpdatesAsync()
