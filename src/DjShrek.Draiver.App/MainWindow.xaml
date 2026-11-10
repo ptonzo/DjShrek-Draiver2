@@ -287,6 +287,45 @@
 
                                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                     <StackPanel>
+                                        <TextBlock Text="ПОСТОЯННЫЙ КАТАЛОГ ОБНОВЛЕНИЙ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
+                                        <TextBlock Text="Кандидаты сохраняются между запусками. Здесь отображаются найденные пакеты, этап подготовки, версия, подпись и результат сопоставления с устройством."
+                                                   Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,7,0,12"/>
+                                        <WrapPanel>
+                                            <Button Content="Обновить каталог" Click="RefreshDriverCatalog_Click"/>
+                                            <Button Content="Удалить выбранную запись" Click="RemoveDriverCandidate_Click"/>
+                                            <Button Content="Открыть манифест" Click="OpenDriverManifest_Click"/>
+                                            <Button Content="Резервные копии" Click="RefreshBackupCatalog_Click"/>
+                                            <Button Content="Проверить копию" Click="VerifyBackupCatalog_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="DriverCatalogSummaryText" Text="Каталог ещё не загружен." Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,8"/>
+                                        <DataGrid x:Name="DriverCatalogGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                                  IsReadOnly="True" SelectionMode="Single" MinHeight="190" MaxHeight="330">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Устройство" Binding="{Binding DeviceName}" Width="2*"/>
+                                                <DataGridTextColumn Header="Производитель" Binding="{Binding Provider}" Width="*"/>
+                                                <DataGridTextColumn Header="Текущая версия" Binding="{Binding InstalledVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Кандидат" Binding="{Binding CandidateVersion}" Width="*"/>
+                                                <DataGridTextColumn Header="Состояние" Binding="{Binding State}" Width="*"/>
+                                                <DataGridTextColumn Header="Подпись" Binding="{Binding SignatureStatus}" Width="*"/>
+                                                <DataGridTextColumn Header="Совместимость" Binding="{Binding Compatibility}" Width="2*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Text="РЕЗЕРВНЫЕ КОПИИ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,15,0,7"/>
+                                        <DataGrid x:Name="DriverBackupGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                                  IsReadOnly="True" SelectionMode="Single" MinHeight="100" MaxHeight="190">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
+                                                <DataGridTextColumn Header="Дата UTC" Binding="{Binding CreatedUtc}" Width="*"/>
+                                                <DataGridTextColumn Header="Пакетов" Binding="{Binding PackageCount}" Width="90"/>
+                                                <DataGridTextColumn Header="Размер, байт" Binding="{Binding TotalBytes}" Width="130"/>
+                                                <DataGridTextColumn Header="Состояние" Binding="{Binding State}" Width="*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="11" Padding="18" Margin="0,0,0,13" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <StackPanel>
                                         <TextBlock Text="ДВИЖОК ПОИСКА SDIO" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}"/>
                                         <TextBlock Text="Официальный Snappy Driver Installer Origin загружается по запросу, архив проверяется по SHA-256. Индексы обновляются внутри SDIO. Выбор и установка пакетов подтверждаются пользователем в окне движка."
                                                    Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,12"/>
