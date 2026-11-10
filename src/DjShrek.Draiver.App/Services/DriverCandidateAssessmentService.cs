@@ -144,12 +144,43 @@ public sealed class DriverCandidateAssessmentService
     public static string AssessArchitecture(string target, string current)
     {
         if (string.IsNullOrWhiteSpace(target)) return "Не указана в метаданных";
-        if (target.Equals("All", StringComparison.OrdinalIgnoreCase) ||
-            target.Equals("Universal", StringComparison.OrdinalIgnoreCase))
+
+        var architectures = target
+            .Split(new[] { ',', ';', '/', '|', ' ' },
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(NormalizeArchitecture)
+            .Where(value => value.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (architectures.Length == 0)
+            return "Неоднозначные метаданные архитектуры; требуется ручная проверка";
+
+        if (architectures.Contains("all", StringComparer.OrdinalIgnoreCase) ||
+            architectures.Contains("universal", StringComparer.OrdinalIgnoreCase))
             return "Универсальная архитектура по данным каталога";
-        return target.Equals(current, StringComparison.OrdinalIgnoreCase)
-            ? "Соответствует " + current
-            : "Не соответствует: пакет " + target + ", система " + current;
+
+        var normalizedCurrent = NormalizeArchitecture(current);
+        if (architectures.Contains(normalizedCurrent, StringComparer.OrdinalIgnoreCase))
+            return "Соответствует " + current;
+
+        return "Не соответствует: пакет " + target + ", система " + current;
+    }
+
+    private static string NormalizeArchitecture(string value)
+    {
+        var normalized = value.Trim().ToLowerInvariant().Replace("_", string.Empty)
+            .Replace("-", string.Empty).Replace(" ", string.Empty);
+        return normalized switch
+        {
+            "x86" or "i386" or "i486" or "i586" or "i686" or "ntx86" => "x86",
+            "x64" or "amd64" or "x8664" or "ntamd64" => "x64",
+            "arm" or "arm32" or "ntarm" => "arm",
+            "arm64" or "aarch64" or "ntarm64" => "arm64",
+            "all" or "any" => "all",
+            "universal" => "universal",
+            _ => string.Empty
+        };
     }
 
     public static string GetCurrentArchitecture() =>
