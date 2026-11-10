@@ -135,7 +135,10 @@ public sealed class DriverCandidateAssessmentService
             ("Windows 7", new[] { "Windows 7", "Win7" })
         };
         var matched = generations.Where(item => item.Item2.Any(alias =>
-            target.Contains(alias, StringComparison.OrdinalIgnoreCase))).Select(item => item.Item1).ToArray();
+            target.Contains(alias, StringComparison.OrdinalIgnoreCase)) &&
+            !(item.Item1 == "Windows 8" &&
+              target.Contains("Windows 8.1", StringComparison.OrdinalIgnoreCase)))
+            .Select(item => item.Item1).ToArray();
         if (matched.Length == 0)
             return "Неоднозначные или неподдерживаемые метаданные ОС; требуется ручная проверка";
         if (matched.Length > 1)
