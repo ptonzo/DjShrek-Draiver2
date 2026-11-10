@@ -72,7 +72,10 @@ public sealed class DriverPackageDownloadService
 
             var info = new FileInfo(temporary);
             if (info.Length == 0) throw new InvalidDataException("Сервер вернул пустой файл.");
-            var hash = await SHA256.HashDataAsync(File.OpenRead(temporary), cancellationToken);
+            byte[] hash;
+            await using (var verifyStream = new FileStream(temporary, FileMode.Open, FileAccess.Read, FileShare.Read,
+                128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                hash = await SHA256.HashDataAsync(verifyStream, cancellationToken);
             File.Move(temporary, destination);
             return new DriverDownloadResult(destination, info.Length, Convert.ToHexString(hash), uri.Host);
         }
