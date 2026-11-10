@@ -41,9 +41,13 @@ public sealed class DriverInfEvidenceProjectionService
             ? "Точный Hardware ID, архитектура и CAT прошли preflight"
             : "Preflight не пройден: " + string.Join(" ", inspection.Warnings);
         candidate.PackageSha256 = inspection.InfSha256;
-        candidate.Evidence = string.Join(" ", new[]
+        var evidenceBase = candidate.Evidence ?? "";
+        var previousInfProjection = evidenceBase.IndexOf(" INF: ", StringComparison.Ordinal);
+        if (previousInfProjection >= 0)
+            evidenceBase = evidenceBase[..previousInfProjection];
+
+        var infEvidence = string.Join(" ", new[]
         {
-            candidate.Evidence,
             "INF: " + Path.GetFileName(inspection.InfPath),
             "CAT: " + inspection.CatalogFile,
             "INF SHA-256: " + inspection.InfSha256,
@@ -51,6 +55,9 @@ public sealed class DriverInfEvidenceProjectionService
             "Совпадение: " + inspection.MatchKind + " " + inspection.MatchedHardwareId,
             string.Join(" ", inspection.Warnings)
         }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        candidate.Evidence = string.IsNullOrWhiteSpace(evidenceBase)
+            ? infEvidence
+            : evidenceBase.TrimEnd() + " " + infEvidence;
         candidate.InstallEligibility = inspection.IsInstallableForDevice &&
             DriverVersionComparisonService.Compare(inspection.DriverVersion, device.DriverVersion).Relation ==
             DriverVersionRelation.Newer
