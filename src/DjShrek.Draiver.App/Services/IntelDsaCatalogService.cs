@@ -266,18 +266,27 @@ public sealed class IntelDsaCatalogService
     private static bool IsCompatibleArchitecture(string architecture)
     {
         if (string.IsNullOrWhiteSpace(architecture)) return true;
-        var target = NormalizeArchitecture(architecture);
+        var targets = ParseArchitectureTargets(architecture);
+        if (targets.Count == 0) return false;
         var current = NormalizeArchitecture(System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString());
-        return target.Length == 0 || target.Equals("all", StringComparison.OrdinalIgnoreCase) ||
-               target.Equals("universal", StringComparison.OrdinalIgnoreCase) ||
-               target.Equals(current, StringComparison.OrdinalIgnoreCase);
+        return targets.Contains("all", StringComparer.OrdinalIgnoreCase) ||
+               targets.Contains("universal", StringComparer.OrdinalIgnoreCase) ||
+               targets.Contains(current, StringComparer.OrdinalIgnoreCase);
     }
 
     private static int ArchitectureSpecificity(string architecture)
     {
         if (string.IsNullOrWhiteSpace(architecture)) return 0;
-        return NormalizeArchitecture(architecture).Length > 0 ? 2 : 0;
+        return ParseArchitectureTargets(architecture).Count > 0 ? 2 : 0;
     }
+
+    private static IReadOnlyList<string> ParseArchitectureTargets(string architecture) =>
+        architecture.Split(new[] { ',', ';', '/', '|', ' ' },
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(NormalizeArchitecture)
+            .Where(value => value.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private static string NormalizeArchitecture(string architecture)
     {
