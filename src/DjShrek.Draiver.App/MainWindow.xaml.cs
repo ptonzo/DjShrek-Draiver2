@@ -866,6 +866,41 @@ public partial class MainWindow : Window
         foreach (var record in records) _installationHistory.Add(record);
     }
 
+    private async void ImportStructuredCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        if (DevicesGrid.SelectedItem is not DeviceInfo device)
+        {
+            StructuredCatalogStatusText.Text = "Сначала выберите устройство в таблице оборудования.";
+            return;
+        }
+
+        var vendor = StructuredCatalogVendorInput.Text.Trim();
+        var catalogUrl = StructuredCatalogUrlInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(vendor) || !Uri.TryCreate(catalogUrl, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps)
+        {
+            StructuredCatalogStatusText.Text = "Укажите производителя и корректный HTTPS-адрес JSON/XML каталога.";
+            return;
+        }
+
+        StructuredCatalogStatusText.Text = "Загружается официальный каталог; выполняется сопоставление аппаратных идентификаторов...";
+        try
+        {
+            var workflow = new DriverUpdateWorkflowService(catalog: _driverCatalog);
+            var imported = await workflow.DiscoverFromStructuredCatalogAsync(device, catalogUrl, vendor);
+            await RefreshDriverCatalogAsync();
+            StructuredCatalogStatusText.Text = imported.Count == 0
+                ? "Подходящие записи не найдены. Каталог загружен, но совпадений по Hardware ID выбранного устройства нет."
+                : $"Импортировано/обновлено записей: {imported.Count}. Записи сохранены в постоянном каталоге обновлений.";
+            AppendEvent($"Структурированный OEM-каталог {vendor}: обработано записей {imported.Count} для {device.Name}.");
+        }
+        catch (Exception ex)
+        {
+            StructuredCatalogStatusText.Text = "Импорт не выполнен: " + ex.Message;
+            AppendEvent("Ошибка импорта структурированного OEM-каталога: " + ex.Message);
+        }
+    }
+
     private async void RefreshDriverCatalog_Click(object sender, RoutedEventArgs e)
     {
         try { await RefreshDriverCatalogAsync(); }
