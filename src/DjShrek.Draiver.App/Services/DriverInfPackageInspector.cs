@@ -356,6 +356,7 @@ public sealed class DriverInfPackageInspector
     private static string GetCurrentArchitectureDecoration() => RuntimeInformation.OSArchitecture switch
     {
         Architecture.Arm64 => "NTarm64",
+        Architecture.Arm => "NTarm",
         Architecture.X64 => "NTamd64",
         Architecture.X86 => "NTx86",
         _ => throw new PlatformNotSupportedException(
