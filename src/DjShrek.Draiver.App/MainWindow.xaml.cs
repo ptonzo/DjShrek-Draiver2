@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private readonly DriverPackageMetadataService _packageMetadata = new();
     private readonly DriverPackageHashService _packageHash = new();
     private readonly DriverPackageDownloadService _packageDownloader = new();
+    private readonly OfficialDriverPackageCandidateService _packageCandidates = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -763,8 +764,46 @@ public partial class MainWindow : Window
 
             var selected = results[number - 1];
             Process.Start(new ProcessStartInfo(selected.Url) { UseShellExecute = true });
-            UpdatesCountText.Text = $"Открыта страница производителя для устройства: {selected.DeviceName}.";
+            UpdatesCountText.Text = $"Страница производителя открыта: {selected.DeviceName}. Поиск прямых ссылок на пакеты...";
             AppendEvent($"Открыта страница драйвера: {selected.DeviceName}; {selected.HardwareId}.");
+
+            IReadOnlyList<OfficialDriverPackageCandidate> candidates;
+            try { candidates = await _packageCandidates.DiscoverAsync(selected); }
+            catch (Exception discoveryError) when (discoveryError is HttpRequestException or InvalidDataException or TaskCanceledException)
+            {
+                UpdatesCountText.Text = "Страница открыта. Автоматически извлечь ссылки на пакеты не удалось.";
+                AppendEvent("Извлечение прямых ссылок недоступно: " + discoveryError.Message);
+                return;
+            }
+
+            if (candidates.Count == 0)
+            {
+                UpdatesCountText.Text = "На странице не найдены прямые ссылки на установочные пакеты. Используйте сайт производителя.";
+                AppendEvent("Прямые ссылки на пакеты на странице не обнаружены.");
+                return;
+            }
+
+            var packageMenu = string.Join(Environment.NewLine, candidates.Select((item, index) =>
+                $"{index + 1}. {item.Title} [{item.FileType}] — {new Uri(item.Url).Host}"));
+            var packageAnswer = Microsoft.VisualBasic.Interaction.InputBox(
+                "Найдены прямые ссылки на файлы пакетов. Выберите номер для загрузки:" +
+                "\n\n" + packageMenu +
+                "\n\nСсылки извлечены со страницы производителя, но совместимость пакета ещё не подтверждена.",
+                "Пакеты драйверов", "1");
+            if (!int.TryParse(packageAnswer, out var packageNumber) ||
+                packageNumber < 1 || packageNumber > candidates.Count) return;
+
+            var package = candidates[packageNumber - 1];
+            var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var folder = Microsoft.VisualBasic.Interaction.InputBox(
+                "Укажите папку для сохранения пакета:", "Загрузка пакета драйвера", downloads);
+            if (string.IsNullOrWhiteSpace(folder)) return;
+            var downloaded = await _packageDownloader.DownloadAsync(package.Url, folder);
+            UpdatesCountText.Text = $"Пакет загружен: {Path.GetFileName(downloaded.FilePath)}; SHA-256: {downloaded.Sha256}";
+            AppendEvent($"Загружен пакет {package.Title}; размер {downloaded.SizeBytes} байт; SHA-256 {downloaded.Sha256}.");
+            MessageBox.Show(
+                $"Файл: {downloaded.FilePath}\nРазмер: {downloaded.SizeBytes:N0} байт\nSHA-256: {downloaded.Sha256}\n\nПакет не установлен. Перед установкой требуется анализ INF и проверка подписи CAT.",
+                "Пакет драйвера загружен", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
