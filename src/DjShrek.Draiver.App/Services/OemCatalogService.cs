@@ -19,7 +19,7 @@ public sealed class OemCatalogService
         new("Intel", "https://www.intel.com/content/www/us/en/download-center/home.html"),
         new("AMD", "https://www.amd.com/en/support/download/drivers.html"),
         new("NVIDIA", "https://www.nvidia.com/Download/index.aspx"),
-        new("Realtek", "https://www.realtek.com/Download/List?cate_id= papa"),
+        new("Realtek", "https://www.realtek.com/en/downloads"),
         new("Microsoft Surface", "https://support.microsoft.com/surface")
     ];
 
