@@ -298,6 +298,7 @@
                                         <TextBlock x:Name="OemIdentityText" Text="Получение расширенных идентификаторов модели..." Foreground="{DynamicResource AccentSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10"/>
                                         <WrapPanel>
                                             <Button Content="Открыть сайт производителя" Click="OpenDetectedOem_Click"/>
+                                            <Button Content="Каталоги по модели и устройствам" Click="OpenModelCatalog_Click"/>
                                             <Button Content="Все каталоги" Click="OpenOemCatalog_Click"/>
                                         </WrapPanel>
                                     </StackPanel>
