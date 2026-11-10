@@ -320,25 +320,24 @@ public sealed class IntelDsaCatalogService
 
     private static bool IsCompatibleWindowsGeneration(string operatingSystem, int windowsBuild)
     {
+        // Missing OS metadata remains unknown (not proof of compatibility), while an
+        // explicit non-Windows/unknown target must never be selected for Windows.
         if (string.IsNullOrWhiteSpace(operatingSystem)) return true;
-        var isWindows10Only =
-            (operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
-             operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase)) &&
-            !operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) &&
-            !operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
-        var isWindows11Only =
-            (operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
-             operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase)) &&
-            !operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) &&
-            !operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase);
-        var namesWindows = operatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
-                           operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase) ||
-                           operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
-        if (namesWindows && !isWindows10Only && !isWindows11Only && !HasBothWindowsGenerations(operatingSystem))
-            return false;
-        if (windowsBuild >= 22000 && isWindows10Only) return false;
-        if (windowsBuild < 22000 && isWindows11Only) return false;
-        return true;
+        var value = operatingSystem.Trim();
+        if (value.Equals("all", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("any", StringComparison.OrdinalIgnoreCase) ||
+            value.Equals("universal", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var has10 = System.Text.RegularExpressions.Regex.IsMatch(value,
+            @"(?<![A-Za-z0-9])(?:Windows\\s*10|Win10)(?![A-Za-z0-9])",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var has11 = System.Text.RegularExpressions.Regex.IsMatch(value,
+            @"(?<![A-Za-z0-9])(?:Windows\\s*11|Win11)(?![A-Za-z0-9])",
+            System.Text.RegularExpressions.Regex.RegexOptions.IgnoreCase);
+        if (!has10 && !has11) return false;
+        if (has10 && has11) return true;
+        return windowsBuild >= 22000 ? has11 : has10;
     }
 
     private static bool HasBothWindowsGenerations(string operatingSystem) =>
