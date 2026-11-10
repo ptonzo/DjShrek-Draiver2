@@ -16,6 +16,8 @@ public partial class MainWindow : Window
 {
     private readonly DeviceInventoryService _inventory = new();
     private readonly DriverMaintenanceService _maintenance = new();
+    private readonly DriverHealthAnalysisService _driverHealth = new();
+    private readonly ObservableCollection<DriverHealthFinding> _driverHealthFindings = new();
     private readonly HardwareSensorService _sensors = new();
     private readonly GameOptimizationService _gameProfile = new();
     private readonly OemCatalogService _oemCatalog = new();
@@ -53,6 +55,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         DevicesGrid.ItemsSource = _devices;
+        DriverHealthGrid.ItemsSource = _driverHealthFindings;
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
         DriverCatalogGrid.ItemsSource = _driverCandidates;
@@ -376,6 +379,7 @@ public partial class MainWindow : Window
 
             var devices = await devicesTask;
             ApplyDevices(devices);
+            await RefreshDriverHealthAsync(devices);
             ApplyHardwareMetrics(await hardwareTask);
             StatusText.Text = $"Готово. Обнаружено устройств: {devices.Count}. Мониторинг обновляется каждые 5 секунд.";
             AppendEvent($"Первичное сканирование: обнаружено устройств — {devices.Count}.");
@@ -435,6 +439,25 @@ public partial class MainWindow : Window
         TemperatureNote.Text = metrics.Note;
     }
 
+
+    private async Task RefreshDriverHealthAsync(IReadOnlyCollection<DeviceInfo> devices)
+    {
+        var report = await _driverHealth.AnalyzeAndStoreAsync(devices);
+        _driverHealthFindings.Clear();
+        foreach (var finding in report.Findings.OrderByDescending(x => x.Severity == "Критично"))
+            _driverHealthFindings.Add(finding);
+        DriverHealthSummaryText.Text = $"Устройств: {report.TotalDevices} | Без замечаний: {report.HealthyDevices} | Проблемы PnP: {report.ProblemDevices} | Нет данных о драйвере: {report.MissingDriverDevices} | Неподписанные: {report.UnsignedDriverDevices}";
+        DriverHealthChangesText.Text = $"Новые замечания: {report.NewIssues.Count}; устранено с прошлого сканирования: {report.ResolvedIssues.Count}; отчёт сохранён локально.";
+        AppendEvent($"Анализ состояния драйверов: замечаний {report.Findings.Count}, новых {report.NewIssues.Count}, устранено {report.ResolvedIssues.Count}.");
+    }
+
+    private async void RefreshDriverHealth_Click(object sender, RoutedEventArgs e)
+    {
+        if (_devices.Count == 0) { MessageBox.Show("Сначала выполните сканирование устройств.", "Состояние драйверов", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        try { await RefreshDriverHealthAsync(_devices.ToArray()); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Состояние драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
     private async Task<bool> ScanDevicesAsync()
     {
         if (_scanRunning) return false;
@@ -444,6 +467,7 @@ public partial class MainWindow : Window
             StatusText.Text = "Сканирование Plug and Play...";
             var devices = await _inventory.ScanAsync();
             ApplyDevices(devices);
+            await RefreshDriverHealthAsync(devices);
             StatusText.Text = $"Сканирование завершено. Устройств: {devices.Count}.";
             AppendEvent($"Сканирование устройств завершено: {devices.Count}.");
             ShowPanel("devices");
