@@ -318,6 +318,24 @@
                                             <Button Content="Проверить копию" Click="VerifyBackupCatalog_Click"/>
                                         </WrapPanel>
                                         <TextBlock x:Name="DriverCatalogSummaryText" Text="Каталог ещё не загружен." Foreground="{DynamicResource MutedBrush}" Margin="0,9,0,8"/>
+                                        <TextBlock Text="ИНТЕЛЛЕКТУАЛЬНЫЙ РЕЙТИНГ КАНДИДАТОВ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,12,0,7"/>
+                                        <TextBlock Text="Оценка учитывает идентификаторы устройства, архитектуру, сборку Windows, подпись каталога и версию. Кандидаты с подтверждённой несовместимостью исключаются из подходящих." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <WrapPanel>
+                                            <Button Content="Рассчитать рейтинг" Click="RefreshCandidateRanking_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="CandidateRankingSummaryText" Text="Рейтинг ещё не рассчитан." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,8"/>
+                                        <DataGrid x:Name="CandidateRankingGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                                  IsReadOnly="True" SelectionMode="Single" MinHeight="140" MaxHeight="260">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Кандидат" Binding="{Binding Title}" Width="2*"/>
+                                                <DataGridTextColumn Header="Баллы" Binding="{Binding Score}" Width="75"/>
+                                                <DataGridTextColumn Header="Оценка" Binding="{Binding Confidence}" Width="100"/>
+                                                <DataGridTextColumn Header="Совпадение" Binding="{Binding MatchType}" Width="*"/>
+                                                <DataGridCheckBoxColumn Header="Допущен" Binding="{Binding IsEligible}" Width="85"/>
+                                                <DataGridTextColumn Header="Причины" Binding="{Binding ReasonsText}" Width="3*"/>
+                                                <DataGridTextColumn Header="Предупреждения" Binding="{Binding WarningsText}" Width="3*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
                                         <DataGrid x:Name="DriverCatalogGrid" AutoGenerateColumns="False" CanUserAddRows="False"
                                                   IsReadOnly="True" SelectionMode="Single" MinHeight="190" MaxHeight="330">
                                             <DataGrid.Columns>
