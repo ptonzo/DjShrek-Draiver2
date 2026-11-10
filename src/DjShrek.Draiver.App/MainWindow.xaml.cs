@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly OemDeviceIdentityService _oemIdentityService = new();
     private readonly OemDriverCatalogAdapter _oemCatalogAdapter = new();
     private readonly InternetDriverCatalogService _internetCatalog = new();
+    private readonly DriverPackageMetadataService _packageMetadata = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -479,6 +480,50 @@ public partial class MainWindow : Window
              d.DriverVersion.Contains(query, StringComparison.OrdinalIgnoreCase) ||
              d.InfName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
              d.InstanceId.Contains(query, StringComparison.OrdinalIgnoreCase))).ToList();
+    }
+
+    private void MatchLocalDriverPackages_Click(object sender, RoutedEventArgs e)
+    {
+        if (_devices.Count == 0)
+        {
+            MessageBox.Show("Сначала выполните сканирование устройств.", "Сопоставление драйверов",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Выберите папку с распакованными пакетами драйверов",
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        try
+        {
+            var matches = _packageMetadata.MatchFolder(dialog.FolderName, _devices);
+            var relevant = matches.Where(x => x.HardwareIdMatch || x.Reasons.Count > 0)
+                .Take(80).ToArray();
+            if (relevant.Length == 0)
+            {
+                MessageBox.Show("В выбранной папке не найдены INF-пакеты для анализа.",
+                    "Сопоставление драйверов", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var report = string.Join(Environment.NewLine + Environment.NewLine, relevant.Select(x =>
+                $"{x.Device.Name}\nINF: {Path.GetFileName(x.Package.InfPath)}\n" +
+                $"Поставщик: {x.Package.Provider}; версия: {x.Package.DriverVersion}; дата: {x.Package.DriverDate:yyyy-MM-dd}\n" +
+                $"Hardware ID: {(x.HardwareIdMatch ? "СОВПАДАЕТ" : "нет точного совпадения")}\n" +
+                $"Архитектура: {(x.ArchitectureMatch ? "подходит" : "не подходит")}; Windows build: {(x.WindowsBuildMatch ? "подходит" : "не подходит")}\n" +
+                $"{x.Verdict}" + (x.Reasons.Count > 0 ? "\nПричины: " + string.Join("; ", x.Reasons) : "")));
+            MessageBox.Show(report, "Сопоставление локальных пакетов драйверов (без установки)",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            AppendEvent($"Выполнено сопоставление локальных INF: результатов {relevant.Length}; установка не запускалась.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Сопоставление драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ExportDevices_Click(object sender, RoutedEventArgs e)
