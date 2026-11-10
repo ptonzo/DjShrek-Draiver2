@@ -32,7 +32,8 @@ public partial class MainWindow : Window
     private readonly DriverUpdateCatalogService _driverCatalog = new();
     private readonly ObservableCollection<DriverUpdateRecord> _driverCandidates = new();
     private readonly ObservableCollection<DriverCandidateRankingRow> _candidateRankings = new();
-    private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();\n    private readonly ObservableCollection<DriverInstallationRecord> _installationHistory = new();
+    private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();
+    private readonly ObservableCollection<DriverInstallationRecord> _installationHistory = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -61,7 +62,8 @@ public partial class MainWindow : Window
         JunkGrid.ItemsSource = _junkFiles;
         DriverCatalogGrid.ItemsSource = _driverCandidates;
         CandidateRankingGrid.ItemsSource = _candidateRankings;
-        DriverBackupGrid.ItemsSource = _driverBackups;\n        InstallationHistoryGrid.ItemsSource = _installationHistory;
+        DriverBackupGrid.ItemsSource = _driverBackups;
+        InstallationHistoryGrid.ItemsSource = _installationHistory;
 
         var selectedTheme = ThemeManager.LoadPreference();
         ThemeSelector.SelectedValue = selectedTheme;
