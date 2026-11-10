@@ -135,18 +135,22 @@ public sealed class DriverCandidateAssessmentService
             ("Windows 7", new[] { "Windows 7", "Win7" })
         };
         var matched = generations.Where(item => item.Item2.Any(alias =>
-            target.Contains(alias, StringComparison.OrdinalIgnoreCase)) &&
-            !(item.Item1 == "Windows 8" &&
-              target.Contains("Windows 8.1", StringComparison.OrdinalIgnoreCase)))
-            .Select(item => item.Item1).ToArray();
+                System.Text.RegularExpressions.Regex.IsMatch(target,
+                    @"(?<![A-Za-z0-9])" + System.Text.RegularExpressions.Regex.Escape(alias) +
+                    (item.Item1 == "Windows 8" ? @"(?![.0-9])" : @"(?![A-Za-z0-9])"),
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                    System.Text.RegularExpressions.RegexOptions.CultureInvariant)))
+            .Select(item => item.Item1).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (matched.Length == 0)
             return "Неоднозначные или неподдерживаемые метаданные ОС; требуется ручная проверка";
-        if (matched.Length > 1)
-            return "Указано несколько поколений Windows (" + string.Join(", ", matched) +
-                   "); требуется проверка конкретной INF-декорации";
-        return current.Equals(matched[0], StringComparison.OrdinalIgnoreCase)
-            ? "Соответствует " + matched[0]
-            : "Не соответствует: пакет для " + matched[0];
+        // Catalog records often intentionally advertise one package for several
+        // Windows generations. A multi-target record is compatible when the current
+        // generation is explicitly among those targets; it is not rejected merely
+        // because additional generations are listed.
+        if (matched.Contains(current, StringComparer.OrdinalIgnoreCase))
+            return "Соответствует " + current + " (каталог также указывает: " +
+                   string.Join(", ", matched) + ")";
+        return "Не соответствует: пакет для " + string.Join(", ", matched);
     }
 
     public static string AssessArchitecture(string target, string current)
