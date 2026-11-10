@@ -331,10 +331,21 @@ public sealed class IntelDsaCatalogService
              operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase)) &&
             !operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) &&
             !operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase);
+        var namesWindows = operatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
+                           operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase) ||
+                           operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
+        if (namesWindows && !isWindows10Only && !isWindows11Only && !hasBothWindowsGenerations(operatingSystem))
+            return false;
         if (windowsBuild >= 22000 && isWindows10Only) return false;
         if (windowsBuild < 22000 && isWindows11Only) return false;
         return true;
     }
+
+    private static bool hasBothWindowsGenerations(string operatingSystem) =>
+        (operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
+         operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase)) &&
+        (operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
+         operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase));
 
     private static bool IsAllowedPackageUrl(string value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
