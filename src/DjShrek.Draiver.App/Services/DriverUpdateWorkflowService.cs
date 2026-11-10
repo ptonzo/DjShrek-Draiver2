@@ -118,6 +118,11 @@ public sealed class DriverUpdateWorkflowService
         CancellationToken token = default) =>
         new DriverActivationReconciliationService().GetHistoryAsync(token);
 
+    public IReadOnlyList<DriverCandidateRanking> RankCandidates(
+        DeviceInfo device, IEnumerable<DriverCandidateForRanking> candidates,
+        string architecture, int windowsBuild) =>
+        new DriverCandidateRankingService().Rank(device, candidates, architecture, windowsBuild);
+
     public Task SetCandidateStateAsync(string recordId, DriverCandidateState state,
         IEnumerable<string>? reasons = null, CancellationToken token = default) =>
         _catalog.SetStateAsync(recordId, state, reasons, token);
