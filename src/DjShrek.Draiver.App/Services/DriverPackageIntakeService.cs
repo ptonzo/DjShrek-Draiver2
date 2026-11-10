@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using DjShrek.Draiver.App.Models;
@@ -56,7 +57,16 @@ public sealed class DriverPackageIntakeService
                 ? "INF-файлы не содержат совпадений для выбранного устройства."
                 : "INF сопоставлены с устройством. Перед установкой проверьте вердикт, версию и подпись CAT.";
         }
-        else if (extension is ".exe" or ".msi" or ".cab" or ".7z" or ".rar")
+        else if (extension == ".cab")
+        {
+            Directory.CreateDirectory(expanded);
+            await ExtractCabAsync(download.FilePath, expanded, cancellationToken);
+            matches = _metadata.MatchFolder(expanded, new[] { targetDevice });
+            nextAction = matches.Count == 0
+                ? "В CAB не обнаружены подходящие INF-файлы."
+                : "CAB распакован штатной утилитой Windows; INF сопоставлены с устройством. Проверьте CAT и версию.";
+        }
+        else if (extension is ".exe" or ".msi" or ".7z" or ".rar")
         {
             nextAction = "Контейнер получен. Для анализа INF требуется штатное извлечение производителя или Windows DISM/Expand.";
         }
@@ -115,6 +125,34 @@ public sealed class DriverPackageIntakeService
 
         return new DriverPackageStageResult(download.FilePath, staging, manifestPath,
             download.Sha256, download.SizeBytes, containerType, matches, nextAction);
+    }
+
+    private static async Task ExtractCabAsync(string cabPath, string destination, CancellationToken token)
+    {
+        var start = new ProcessStartInfo
+        {
+            FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "expand.exe"),
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("-F:*");
+        start.ArgumentList.Add(cabPath);
+        start.ArgumentList.Add(destination);
+        using var process = new Process { StartInfo = start };
+        if (!process.Start()) throw new InvalidOperationException("Не удалось запустить штатную распаковку CAB.");
+        using var registration = token.Register(() =>
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
+        });
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync(token);
+        var error = await stderr;
+        _ = await stdout;
+        if (process.ExitCode != 0)
+            throw new InvalidDataException("Распаковка CAB завершилась с ошибкой: " + error.Trim());
     }
 
     private static void ExtractZipSafely(string archivePath, string destination, CancellationToken token)
