@@ -275,7 +275,17 @@ public sealed class InternetDriverCatalogService
     private static bool IsOfficial(string host)
     {
         host = host.TrimEnd('.').ToLowerInvariant();
-        return OfficialDomains.Any(domain => host == domain || host.EndsWith("." + domain, StringComparison.Ordinal));
+        if (OfficialDomains.Any(domain =>
+                host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+                host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
+            return true;
+
+        // Keep source classification aligned with the complete curated vendor
+        // registry. This automatically covers newly registered OEM/component makers
+        // without maintaining a second, inevitably stale allow-list.
+        return new DriverVendorCatalogRegistry().GetAll().Any(entry =>
+            host.Equals(entry.SearchDomain, StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith("." + entry.SearchDomain, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string Clean(string? value) =>
