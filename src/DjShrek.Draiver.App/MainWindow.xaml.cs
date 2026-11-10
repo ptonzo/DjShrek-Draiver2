@@ -771,6 +771,61 @@ public partial class MainWindow : Window
         catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог обновлений", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
+    private async void InstallSelectedCandidate_Click(object sender, RoutedEventArgs e)
+    {
+        if (DriverCatalogGrid.SelectedItem is not DriverUpdateRecord selected)
+        {
+            MessageBox.Show("Выберите кандидата в каталоге обновлений.", "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (selected.State != nameof(DriverCandidateState.ReadyForInstall))
+        {
+            MessageBox.Show("Установка заблокирована: кандидат не имеет статуса ReadyForInstall. Сначала завершите распаковку, сопоставление INF и проверку подписи CAT.",
+                "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        var device = _devices.FirstOrDefault(x => string.Equals(x.InstanceId, selected.DeviceInstanceId, StringComparison.OrdinalIgnoreCase));
+        if (device is null)
+        {
+            MessageBox.Show("Устройство отсутствует в текущей инвентаризации. Выполните сканирование устройств.",
+                "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        var expanded = Path.Combine(selected.StagingDirectory, "expanded");
+        if (!Directory.Exists(expanded))
+        {
+            MessageBox.Show("В пакете нет распакованной папки INF. Для этого формата требуется поддерживаемое извлечение.",
+                "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        try
+        {
+            var matches = _packageMetadata.MatchFolder(expanded, new[] { device });
+            var applicable = matches.Where(x => x.SignatureValid == true &&
+                x.HardwareIdMatch && x.ArchitectureMatch && x.WindowsBuildMatch).ToArray();
+            if (applicable.Length == 0)
+                throw new InvalidDataException("Не найден INF, одновременно соответствующий Hardware ID, архитектуре, сборке Windows и действительной подписи CAT.");
+            var chosen = applicable.OrderByDescending(x => x.VersionAssessment, StringComparer.OrdinalIgnoreCase).First();
+            var inf = Path.GetFullPath(chosen.Package.InfPath);
+            if (!inf.StartsWith(Path.GetFullPath(expanded).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Путь INF выходит за пределы каталога распаковки.");
+            var answer = MessageBox.Show(
+                $"Устройство: {device.Name}\nТекущий драйвер: {device.DriverVersion}\nНовый драйвер: {chosen.Package.DriverVersion}\nINF: {inf}\n\nПодпись CAT подтверждена. Совместимость по Hardware ID, архитектуре и Windows подтверждена. Передать пакет Windows для установки?",
+                "Подтверждение установки драйвера", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (answer != MessageBoxResult.Yes) return;
+            StatusText.Text = "Запуск установки через pnputil. Windows запросит права администратора.";
+            var result = await Task.Run(() => _maintenance.InstallInf(inf));
+            await _driverCatalog.SetStateAsync(selected.Id, DriverCandidateState.Installed,
+                new[] { "Команда pnputil завершилась успешно; состояние устройства следует подтвердить в Windows." });
+            await RefreshDriverCatalogAsync();
+            AppendEvent($"Команда установки отправлена Windows: {device.Name}; INF {Path.GetFileName(inf)}.");
+            MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Установка отменена в запросе UAC."; }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
     private void OpenDriverManifest_Click(object sender, RoutedEventArgs e)
     {
         if (DriverCatalogGrid.SelectedItem is not DriverUpdateRecord selected) return;
