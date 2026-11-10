@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private readonly OemDriverCatalogAdapter _oemCatalogAdapter = new();
     private readonly InternetDriverCatalogService _internetCatalog = new();
     private readonly DriverPackageMetadataService _packageMetadata = new();
+    private readonly DriverPackageHashService _packageHash = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -525,6 +526,46 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Сопоставление драйверов", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void CalculatePackageHashes_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Выберите папку с драйверными пакетами",
+            Multiselect = false
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        try
+        {
+            UpdatesCountText.Text = "Расчёт SHA-256 для файлов пакетов...";
+            var hashes = await _packageHash.CalculateFolderAsync(dialog.FolderName);
+            if (hashes.Count == 0)
+            {
+                MessageBox.Show("Доступные файлы для расчёта хэша не найдены.",
+                    "Контроль целостности", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var report = string.Join(Environment.NewLine, hashes.Select(x =>
+                $"{Path.GetRelativePath(dialog.FolderName, x.FilePath)} | {x.SizeBytes} байт | SHA-256: {x.Sha256}"));
+            var save = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Сохранить манифест SHA-256",
+                Filter = "Текстовый файл (*.txt)|*.txt",
+                FileName = "driver-sha256-manifest.txt"
+            };
+            if (save.ShowDialog(this) == true)
+                await File.WriteAllTextAsync(save.FileName, report, new System.Text.UTF8Encoding(false));
+
+            UpdatesCountText.Text = $"Рассчитаны SHA-256: {hashes.Count} файлов.";
+            AppendEvent($"Сформирован SHA-256 манифест: файлов {hashes.Count}; установка не выполнялась.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Контроль целостности", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
