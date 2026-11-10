@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private readonly DriverPackageHashService _packageHash = new();
     private readonly DriverPackageDownloadService _packageDownloader = new();
     private readonly OfficialDriverPackageCandidateService _packageCandidates = new();
+    private readonly DriverPackageIntakeService _packageIntake = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -794,16 +795,32 @@ public partial class MainWindow : Window
                 packageNumber < 1 || packageNumber > candidates.Count) return;
 
             var package = candidates[packageNumber - 1];
+            var targetDevice = _devices.FirstOrDefault(device =>
+                device.HardwareIds.Concat(device.CompatibleIds)
+                    .Contains(package.MatchHardwareId, StringComparer.OrdinalIgnoreCase));
+            if (targetDevice is null)
+            {
+                MessageBox.Show("Устройство, для которого выполнялся поиск, больше не присутствует в текущем списке.",
+                    "Пакет драйвера", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             var folder = Microsoft.VisualBasic.Interaction.InputBox(
-                "Укажите папку для сохранения пакета:", "Загрузка пакета драйвера", downloads);
+                "Укажите корневую папку для хранения пакетов и манифестов:",
+                "Загрузка и анализ пакета", downloads);
             if (string.IsNullOrWhiteSpace(folder)) return;
-            var downloaded = await _packageDownloader.DownloadAsync(package.Url, folder);
-            UpdatesCountText.Text = $"Пакет загружен: {Path.GetFileName(downloaded.FilePath)}; SHA-256: {downloaded.Sha256}";
-            AppendEvent($"Загружен пакет {package.Title}; размер {downloaded.SizeBytes} байт; SHA-256 {downloaded.Sha256}.");
+
+            UpdatesCountText.Text = "Загрузка, SHA-256, подготовка пакета и анализ INF...";
+            var intake = await _packageIntake.AcquireAndAnalyzeAsync(package, targetDevice, folder);
+            var matchSummary = intake.Matches.Count == 0
+                ? "Совпадения INF: не обнаружены."
+                : string.Join(Environment.NewLine, intake.Matches.Take(12).Select(match =>
+                    $"{match.Package.DriverVersion} | {match.Verdict} | подпись CAT: {(match.SignatureValid ? "подтверждена" : "не подтверждена")}"));
+            UpdatesCountText.Text = $"Пакет подготовлен: {Path.GetFileName(intake.PackagePath)}; найдено INF-сопоставлений: {intake.Matches.Count}.";
+            AppendEvent($"Пакет подготовлен: {package.Title}; SHA-256 {intake.Sha256}; INF-сопоставлений {intake.Matches.Count}.");
             MessageBox.Show(
-                $"Файл: {downloaded.FilePath}\nРазмер: {downloaded.SizeBytes:N0} байт\nSHA-256: {downloaded.Sha256}\n\nПакет не установлен. Перед установкой требуется анализ INF и проверка подписи CAT.",
-                "Пакет драйвера загружен", MessageBoxButton.OK, MessageBoxImage.Information);
+                $"Файл: {intake.PackagePath}\nРазмер: {intake.SizeBytes:N0} байт\nSHA-256: {intake.Sha256}\n\n{matchSummary}\n\nСледующий шаг: {intake.NextAction}\n\nМанифест: {intake.ManifestPath}\n\nПакет не установлен.",
+                "Пакет драйвера подготовлен", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
