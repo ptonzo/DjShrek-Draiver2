@@ -344,6 +344,23 @@
                                                 <DataGridTextColumn Header="Предупреждения" Binding="{Binding WarningsText}" Width="3*"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
+                                        <TextBlock Text="СРАВНЕНИЕ КАНДИДАТОВ И ДОВЕРИЯ К ИСТОЧНИКАМ" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,14,0,7"/>
+                                        <TextBlock Text="Сводная оценка сохранённых источников для выбранного устройства: совместимость, официальный домен, подпись, версия и дубликаты пакетов." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <WrapPanel><Button Content="Сравнить источники выбранного устройства" Click="CompareDriverSources_Click"/></WrapPanel>
+                                        <TextBlock x:Name="SourceComparisonSummaryText" Text="Сравнение источников ещё не выполнялось." Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,8"/>
+                                        <DataGrid x:Name="SourceComparisonGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                                                  IsReadOnly="True" SelectionMode="Single" MinHeight="130" MaxHeight="250">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Пакет" Binding="{Binding Title}" Width="2*"/>
+                                                <DataGridTextColumn Header="Поставщик" Binding="{Binding Provider}" Width="*"/>
+                                                <DataGridTextColumn Header="Версия" Binding="{Binding Version}" Width="*"/>
+                                                <DataGridTextColumn Header="Баллы" Binding="{Binding Score}" Width="65"/>
+                                                <DataGridTextColumn Header="Доверие" Binding="{Binding SourceTrust}" Width="*"/>
+                                                <DataGridCheckBoxColumn Header="Совместим" Binding="{Binding IsEligible}" Width="85"/>
+                                                <DataGridTextColumn Header="Источников" Binding="{Binding DuplicateSourceCount}" Width="85"/>
+                                                <DataGridTextColumn Header="Предупреждения" Binding="{Binding WarningsText}" Width="2*"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
                                         <DataGrid x:Name="DriverCatalogGrid" AutoGenerateColumns="False" CanUserAddRows="False"
                                                   IsReadOnly="True" SelectionMode="Single" MinHeight="190" MaxHeight="330">
                                             <DataGrid.Columns>
