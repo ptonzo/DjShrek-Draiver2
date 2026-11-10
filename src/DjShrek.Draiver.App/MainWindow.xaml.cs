@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private readonly GameOptimizationService _gameProfile = new();
     private readonly OemCatalogService _oemCatalog = new();
     private readonly OemDeviceIdentityService _oemIdentityService = new();
+    private readonly OemDriverCatalogAdapter _oemCatalogAdapter = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -672,6 +673,42 @@ public partial class MainWindow : Window
             Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch (Exception ex) { MessageBox.Show(ex.Message, "Каталог драйверов", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    private void OpenModelCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        if (_oemIdentity is null)
+        {
+            MessageBox.Show("Сначала дождитесь завершения определения модели компьютера.",
+                "Каталоги по модели", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var targets = _oemCatalogAdapter.BuildTargets(_oemIdentity, _devices);
+        if (targets.Count == 0)
+        {
+            MessageBox.Show("Для обнаруженного оборудования пока нет подходящих ссылок. Откройте общий каталог производителя.",
+                "Каталоги по модели", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var menu = string.Join(Environment.NewLine, targets.Select((item, index) =>
+            $"{index + 1}. {item.Name} — {item.MatchKey}: {item.Query}"));
+        var answer = Microsoft.VisualBasic.Interaction.InputBox(
+            "Выберите каталог для обнаруженной модели/устройства:\n" + menu,
+            "Каталоги драйверов по модели", "1");
+        if (!int.TryParse(answer, out var number) || number < 1 || number > targets.Count) return;
+
+        try
+        {
+            var selected = targets[number - 1];
+            Process.Start(new ProcessStartInfo(selected.Url) { UseShellExecute = true });
+            AppendEvent("Открыт каталог драйверов: " + selected.Name + "; " + selected.MatchKey);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Каталоги по модели", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void OpenOemCatalog_Click(object sender, RoutedEventArgs e)
