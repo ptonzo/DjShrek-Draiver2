@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private readonly DriverPackageIntakeService _packageIntake = new();
     private readonly DriverUpdateCatalogService _driverCatalog = new();
     private readonly ObservableCollection<DriverUpdateRecord> _driverCandidates = new();
+    private readonly ObservableCollection<DriverCandidateRankingRow> _candidateRankings = new();
     private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();\n    private readonly ObservableCollection<DriverInstallationRecord> _installationHistory = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
@@ -59,6 +60,7 @@ public partial class MainWindow : Window
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
         DriverCatalogGrid.ItemsSource = _driverCandidates;
+        CandidateRankingGrid.ItemsSource = _candidateRankings;
         DriverBackupGrid.ItemsSource = _driverBackups;\n        InstallationHistoryGrid.ItemsSource = _installationHistory;
 
         var selectedTheme = ThemeManager.LoadPreference();
@@ -760,6 +762,91 @@ public partial class MainWindow : Window
         _driverCandidates.Clear();
         foreach (var record in records) _driverCandidates.Add(record);
         DriverCatalogSummaryText.Text = $"В каталоге: {records.Count}; готовы к рассмотрению: {records.Count(x => x.IsActionable)}; требуют анализа/извлечения: {records.Count(x => x.State == nameof(DriverCandidateState.Staged))}.";
+        await RefreshCandidateRankingAsync(records);
+    }
+
+    private async Task RefreshCandidateRankingAsync(IReadOnlyList<DriverUpdateRecord>? source = null)
+    {
+        var records = source ?? await _driverCatalog.GetRecordsAsync();
+        var rows = new List<DriverCandidateRankingRow>();
+        var build = Environment.OSVersion.Version.Build;
+        var architecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
+        foreach (var record in records)
+        {
+            if (string.IsNullOrWhiteSpace(record.StagingDirectory)) continue;
+            var expanded = Path.Combine(record.StagingDirectory, "expanded");
+            if (!Directory.Exists(expanded)) continue;
+            var device = _devices.FirstOrDefault(x =>
+                string.Equals(x.InstanceId, record.DeviceInstanceId, StringComparison.OrdinalIgnoreCase));
+            if (device is null) continue;
+            IReadOnlyList<DriverPackageMatch> matches;
+            try { matches = _packageMetadata.MatchFolder(expanded, new[] { device }); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException) { continue; }
+            foreach (var match in matches)
+            {
+                var package = match.Package;
+                var candidate = new DriverCandidateForRanking
+                {
+                    Id = record.Id + "|" + package.InfPath,
+                    Title = record.PackageTitle + " — " + Path.GetFileName(package.InfPath),
+                    Provider = package.Provider,
+                    Version = package.DriverVersion,
+                    HardwareIds = package.HardwareIds.ToArray(),
+                    CompatibleIds = package.CompatibleIds.ToArray(),
+                    Architecture = package.Architecture,
+                    MinimumWindowsBuild = package.MinWindowsBuild > 0 ? package.MinWindowsBuild : null,
+                    MaximumWindowsBuild = package.MaxWindowsBuild < int.MaxValue ? package.MaxWindowsBuild : null,
+                    CatalogSignatureValid = match.SignatureValid,
+                    IsOfficialSource = false
+                };
+                var ranked = new DriverCandidateRankingService().Rank(device, new[] { candidate }, architecture, build).First();
+                rows.Add(new DriverCandidateRankingRow(ranked));
+            }
+        }
+        _candidateRankings.Clear();
+        foreach (var row in rows.OrderByDescending(x => x.IsEligible).ThenByDescending(x => x.Score))
+            _candidateRankings.Add(row);
+        var eligible = rows.Count(x => x.IsEligible);
+        CandidateRankingSummaryText.Text = rows.Count == 0
+            ? "Нет подготовленных INF-пакетов для рейтинга. Сначала загрузите и распакуйте кандидата."
+            : $"Оценено INF-кандидатов: {rows.Count}; допущено по критериям: {eligible}; исключено: {rows.Count - eligible}. Сортировка: сначала допущенные, затем баллы.";
+    }
+
+    private async void RefreshCandidateRanking_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            CandidateRankingSummaryText.Text = "Рассчитывается рейтинг подготовленных INF...";
+            await RefreshCandidateRankingAsync();
+        }
+        catch (Exception ex)
+        {
+            CandidateRankingSummaryText.Text = "Не удалось рассчитать рейтинг: " + ex.Message;
+        }
+    }
+
+    private sealed class DriverCandidateRankingRow
+    {
+        public string CandidateId { get; }
+        public string Title { get; }
+        public int Score { get; }
+        public string Confidence { get; }
+        public string MatchType { get; }
+        public bool IsEligible { get; }
+        public string ReasonsText { get; }
+        public string WarningsText { get; }
+
+        public DriverCandidateRankingRow(DriverCandidateRanking ranking)
+        {
+            CandidateId = ranking.CandidateId;
+            Title = ranking.Title;
+            Score = ranking.Score;
+            Confidence = ranking.Confidence;
+            MatchType = ranking.MatchType;
+            IsEligible = ranking.IsEligible;
+            ReasonsText = string.Join(" • ", ranking.Reasons);
+            WarningsText = string.Join(" • ", ranking.Warnings);
+        }
     }
 
     private async Task RefreshBackupCatalogAsync()
