@@ -76,7 +76,7 @@ public sealed class DriverPackageMetadataService
                         normalized.Contains("VID_", StringComparison.OrdinalIgnoreCase) ||
                         normalized.Contains("HDAUDIO", StringComparison.OrdinalIgnoreCase))
                         hardware.Add(normalized);
-                    else if (normalized.Contains('\\\\'))
+                    else if (normalized.Contains('\\'))
                         compatible.Add(normalized);
                 }
             }
