@@ -29,7 +29,7 @@ public partial class MainWindow : Window
     private readonly DriverPackageIntakeService _packageIntake = new();
     private readonly DriverUpdateCatalogService _driverCatalog = new();
     private readonly ObservableCollection<DriverUpdateRecord> _driverCandidates = new();
-    private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();
+    private readonly ObservableCollection<DriverBackupRecord> _driverBackups = new();\n    private readonly ObservableCollection<DriverInstallationRecord> _installationHistory = new();
     private OemDeviceIdentity? _oemIdentity;
     private bool _oemDetectRunning;
     private readonly RegistryMaintenanceService _registryService = new();
@@ -56,7 +56,7 @@ public partial class MainWindow : Window
         RegistryGrid.ItemsSource = _registryFindings;
         JunkGrid.ItemsSource = _junkFiles;
         DriverCatalogGrid.ItemsSource = _driverCandidates;
-        DriverBackupGrid.ItemsSource = _driverBackups;
+        DriverBackupGrid.ItemsSource = _driverBackups;\n        InstallationHistoryGrid.ItemsSource = _installationHistory;
 
         var selectedTheme = ThemeManager.LoadPreference();
         ThemeSelector.SelectedValue = selectedTheme;
@@ -745,6 +745,14 @@ public partial class MainWindow : Window
         foreach (var record in records.OrderByDescending(x => x.CreatedUtc)) _driverBackups.Add(record);
     }
 
+
+    private async Task RefreshInstallationHistoryAsync()
+    {
+        var records = await _driverCatalog.GetInstallationHistoryAsync();
+        _installationHistory.Clear();
+        foreach (var record in records) _installationHistory.Add(record);
+    }
+
     private async void RefreshDriverCatalog_Click(object sender, RoutedEventArgs e)
     {
         try { await RefreshDriverCatalogAsync(); }
@@ -817,9 +825,18 @@ public partial class MainWindow : Window
             StatusText.Text = "Запуск установки через pnputil. Windows запросит права администратора.";
             var result = await Task.Run(() => _maintenance.InstallInf(inf));
             await _driverCatalog.SetStateAsync(selected.Id, DriverCandidateState.Installed,
-                new[] { "Команда pnputil завершилась успешно; состояние устройства следует подтвердить в Windows." });
+                new[] { "Команда pnputil завершилась успешно; фактическую активную версию следует подтвердить после обновления инвентаризации." });
+            await _driverCatalog.AddInstallationRecordAsync(new DriverInstallationRecord
+            {
+                DeviceName = device.Name, DeviceInstanceId = device.InstanceId, Provider = selected.Provider,
+                PreviousVersion = device.DriverVersion, RequestedVersion = chosen.Package.DriverVersion,
+                InfPath = inf, CandidateId = selected.Id, Outcome = "Команда pnputil завершилась успешно",
+                RebootStatus = "Не определён — требуется оценка Windows",
+                Details = result
+            });
             await RefreshDriverCatalogAsync();
-            AppendEvent($"Команда установки отправлена Windows: {device.Name}; INF {Path.GetFileName(inf)}.");
+            await RefreshInstallationHistoryAsync();
+            AppendEvent($"В журнал записан результат передачи пакета Windows: {device.Name}; INF {Path.GetFileName(inf)}.");
             MessageBox.Show(result, "Установка драйвера", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (System.ComponentModel.Win32Exception) { StatusText.Text = "Установка отменена в запросе UAC."; }
