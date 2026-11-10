@@ -116,12 +116,17 @@ foreach ($path in $regPaths) {
         var all = string.Join(" ", values).ToLowerInvariant();
         if (all.Contains("acer")) return "Acer";
         if (all.Contains("micro-star") || all.Contains("msi")) return "MSI";
+        if (all.Contains("gigabyte") || all.Contains("aorus")) return "Gigabyte";
+        if (all.Contains("asrock")) return "ASRock";
         if (all.Contains("nvidia")) return "NVIDIA";
         if (all.Contains("asus")) return "ASUS";
         if (all.Contains("dell")) return "Dell";
         if (all.Contains("hewlett") || all.Contains("hewlett-packard") ||
             all.Contains("hp inc") || all.Contains("hp ") || all.StartsWith("hp")) return "HP";
         if (all.Contains("lenovo")) return "Lenovo";
+        if (all.Contains("intel")) return "Intel";
+        if (all.Contains("advanced micro") || all.Contains("amd")) return "AMD";
+        if (all.Contains("realtek")) return "Realtek";
         return values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim() ?? "Unknown";
     }
 
@@ -143,6 +148,11 @@ foreach ($path in $regPaths) {
         "Dell" => "https://www.dell.com/support/home/",
         "HP" => "https://support.hp.com/drivers",
         "Lenovo" => "https://pcsupport.lenovo.com/",
+        "Gigabyte" => "https://www.gigabyte.com/Support",
+        "ASRock" => "https://www.asrock.com/support/index.asp",
+        "Intel" => "https://www.intel.com/content/www/us/en/download-center/home.html",
+        "AMD" => "https://www.amd.com/en/support/download/drivers.html",
+        "Realtek" => "https://www.realtek.com/en/downloads",
         _ => ""
     };
 }
