@@ -230,10 +230,11 @@ public sealed class DriverPackageMetadataService
 
     private static (int Min, int Max) ReadWindowsDecorations(IEnumerable<string> sections)
     {
-        var builds = sections.SelectMany(section => Regex.Matches(section, @"NTamd64\.([0-9]+)(?:\.\.([0-9]+))?")
-            .Cast<Match>())
-            .SelectMany(m => new[] { ParseBuild(m.Groups[1].Value), ParseBuild(m.Groups[2].Value) })
-            .Where(x => x > 0).ToArray();
+        var builds = sections
+            .SelectMany(section => Regex.Matches(section, @"\.\.\.(\\d{4,})").Cast<Match>())
+            .Select(match => ParseBuild(match.Groups[1].Value))
+            .Where(build => build > 0)
+            .ToArray();
         return builds.Length == 0 ? (0, int.MaxValue) : (builds.Min(), int.MaxValue);
     }
 
