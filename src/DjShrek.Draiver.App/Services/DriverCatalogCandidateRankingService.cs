@@ -119,10 +119,10 @@ public sealed class DriverCatalogCandidateRankingService
     {
         if (string.IsNullOrWhiteSpace(text)) return "";
         var targets = new List<string>();
-        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\\s*11|Win11)(?![A-Za-z0-9])",
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*11|Win11)(?![A-Za-z0-9])",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             targets.Add("Windows 11");
-        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\\s*10|Win10)(?![A-Za-z0-9])",
+        if (Regex.IsMatch(text, @"(?<![A-Za-z0-9])(?:Windows\s*10|Win10)(?![A-Za-z0-9])",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             targets.Add("Windows 10");
         return string.Join("; ", targets);
