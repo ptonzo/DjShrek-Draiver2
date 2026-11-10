@@ -118,6 +118,11 @@ public sealed class DriverUpdateWorkflowService
         CancellationToken token = default) =>
         new DriverActivationReconciliationService().GetHistoryAsync(token);
 
+    public IReadOnlyList<DriverCandidateSourceComparison> CompareCandidatesFromSources(
+        DeviceInfo device, IEnumerable<DriverCandidateSourceEntry> candidates,
+        string architecture, int windowsBuild) =>
+        new DriverCandidateSourceComparisonService().Compare(device, candidates, architecture, windowsBuild);
+
     public OfficialDriverSourceAssessment AssessOfficialSource(string? sourcePage, string? packageUrl, string? claimedVendor = null) =>
         new OfficialDriverSourcePolicy().Assess(sourcePage, packageUrl, claimedVendor);
 
