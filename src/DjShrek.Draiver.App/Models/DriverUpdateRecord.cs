@@ -68,3 +68,20 @@ public sealed class DriverBackupPackage
     public string DriverVersion { get; set; } = "";
     public string DriverDate { get; set; } = "";
 }
+
+
+public sealed class DriverInstallationRecord
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
+    public string DeviceName { get; set; } = "";
+    public string DeviceInstanceId { get; set; } = "";
+    public string Provider { get; set; } = "";
+    public string PreviousVersion { get; set; } = "";
+    public string RequestedVersion { get; set; } = "";
+    public string InfPath { get; set; } = "";
+    public string CandidateId { get; set; } = "";
+    public string Outcome { get; set; } = "Не определён";
+    public string RebootStatus { get; set; } = "Не определён";
+    public string Details { get; set; } = "";
+}
