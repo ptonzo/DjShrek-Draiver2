@@ -118,6 +118,10 @@ public sealed class DriverUpdateWorkflowService
         CancellationToken token = default) =>
         new DriverActivationReconciliationService().GetHistoryAsync(token);
 
+    public IReadOnlyList<StructuredDriverCatalogEntry> ParseStructuredOemCatalog(
+        string payload, string sourceUrl, string vendor) =>
+        new StructuredDriverCatalogParser().Parse(payload, sourceUrl, vendor);
+
     public IReadOnlyList<DriverCandidateSourceComparison> CompareCandidatesFromSources(
         DeviceInfo device, IEnumerable<DriverCandidateSourceEntry> candidates,
         string architecture, int windowsBuild) =>
