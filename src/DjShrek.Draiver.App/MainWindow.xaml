@@ -300,6 +300,14 @@
                                             <Button Content="Поиск по Hardware ID в интернете" Click="SearchInternetCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                             <Button Content="Каталоги производителей" Click="OpenOemCatalog_Click" Background="{DynamicResource AccentSecondaryBrush}"/>
                                         </WrapPanel>
+                                        <TextBlock Text="ИМПОРТ СТРУКТУРИРОВАННОГО КАТАЛОГА OEM" FontWeight="Bold" Foreground="{DynamicResource AccentSecondaryBrush}" Margin="0,15,0,7"/>
+                                        <TextBlock Text="Загрузка JSON/XML-каталога производителя по официальному HTTPS-адресу с отбором записей по Hardware ID выбранного устройства." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <WrapPanel>
+                                            <TextBox x:Name="StructuredCatalogVendorInput" Width="150" Margin="0,0,8,6" ToolTip="Производитель: ASUS, Dell, HP, Lenovo и т. д." Text="ASUS"/>
+                                            <TextBox x:Name="StructuredCatalogUrlInput" Width="420" Margin="0,0,8,6" ToolTip="Официальный HTTPS URL JSON или XML каталога" />
+                                            <Button Content="Загрузить каталог для выбранного устройства" Click="ImportStructuredCatalog_Click"/>
+                                        </WrapPanel>
+                                        <TextBlock x:Name="StructuredCatalogStatusText" Text="Выберите устройство в таблице оборудования и укажите официальный URL каталога." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         <TextBlock x:Name="UpdatesCountText" Text="Поиск ещё не запускался." Foreground="{DynamicResource TextBrush}" Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Border>
