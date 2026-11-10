@@ -265,6 +265,7 @@ public sealed class DriverInfPackageInspector
         var architecture = RuntimeInformation.OSArchitecture switch
         {
             Architecture.Arm64 => "NTarm64",
+            Architecture.Arm => "NTarm",
             Architecture.X64 => "NTamd64",
             Architecture.X86 => "NTx86",
             _ => throw new PlatformNotSupportedException(
@@ -332,7 +333,7 @@ public sealed class DriverInfPackageInspector
         var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var section in sections.Keys)
         {
-            var match = Regex.Match(section, @"(?:^|\.)(NTamd64|NTx86|NTarm64)(?:\.|$)", RegexOptions.IgnoreCase);
+            var match = Regex.Match(section, @"(?:^|\.)(NTamd64|NTx86|NTarm64|NTarm)(?:\.|$)", RegexOptions.IgnoreCase);
             if (match.Success) values.Add(match.Groups[1].Value);
         }
         return values.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -344,8 +345,10 @@ public sealed class DriverInfPackageInspector
         var expected = RuntimeInformation.OSArchitecture switch
         {
             Architecture.Arm64 => "NTarm64",
+            Architecture.Arm => "NTarm",
             Architecture.X64 => "NTamd64",
-            _ => "NTx86"
+            Architecture.X86 => "NTx86",
+            _ => throw new PlatformNotSupportedException("Unsupported Windows architecture for INF inspection.")
         };
         return architectures.Contains(expected, StringComparer.OrdinalIgnoreCase);
     }
@@ -376,7 +379,7 @@ public sealed class DriverInfPackageInspector
             modelSectionNames.Add(targets[0]);
             foreach (var decoration in targets.Skip(1))
             {
-                var architecture = Regex.Match(decoration, @"^(NTamd64|NTx86|NTarm64)(?:\.|$)", RegexOptions.IgnoreCase);
+                var architecture = Regex.Match(decoration, @"^(NTamd64|NTx86|NTarm64|NTarm)(?:\.|$)", RegexOptions.IgnoreCase);
                 if (architecture.Success &&
                     !architecture.Groups[1].Value.Equals(currentArchitecture, StringComparison.OrdinalIgnoreCase))
                     continue;
