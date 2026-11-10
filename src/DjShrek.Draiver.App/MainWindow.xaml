@@ -245,6 +245,7 @@
                                 <Button Content="Восстановить" Click="RestoreDrivers_Click"/>
                                 <Button Content="Сопоставить локальные INF" Click="MatchLocalDriverPackages_Click"/>
                                 <Button Content="SHA-256 манифест пакетов" Click="CalculatePackageHashes_Click"/>
+                                <Button Content="Загрузить официальный пакет" Click="DownloadOfficialPackage_Click"/>
                             </WrapPanel>
                         </DockPanel>
                         <DataGrid x:Name="DevicesGrid" Grid.Row="1" AutoGenerateColumns="False"
