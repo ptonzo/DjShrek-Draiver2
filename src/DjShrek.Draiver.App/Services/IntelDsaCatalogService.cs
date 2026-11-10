@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using DjShrek.Draiver.App.Models;
 
@@ -121,7 +123,8 @@ public sealed class IntelDsaCatalogService
                     var hardwareId = match.Match!;
                     results.Add(new DriverUpdateCandidate
                     {
-                        UpdateId = "intel-dsa:" + configId + ":" + category + ":" + hardwareId,
+                        UpdateId = "intel-dsa:" + configId + ":" + category + ":" + hardwareId +
+                                  ":" + GetDeviceIdentityToken(device),
                         CatalogRecordId = configId,
                         CatalogReleaseVersion = feedVersion,
                         CatalogReleaseDate = releaseDate,
@@ -205,6 +208,17 @@ public sealed class IntelDsaCatalogService
             return (bytes, expectedHash ?? "", version);
         }
         throw new InvalidDataException("Intel DSA feed could not be retrieved.");
+    }
+
+    private static string GetDeviceIdentityToken(DeviceInfo device)
+    {
+        var identity = !string.IsNullOrWhiteSpace(device.InstanceId)
+            ? device.InstanceId.Trim()
+            : string.Join("|", device.Name, device.Manufacturer,
+                string.Join(";", (device.HardwareIds ?? Array.Empty<string>())
+                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)));
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(identity.ToUpperInvariant()));
+        return Convert.ToHexString(digest.AsSpan(0, 8));
     }
 
     private static bool IsIntelDevice(DeviceInfo device)
