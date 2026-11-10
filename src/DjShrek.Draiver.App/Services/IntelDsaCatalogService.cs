@@ -334,14 +334,14 @@ public sealed class IntelDsaCatalogService
         var namesWindows = operatingSystem.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
                            operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase) ||
                            operatingSystem.Contains("Win11", StringComparison.OrdinalIgnoreCase);
-        if (namesWindows && !isWindows10Only && !isWindows11Only && !hasBothWindowsGenerations(operatingSystem))
+        if (namesWindows && !isWindows10Only && !isWindows11Only && !HasBothWindowsGenerations(operatingSystem))
             return false;
         if (windowsBuild >= 22000 && isWindows10Only) return false;
         if (windowsBuild < 22000 && isWindows11Only) return false;
         return true;
     }
 
-    private static bool hasBothWindowsGenerations(string operatingSystem) =>
+    private static bool HasBothWindowsGenerations(string operatingSystem) =>
         (operatingSystem.Contains("Windows 10", StringComparison.OrdinalIgnoreCase) ||
          operatingSystem.Contains("Win10", StringComparison.OrdinalIgnoreCase)) &&
         (operatingSystem.Contains("Windows 11", StringComparison.OrdinalIgnoreCase) ||
