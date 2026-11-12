@@ -12,7 +12,8 @@ public sealed class DriverUpdateCatalogService
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly string _root;
     private readonly string _catalogPath;
-    private readonly string _backupRoot;\n    private readonly string _installationHistoryPath;
+    private readonly string _backupRoot;
+    private readonly string _installationHistoryPath;
 
     public DriverUpdateCatalogService(string? root = null)
     {
